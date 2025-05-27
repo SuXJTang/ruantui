@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>银杏叶PNG-SVG动态背景演示</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      /* 渐变背景替代纯色 */
+      background: linear-gradient(135deg, #f0f4f8 0%, #d9e6f2 100%);
+      min-height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      position: relative;
+      perspective: 1000px;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      transition: background 1.5s ease;
+    }
+    
+    #container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #leafContainer {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    #leafContainer > div {
+      position: absolute;
+      pointer-events: none;
+      will-change: transform;
+      backface-visibility: hidden;
+      -webkit-animation-iteration-count: infinite, infinite;
+      -webkit-animation-direction: normal, normal;
+      -webkit-animation-timing-function: linear, ease-in;
+    }
+    
+    /* 近景层叶子 - 更大更清晰 */
+    #leafContainer > div.foreground {
+      width: 110px;
+      height: 75px;
+      opacity: 1;
+      z-index: 3;
+      filter: blur(0px);
+    }
+    
+    /* 中景层叶子 - 标准大小 */
+    #leafContainer > div.midground {
+      width: 80px;
+      height: 55px;
+      opacity: 0.9;
+      z-index: 2;
+      filter: blur(1px);
+    }
+    
+    /* 远景层叶子 - 更小更模糊 */
+    #leafContainer > div.background {
+      width: 60px;
+      height: 40px;
+      opacity: 0.75;
+      z-index: 1;
+      filter: blur(2px);
+    }
+
+    #leafContainer > div > svg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-animation-iteration-count: infinite;
+      -webkit-animation-direction: alternate;
+      -webkit-animation-timing-function: ease-in-out;
+      -webkit-transform-origin: 50% -100%;
+    }
+
+    /* 叶子拖尾效果 */
+    .leaf-trail {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.4;
+      transform-origin: center center;
+      transition: opacity 0.3s;
+    }
+
+    /* 叶子淡出动画 */
+    @-webkit-keyframes fade {
+      0%   { opacity: 1; }
+      95%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* 叶子下落动画 - 调慢速度 */
+    @-webkit-keyframes drop {
+      0%   { -webkit-transform: translate(0px, -50px); }
+      100% { -webkit-transform: translate(0px, 110vh); }
+    }
+
+    /* 顺时针旋转 */
+    @-webkit-keyframes clockwiseSpin {
+      0%   { -webkit-transform: rotate(-50deg); }
+      100% { -webkit-transform: rotate(50deg); }
+    }
+
+    /* 逆时针旋转并翻转 */
+    @-webkit-keyframes counterclockwiseSpinAndFlip {
+      0%   { -webkit-transform: scale(-1, 1) rotate(50deg); }
+      100% { -webkit-transform: scale(-1, 1) rotate(-50deg); }
+    }
+    
+    /* 改进卡片样式 */
+    .card {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 
+                  0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+      padding: 40px 46px;
+      max-width: 520px;
+      text-align: center;
+      z-index: 10;
+      transition: all 0.5s ease;
+    }
+    
+    /* 卡片悬停效果 */
+    .card:hover {
+      transform: translate(-50%, -50%) scale(1.02);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2),
+                  0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+    }
+    
+    .card h1 {
+      font-size: 2.6rem;
+      color: #2a3f54;
+      margin-bottom: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-shadow: 0 2px 3px rgba(0,0,0,0.05);
+      transition: all 0.5s ease;
+    }
+    
+    .card-content {
+      color: #34495e;
+      font-size: 1.15rem;
+      line-height: 2;
+      position: relative;
+      padding: 0.8em 0;
+    }
+    
+    .card-content p {
+      margin: 0 0 1.2em;
+      position: relative;
+      padding-left: 1.2em;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .card-content p:hover {
+      transform: translateX(5px);
+      color: #000;
+    }
+    
+    .card-content p:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.85em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #2a3f54;
+      transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+    
+    .card-content p:hover:before {
+      transform: scale(1.5);
+      background-color: currentColor;
+    }
+    
+    /* 鼠标指针影响效果 */
+    .cursor-effect {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+      transform: translate(-50%, -50%);
+      z-index: 9;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .card {
+        width: 85%;
+        padding: 30px 20px;
+      }
+      
+      .card h1 {
+        font-size: 2rem;
+      }
+      
+      .card-content {
+        font-size: 1rem;
+      }
+    }
+    
+    /* 页面载入动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+      animation: fadeIn 1s ease forwards;
+    }
+    
+    .card {
+      opacity: 0;
+      animation: fadeIn 1s ease 0.5s forwards;
+    }
+  </style>
+</head>
+<body>
+<div id="container">
+  <div id="leafContainer"></div>
+</div>
+
+<div id="cursorEffect" class="cursor-effect"></div>
+
+<div class="card">
+  <h1>三秋叶</h1>
+  <div class="card-content">
+    <p>春色银杏叶：嫩绿充满生机，随风轻摇，象征成长与希望。</p>
+    <p>秋霜银杏叶：金黄转深红，缓缓飘落，唤起成熟与思念。</p>
+    <p>冬雪银杏叶：纯白通透，如雪花轻飘，代表宁静与新生。</p>
+  </div>
+</div>
+
+<script>
+// 三个SVG字符串（纯矢量SVG）
+const svgList = [
+  // 黄
+  `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 192"><path d="M0 0 C0.71655762 0.00080566 1.43311523 0.00161133 2.17138672 0.00244141 C9.04271315 0.08135103 15.33382345 0.95774137 21.75 3.5 C24.46475105 4.52554547 24.46475105 4.52554547 26.75 2.875 C28.0803125 2.0396875 28.0803125 2.0396875 29.4375 1.1875 C34.84071519 -0.07687211 38.32231134 0.05490651 43.4375 2.1875 C46.77422627 2.92271087 50.11989879 3.57340183 53.4765625 4.2109375 C56.82035372 5.31377101 57.71620259 6.18523708 59.4375 9.1875 C61.14243358 12.68710051 61.95272452 15.309466 61.4375 19.1875 C59.83839309 21.4362441 58.24408095 23.43402921 56.4375 25.5 C42.3444405 42.55391995 34.92664135 64.09322291 36.4375 86.1875 C37.51125483 92.54548137 39.62431951 95.83400528 44.4375 100.1875 C60.73073895 111.43302963 80.84159387 116.36768589 100.5 116.5 C101.51694946 116.50833862 101.51694946 116.50833862 102.55444336 116.5168457 C107.48146099 116.44579171 111.71573541 115.4516338 116.4375 114.1875 C119.4375 114.0625 119.4375 114.0625 121.4375 114.1875 C121.6875 116.5 121.6875 116.5 121.4375 119.1875 C118.7865681 122.28025389 115.75707426 122.71503743 111.8046875 123.0625 C89.17287251 124.25757934 69.04384065 119.74812323 48.61401367 110.20019531 C46.2789459 109.11372744 43.93773343 108.04285958 41.58984375 106.984375 C40.86788818 106.65791992 40.14593262 106.33146484 39.40209961 105.99511719 C29.68555809 102.00079392 18.01558254 104.22447761 8.56054688 107.92138672 C-2.81770785 112.80894324 -12.64493115 119.87211729 -22.5625 127.1875 C-37.71778222 138.22365424 -37.71778222 138.22365424 -46.21875 137.91796875 C-51.47492806 136.27979325 -54.66317428 131.63960268 -57.5625 127.1875 C-58.57435099 124.61664898 -59.26546587 122.14238839 -59.8828125 119.453125 C-60.95385744 115.88297519 -63.01991257 113.86390783 -65.5625 111.1875 C-66.74046194 108.83157612 -66.76874468 107.12374337 -66.9375 104.5 C-67.23978614 100.91867771 -67.65150802 99.00289076 -69.25 95.6875 C-71.08129439 90.80404829 -70.03047438 87.08373161 -68.5625 82.1875 C-68.0675 81.1975 -68.0675 81.1975 -67.5625 80.1875 C-67.53657276 76.91696345 -67.58948722 73.66116017 -67.68945312 70.39257812 C-67.80114127 63.3562247 -66.41741452 56.77988178 -62.08203125 51.10546875 C-57.71689685 47.78255248 -52.45352185 46.61479233 -47.19165039 45.26538086 C-46.37043701 45.04889893 -45.54922363 44.83241699 -44.703125 44.609375 C-43.95579102 44.42987305 -43.20845703 44.25037109 -42.43847656 44.06542969 C-40.42511509 43.32015497 -40.42511509 43.32015497 -39.34814453 41.37402344 C-38.54342016 39.134399 -38.13421704 37.14194827 -37.8515625 34.78125 C-37.74070313 33.95496094 -37.62984375 33.12867188 -37.515625 32.27734375 C-37.29699626 30.5517383 -37.08604618 28.82514251 -36.8828125 27.09765625 C-36.01391826 20.76855161 -36.01391826 20.76855161 -33.64453125 17.71875 C-31.00864993 15.78016561 -28.30196124 13.97653591 -25.5625 12.1875 C-24.7375 11.5275 -23.9125 10.8675 -23.0625 10.1875 C-20.33319456 8.00405565 -17.47919728 6.11127906 -14.5625 4.1875 C-13.840625 3.630625 -13.11875 3.07375 -12.375 2.5 C-8.545708 -0.27293559 -4.52349412 -0.00521741 0 0 Z" fill="#EEAF11" transform="translate(157.5625,11.8125)"/></svg>`,
+  // 白
+  `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 192"><path d="M0 0 C0.71655762 0.00080566 1.43311523 0.00161133 2.17138672 0.00244141 C9.04271315 0.08135103 15.33382345 0.95774137 21.75 3.5 C24.46475105 4.52554547 24.46475105 4.52554547 26.75 2.875 C28.0803125 2.0396875 28.0803125 2.0396875 29.4375 1.1875 C34.84071519 -0.07687211 38.32231134 0.05490651 43.4375 2.1875 C46.77422627 2.92271087 50.11989879 3.57340183 53.4765625 4.2109375 C56.82035372 5.31377101 57.71620259 6.18523708 59.4375 9.1875 C61.14243358 12.68710051 61.95272452 15.309466 61.4375 19.1875 C59.83839309 21.4362441 58.24408095 23.43402921 56.4375 25.5 C42.3444405 42.55391995 34.92664135 64.09322291 36.4375 86.1875 C37.51125483 92.54548137 39.62431951 95.83400528 44.4375 100.1875 C60.73073895 111.43302963 80.84159387 116.36768589 100.5 116.5 C101.51694946 116.50833862 101.51694946 116.50833862 102.55444336 116.5168457 C107.48146099 116.44579171 111.71573541 115.4516338 116.4375 114.1875 C119.4375 114.0625 119.4375 114.0625 121.4375 114.1875 C121.6875 116.5 121.6875 116.5 121.4375 119.1875 C118.7865681 122.28025389 115.75707426 122.71503743 111.8046875 123.0625 C89.17287251 124.25757934 69.04384065 119.74812323 48.61401367 110.20019531 C46.2789459 109.11372744 43.93773343 108.04285958 41.58984375 106.984375 C40.86788818 106.65791992 40.14593262 106.33146484 39.40209961 105.99511719 C29.68555809 102.00079392 18.01558254 104.22447761 8.56054688 107.92138672 C-2.81770785 112.80894324 -12.64493115 119.87211729 -22.5625 127.1875 C-37.71778222 138.22365424 -37.71778222 138.22365424 -46.21875 137.91796875 C-51.47492806 136.27979325 -54.66317428 131.63960268 -57.5625 127.1875 C-58.57435099 124.61664898 -59.26546587 122.14238839 -59.8828125 119.453125 C-60.95385744 115.88297519 -63.01991257 113.86390783 -65.5625 111.1875 C-66.74046194 108.83157612 -66.76874468 107.12374337 -66.9375 104.5 C-67.23978614 100.91867771 -67.65150802 99.00289076 -69.25 95.6875 C-71.08129439 90.80404829 -70.03047438 87.08373161 -68.5625 82.1875 C-68.0675 81.1975 -68.0675 81.1975 -67.5625 80.1875 C-67.53657276 76.91696345 -67.58948722 73.66116017 -67.68945312 70.39257812 C-67.80114127 63.3562247 -66.41741452 56.77988178 -62.08203125 51.10546875 C-57.71689685 47.78255248 -52.45352185 46.61479233 -47.19165039 45.26538086 C-46.37043701 45.04889893 -45.54922363 44.83241699 -44.703125 44.609375 C-43.95579102 44.42987305 -43.20845703 44.25037109 -42.43847656 44.06542969 C-40.42511509 43.32015497 -40.42511509 43.32015497 -39.34814453 41.37402344 C-38.54342016 39.134399 -38.13421704 37.14194827 -37.8515625 34.78125 C-37.74070313 33.95496094 -37.62984375 33.12867188 -37.515625 32.27734375 C-37.29699626 30.5517383 -37.08604618 28.82514251 -36.8828125 27.09765625 C-36.01391826 20.76855161 -36.01391826 20.76855161 -33.64453125 17.71875 C-31.00864993 15.78016561 -28.30196124 13.97653591 -25.5625 12.1875 C-24.7375 11.5275 -23.9125 10.8675 -23.0625 10.1875 C-20.33319456 8.00405565 -17.47919728 6.11127906 -14.5625 4.1875 C-13.840625 3.630625 -13.11875 3.07375 -12.375 2.5 C-8.545708 -0.27293559 -4.52349412 -0.00521741 0 0 Z" fill="#FFFFFF" transform="translate(157.5625,11.8125)"/></svg>`,
+  // 绿
+  `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 192"><path d="M0 0 C0.71655762 0.00080566 1.43311523 0.00161133 2.17138672 0.00244141 C9.04271315 0.08135103 15.33382345 0.95774137 21.75 3.5 C24.46475105 4.52554547 24.46475105 4.52554547 26.75 2.875 C28.0803125 2.0396875 28.0803125 2.0396875 29.4375 1.1875 C34.84071519 -0.07687211 38.32231134 0.05490651 43.4375 2.1875 C46.77422627 2.92271087 50.11989879 3.57340183 53.4765625 4.2109375 C56.82035372 5.31377101 57.71620259 6.18523708 59.4375 9.1875 C61.14243358 12.68710051 61.95272452 15.309466 61.4375 19.1875 C59.83839309 21.4362441 58.24408095 23.43402921 56.4375 25.5 C42.3444405 42.55391995 34.92664135 64.09322291 36.4375 86.1875 C37.51125483 92.54548137 39.62431951 95.83400528 44.4375 100.1875 C60.73073895 111.43302963 80.84159387 116.36768589 100.5 116.5 C101.51694946 116.50833862 101.51694946 116.50833862 102.55444336 116.5168457 C107.48146099 116.44579171 111.71573541 115.4516338 116.4375 114.1875 C119.4375 114.0625 119.4375 114.0625 121.4375 114.1875 C121.6875 116.5 121.6875 116.5 121.4375 119.1875 C118.7865681 122.28025389 115.75707426 122.71503743 111.8046875 123.0625 C89.17287251 124.25757934 69.04384065 119.74812323 48.61401367 110.20019531 C46.2789459 109.11372744 43.93773343 108.04285958 41.58984375 106.984375 C40.86788818 106.65791992 40.14593262 106.33146484 39.40209961 105.99511719 C29.68555809 102.00079392 18.01558254 104.22447761 8.56054688 107.92138672 C-2.81770785 112.80894324 -12.64493115 119.87211729 -22.5625 127.1875 C-37.71778222 138.22365424 -37.71778222 138.22365424 -46.21875 137.91796875 C-51.47492806 136.27979325 -54.66317428 131.63960268 -57.5625 127.1875 C-58.57435099 124.61664898 -59.26546587 122.14238839 -59.8828125 119.453125 C-60.95385744 115.88297519 -63.01991257 113.86390783 -65.5625 111.1875 C-66.74046194 108.83157612 -66.76874468 107.12374337 -66.9375 104.5 C-67.23978614 100.91867771 -67.65150802 99.00289076 -69.25 95.6875 C-71.08129439 90.80404829 -70.03047438 87.08373161 -68.5625 82.1875 C-68.0675 81.1975 -68.0675 81.1975 -67.5625 80.1875 C-67.53657276 76.91696345 -67.58948722 73.66116017 -67.68945312 70.39257812 C-67.80114127 63.3562247 -66.41741452 56.77988178 -62.08203125 51.10546875 C-57.71689685 47.78255248 -52.45352185 46.61479233 -47.19165039 45.26538086 C-46.37043701 45.04889893 -45.54922363 44.83241699 -44.703125 44.609375 C-43.95579102 44.42987305 -43.20845703 44.25037109 -42.43847656 44.06542969 C-40.42511509 43.32015497 -40.42511509 43.32015497 -39.34814453 41.37402344 C-38.54342016 39.134399 -38.13421704 37.14194827 -37.8515625 34.78125 C-37.74070313 33.95496094 -37.62984375 33.12867188 -37.515625 32.27734375 C-37.29699626 30.5517383 -37.08604618 28.82514251 -36.8828125 27.09765625 C-36.01391826 20.76855161 -36.01391826 20.76855161 -33.64453125 17.71875 C-31.00864993 15.78016561 -28.30196124 13.97653591 -25.5625 12.1875 C-24.7375 11.5275 -23.9125 10.8675 -23.0625 10.1875 C-20.33319456 8.00405565 -17.47919728 6.11127906 -14.5625 4.1875 C-13.840625 3.630625 -13.11875 3.07375 -12.375 2.5 C-8.545708 -0.27293559 -4.52349412 -0.00521741 0 0 Z" fill="#04F15B" transform="translate(157.5625,11.8125)"/></svg>`
+];
+
+// 颜色映射
+const colorMap = {
+  "#EEAF11": "rgba(238, 175, 17, ", // 黄色
+  "#FFFFFF": "rgba(255, 255, 255, ", // 白色
+  "#04F15B": "rgba(4, 241, 91, "    // 绿色
+};
+
+// 定义叶子数量
+const NUMBER_OF_LEAVES = 30;
+
+// 存储每片叶子的历史位置
+let leafPositions = {};
+// 拖尾长度
+const TRAIL_LENGTH = 5;
+
+// 叶子容器
+let leafContainer;
+
+function init() {
+  // 获取叶子容器元素
+  leafContainer = document.getElementById('leafContainer');
+  
+  // 填充容器，创建叶子
+  for (let i = 0; i < NUMBER_OF_LEAVES; i++) {
+    leafContainer.appendChild(createALeaf(i));
+  }
+  
+  // 启动动画循环
+  requestAnimationFrame(updateTrails);
+  
+  // 添加窗口调整大小时重新初始化
+  window.addEventListener('resize', function() {
+    resetLeafContainer();
+    
+    // 重新创建叶子
+    for (let i = 0; i < NUMBER_OF_LEAVES; i++) {
+      leafContainer.appendChild(createALeaf(i));
+    }
+  });
+  
+  // 添加页面可见性变化监听
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      resetLeafContainer();
+      
+      // 重新创建叶子
+      for (let i = 0; i < NUMBER_OF_LEAVES; i++) {
+        leafContainer.appendChild(createALeaf(i));
+      }
+    }
+  });
+}
+
+// 重置叶子容器
+function resetLeafContainer() {
+  // 清空叶子容器
+  while (leafContainer.firstChild) {
+    leafContainer.removeChild(leafContainer.firstChild);
+  }
+  
+  // 重置叶子位置记录
+  leafPositions = {};
+}
+
+// 清除所有拖尾
+function clearAllTrails() {
+  const trails = document.querySelectorAll('.leaf-trail');
+  trails.forEach(trail => trail.remove());
+}
+
+function updateTrails() {
+  // 更新所有叶子的拖尾
+  for (let id in leafPositions) {
+    const positions = leafPositions[id];
+    const leaf = document.getElementById('leaf-' + id);
+    
+    if (leaf && positions.length > 0) {
+      const rect = leaf.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      
+      // 添加新位置
+      positions.push({ x, y, rotation: leaf.style.transform });
+      
+      // 限制拖尾长度
+      if (positions.length > TRAIL_LENGTH) {
+        positions.shift();
+      }
+      
+      // 更新拖尾元素
+      updateTrailElements(id, positions, leaf);
+    }
+  }
+  
+  requestAnimationFrame(updateTrails);
+}
+
+function updateTrailElements(id, positions, leaf) {
+  const leafColor = getLeafColor(leaf);
+  
+  // 移除旧的拖尾
+  const oldTrails = document.querySelectorAll('.leaf-trail[data-leaf-id="' + id + '"]');
+  oldTrails.forEach(trail => trail.remove());
+  
+  // 创建新的拖尾
+  for (let i = 0; i < positions.length - 1; i++) {
+    const pos = positions[i];
+    const trailElement = document.createElement('div');
+    trailElement.className = 'leaf-trail';
+    trailElement.dataset.leafId = id;
+    
+    // 复制叶子的SVG内容
+    const svgContent = leaf.querySelector('svg').outerHTML;
+    
+    // 计算透明度
+    const opacity = (i + 1) / positions.length * 0.3;
+    
+    // 缩放比例
+    const scale = 0.6 + (i / positions.length * 0.4);
+    
+    // 设置样式
+    trailElement.style.position = 'absolute';
+    trailElement.style.left = pos.x + 'px';
+    trailElement.style.top = pos.y + 'px';
+    trailElement.style.width = leaf.offsetWidth * scale + 'px';
+    trailElement.style.height = leaf.offsetHeight * scale + 'px';
+    trailElement.style.transform = `translate(-50%, -50%) ${pos.rotation || ''}`;
+    trailElement.style.opacity = opacity;
+    trailElement.innerHTML = svgContent;
+    
+    // 给SVG路径设置新的颜色和透明度
+    const path = trailElement.querySelector('path');
+    if (path && leafColor) {
+      path.setAttribute('fill', `${leafColor}${opacity})`);
+    }
+    
+    // 添加到页面
+    document.body.appendChild(trailElement);
+  }
+}
+
+function getLeafColor(leafElement) {
+  if (!leafElement) return null;
+  
+  const path = leafElement.querySelector('path');
+  if (!path) return null;
+  
+  const fillColor = path.getAttribute('fill');
+  return colorMap[fillColor] || null;
+}
+
+// 获取随机整数
+function randomInteger(low, high) {
+  return low + Math.floor(Math.random() * (high - low));
+}
+
+// 获取随机浮点数
+function randomFloat(low, high) {
+  return low + Math.random() * (high - low);
+}
+
+// 返回CSS像素值
+function pixelValue(value) {
+  return value + 'px';
+}
+
+// 返回持续时间值
+function durationValue(value) {
+  return value + 's';
+}
+
+// 创建一片叶子
+function createALeaf(id) {
+  // 创建一个包装div和SVG内容
+  var leafDiv = document.createElement('div');
+  leafDiv.id = 'leaf-' + id;
+  
+  // 初始化位置数组
+  leafPositions[id] = [];
+  
+  // 分配深度层 - 近景，中景或远景
+  const depthLayer = Math.floor(Math.random() * 3); // 0, 1, 或 2
+  if (depthLayer === 0) {
+    leafDiv.className = 'foreground'; // 近景层
+  } else if (depthLayer === 1) {
+    leafDiv.className = 'midground';  // 中景层
+  } else {
+    leafDiv.className = 'background'; // 远景层
+  }
+  
+  // 随机选择一种SVG叶子
+  const svgContent = svgList[randomInteger(0, svgList.length)];
+  
+  // 设置叶子的初始位置
+  leafDiv.style.top = "-100px";
+  leafDiv.style.left = pixelValue(randomInteger(0, window.innerWidth - 100));
+  
+  // 随机选择旋转动画
+  var spinAnimationName = (Math.random() < 0.5) ? 'clockwiseSpin' : 'counterclockwiseSpinAndFlip';
+  
+  // 设置动画名称
+  leafDiv.style.webkitAnimationName = 'fade, drop';
+  
+  // 根据深度层调整下落速度
+  var durationMultiplier;
+  if (leafDiv.className === 'foreground') {
+    durationMultiplier = 1.0; // 前景层速度基准
+  } else if (leafDiv.className === 'midground') {
+    durationMultiplier = 1.5; // 中景层速度较慢
+  } else {
+    durationMultiplier = 2.0; // 远景层速度最慢
+  }
+  
+  // 随机设置淡出和下落动画的持续时间
+  var fadeAndDropDuration = durationValue(randomFloat(8, 16) * durationMultiplier);
+  
+  // 设置动画持续时间
+  leafDiv.style.webkitAnimationDuration = fadeAndDropDuration + ', ' + fadeAndDropDuration;
+  
+  // 随机设置动画延迟
+  var leafDelay = durationValue(randomFloat(0, 7));
+  leafDiv.style.webkitAnimationDelay = leafDelay + ', ' + leafDelay;
+  
+  // 创建SVG元素
+  var svgElem = document.createElement('div');
+  svgElem.innerHTML = svgContent;
+  svgElem = svgElem.firstChild;
+  
+  // 设置SVG元素的动画
+  svgElem.style.webkitAnimationName = spinAnimationName;
+  svgElem.style.webkitAnimationDuration = durationValue(randomFloat(4, 8));
+  
+  // 将SVG添加到div中
+  leafDiv.appendChild(svgElem);
+  
+  // 为叶子添加动画结束监听
+  leafDiv.addEventListener('animationend', function(e) {
+    if (e.animationName === 'fade') {
+      // 当淡出动画结束时，创建新的叶子替换此叶子
+      const newLeaf = createALeaf(id);
+      this.parentNode.replaceChild(newLeaf, this);
+    }
+  });
+  
+  // 返回创建的叶子div
+  return leafDiv;
+}
+
+// 页面加载完成后初始化
+window.addEventListener('load', function() {
+  // 初始化叶子
+  init();
+  
+  // 添加鼠标移动效果
+  initMouseEffect();
+});
+
+// 初始化鼠标效果
+function initMouseEffect() {
+  const cursorEffect = document.getElementById('cursorEffect');
+  const container = document.getElementById('container');
+  
+  // 鼠标移动时显示效果
+  container.addEventListener('mousemove', function(e) {
+    // 更新光效位置
+    cursorEffect.style.left = e.clientX + 'px';
+    cursorEffect.style.top = e.clientY + 'px';
+    cursorEffect.style.opacity = '1';
+    
+    // 影响附近的叶子
+    influenceNearbyLeaves(e.clientX, e.clientY);
+  });
+  
+  // 鼠标离开时隐藏效果
+  container.addEventListener('mouseleave', function() {
+    cursorEffect.style.opacity = '0';
+  });
+}
+
+// 影响鼠标附近的叶子
+function influenceNearbyLeaves(mouseX, mouseY) {
+  const leaves = document.querySelectorAll('#leafContainer > div');
+  const influenceRadius = 150; // 影响半径
+  
+  leaves.forEach(leaf => {
+    const rect = leaf.getBoundingClientRect();
+    const leafX = rect.left + rect.width / 2;
+    const leafY = rect.top + rect.height / 2;
+    
+    // 计算距离
+    const distance = Math.sqrt(Math.pow(mouseX - leafX, 2) + Math.pow(mouseY - leafY, 2));
+    
+    // 如果叶子在影响范围内
+    if (distance < influenceRadius) {
+      // 计算影响力度
+      const influence = 1 - (distance / influenceRadius);
+      
+      // 计算偏移方向
+      const directionX = (leafX - mouseX) * influence * 0.5;
+      const directionY = (leafY - mouseY) * influence * 0.5;
+      
+      // 应用临时样式
+      leaf.style.transition = 'transform 0.3s ease';
+      leaf.style.transform = `translate(${directionX}px, ${directionY}px)`;
+      
+      // 淡出效果
+      setTimeout(() => {
+        leaf.style.transform = '';
+      }, 300);
+    }
+  });
+}
+</script>
+</body>
+</html> 

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="专业的软件推荐平台，基于百万用户真实评价，为您推荐最适合的软件解决方案">
+    <meta name="theme-color" content="#FF7D20">
+    <title>软件推荐网站 - 精准匹配您的软件需求</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 添加结构化数据 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "软件推荐",
+        "url": "https://example.com/",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://example.com/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        },
+        "description": "专业的软件推荐平台，基于百万用户真实评价，为您推荐最适合的软件解决方案"
+    }
+    </script>
+</head>
+<body>
+    <!-- 跳转到主要内容的无障碍链接 -->
+    <a href="#main-content" class="sr-only sr-only-focusable">跳到主要内容</a>
+    
+    <!-- 顶部导航栏 -->
+    <header class="header" role="banner">
+        <div class="container">
+            <div class="logo">软件推荐</div>
+            
+            <!-- 添加移动端菜单按钮 -->
+            <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="切换菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            
+            <nav class="nav" id="main-nav" role="navigation" aria-label="主导航">
+                <ul>
+                    <li class="active"><a href="#" aria-current="page">首页</a></li>
+                    <li><a href="#">分类</a></li>
+                    <li><a href="#">排行榜</a></li>
+                    <li><a href="#">专业评测</a></li>
+                    <li><a href="#">社区</a></li>
+                </ul>
+            </nav>
+            <button class="theme-toggle" aria-label="切换主题" title="切换暗色模式">
+                <i class="fas fa-moon"></i>
+            </button>
+            <div class="search-box">
+                <input type="text" placeholder="搜索软件..." aria-label="搜索框">
+                <!-- 搜索建议会动态添加到这里 -->
+            </div>
+            <div class="login-btn" role="button" tabindex="0">登录</div>
+        </div>
+    </header>
+
+    <!-- 面包屑导航 -->
+    <nav class="breadcrumb" aria-label="面包屑导航">
+        <div class="container">
+            <ul>
+                <li><a href="#">首页</a></li>
+                <li aria-current="page">软件推荐</li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main id="main-content">
+        <!-- 优化后的英雄区域 -->
+        <section class="hero">
+            <div class="container">
+                <h1>精准匹配您的软件需求</h1>
+                <p class="hero-subtitle">基于百万用户真实评价，为您推荐最适合的软件解决方案</p>
+                <div class="search-large" role="search">
+                    <input type="text" placeholder="试试搜索「设计软件」或「办公工具」..." aria-label="搜索软件">
+                    <button class="search-btn">
+                        <i class="fas fa-search" aria-hidden="true"></i> 立即搜索
+                    </button>
+                </div>
+                <div class="popular-tags" aria-label="热门标签">
+                    <span tabindex="0" role="button">设计工具</span>
+                    <span tabindex="0" role="button">办公软件</span>
+                    <span tabindex="0" role="button">开发工具</span>
+                    <span tabindex="0" role="button">浏览器</span>
+                    <span tabindex="0" role="button">安全防护</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 推荐软件区域 -->
+        <section class="recommended">
+            <div class="container">
+                <h2>热门推荐</h2>
+                <p>根据用户评价和下载量精选的优质软件，涵盖各类应用场景</p>
+                
+                <!-- 筛选控件 -->
+                <div class="filters" aria-labelledby="filter-heading">
+                    <h3 id="filter-heading" class="sr-only">筛选选项</h3>
+                    <div class="filter-group">
+                        <label for="category-filter">类别:</label>
+                        <select id="category-filter" class="filter-select">
+                            <option value="all">全部类别</option>
+                            <option value="design">设计</option>
+                            <option value="office">办公</option>
+                            <option value="development">开发</option>
+                            <option value="browser">浏览器</option>
+                            <option value="security">安全</option>
+                            <option value="entertainment">娱乐</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="rating-filter">评分:</label>
+                        <select id="rating-filter" class="filter-select">
+                            <option value="all">全部评分</option>
+                            <option value="5">★★★★★</option>
+                            <option value="4">★★★★☆及以上</option>
+                            <option value="3">★★★☆☆及以上</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="downloads-filter">下载量:</label>
+                        <select id="downloads-filter" class="filter-select">
+                            <option value="all">全部</option>
+                            <option value="10000">1万+</option>
+                            <option value="5000">5千+</option>
+                            <option value="1000">1千+</option>
+                        </select>
+                    </div>
+                    
+                    <button class="filter-btn">筛选</button>
+                    <button class="reset-btn">重置</button>
+                </div>
+                <div class="software-grid" role="list">
+                    <!-- 软件卡片1 -->
+                    <article class="software-card" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="software-icon" style="background-color: #3B82F6;" aria-hidden="true"></div>
+                        <div class="software-info">
+                            <h3 itemprop="name">Adobe Photoshop</h3>
+                            <p class="description" itemprop="description">专业图像编辑软件</p>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span aria-label="评分4.5星，满分5星">★★★★☆</span> 
+                                <span itemprop="ratingValue">4.5</span>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                            <div class="tags" aria-label="软件标签">
+                                <span class="tag" itemprop="applicationCategory">设计</span>
+                                <span class="tag" itemprop="applicationSubCategory">图像处理</span>
+                            </div>
+                            <button class="details-btn">查看详情</button>
+                        </div>
+                    </article>
+
+                    <!-- 软件卡片2 -->
+                    <article class="software-card" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="software-icon" style="background-color: #2563EB;" aria-hidden="true"></div>
+                        <div class="software-info">
+                            <h3 itemprop="name">Microsoft Office</h3>
+                            <p class="description" itemprop="description">全能办公套件</p>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span aria-label="评分5.0星，满分5星">★★★★★</span> 
+                                <span itemprop="ratingValue">5.0</span>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                            <div class="tags" aria-label="软件标签">
+                                <span class="tag" itemprop="applicationCategory">办公</span>
+                                <span class="tag" itemprop="applicationSubCategory">文档处理</span>
+                            </div>
+                            <button class="details-btn">查看详情</button>
+                        </div>
+                    </article>
+
+                    <!-- 软件卡片3 -->
+                    <article class="software-card" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="software-icon" style="background-color: #60A5FA;" aria-hidden="true"></div>
+                        <div class="software-info">
+                            <h3 itemprop="name">Google Chrome</h3>
+                            <p class="description" itemprop="description">快速安全的浏览器</p>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span aria-label="评分4.8星，满分5星">★★★★☆</span> 
+                                <span itemprop="ratingValue">4.8</span>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                            <div class="tags" aria-label="软件标签">
+                                <span class="tag" itemprop="applicationCategory">浏览器</span>
+                                <span class="tag" itemprop="applicationSubCategory">网页浏览</span>
+                            </div>
+                            <button class="details-btn">查看详情</button>
+                        </div>
+                    </article>
+
+                    <!-- 软件卡片4 -->
+                    <article class="software-card" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="software-icon" style="background-color: #1E40AF;" aria-hidden="true"></div>
+                        <div class="software-info">
+                            <h3 itemprop="name">Visual Studio Code</h3>
+                            <p class="description" itemprop="description">功能强大的代码编辑器</p>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span aria-label="评分4.9星，满分5星">★★★★★</span> 
+                                <span itemprop="ratingValue">4.9</span>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                            <div class="tags" aria-label="软件标签">
+                                <span class="tag" itemprop="applicationCategory">开发</span>
+                                <span class="tag" itemprop="applicationSubCategory">编程工具</span>
+                            </div>
+                            <button class="details-btn">查看详情</button>
+                        </div>
+                    </article>
+                </div>
+                <button class="more-btn">查看更多软件</button>
+            </div>
+        </section>
+
+        <!-- 分类浏览区域 -->
+        <section class="categories">
+            <div class="container">
+                <h2>按分类浏览</h2>
+                <p>浏览不同类别的软件，找到适合您需求的应用程序</p>
+                <div class="category-grid" role="list">
+                    <!-- 分类卡片1 -->
+                    <div class="category-card" role="listitem">
+                        <div class="category-icon" style="background-color: #3B82F6;" aria-hidden="true"></div>
+                        <h3>办公软件</h3>
+                        <p>14款软件</p>
+                    </div>
+                    <!-- 分类卡片2 -->
+                    <div class="category-card" role="listitem">
+                        <div class="category-icon" style="background-color: #2563EB;" aria-hidden="true"></div>
+                        <h3>设计软件</h3>
+                        <p>23款软件</p>
+                    </div>
+                    <!-- 分类卡片3 -->
+                    <div class="category-card" role="listitem">
+                        <div class="category-icon" style="background-color: #1E40AF;" aria-hidden="true"></div>
+                        <h3>开发工具</h3>
+                        <p>18款软件</p>
+                    </div>
+                    <!-- 分类卡片4 -->
+                    <div class="category-card" role="listitem">
+                        <div class="category-icon" style="background-color: #FF9500;" aria-hidden="true"></div>
+                        <h3>安全软件</h3>
+                        <p>9款软件</p>
+                    </div>
+                    <!-- 分类卡片5 -->
+                    <div class="category-card" role="listitem">
+                        <div class="category-icon" style="background-color: #60A5FA;" aria-hidden="true"></div>
+                        <h3>娱乐软件</h3>
+                        <p>16款软件</p>
+                    </div>
+                    <!-- 分类卡片6 -->
+                    <div class="category-card" role="listitem">
+                        <div class="category-icon" style="background-color: #93C5FD;" aria-hidden="true"></div>
+                        <h3>系统工具</h3>
+                        <p>12款软件</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 用户评价区域 -->
+        <section class="testimonials">
+            <div class="container">
+                <h2>用户评价</h2>
+                <p>来自真实用户的软件使用体验分享</p>
+                <div class="testimonial-grid" role="list">
+                    <div class="testimonial-card" role="listitem" itemscope itemtype="https://schema.org/Review">
+                        <div class="testimonial-content">
+                            <p itemprop="reviewBody">"这个网站帮我找到了最适合我需求的图片编辑软件，节省了大量时间。专业的评测和用户评价非常有参考价值。"</p>
+                        </div>
+                        <div class="testimonial-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                            <div class="author-avatar" style="background-color: #EFF6FF;">
+                                <span itemprop="name" aria-hidden="true">张</span>
+                            </div>
+                            <div class="author-info">
+                                <h4 itemprop="name">张先生</h4>
+                                <p>摄影爱好者</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card" role="listitem" itemscope itemtype="https://schema.org/Review">
+                        <div class="testimonial-content">
+                            <p itemprop="reviewBody">"作为一名开发者，这里的软件推荐让我发现了很多提高效率的工具。详细的对比和评测非常专业，推荐给所有IT从业者。"</p>
+                        </div>
+                        <div class="testimonial-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                            <div class="author-avatar" style="background-color: #2b2d42; color: white;">
+                                <span itemprop="name" aria-hidden="true">李</span>
+                            </div>
+                            <div class="author-info">
+                                <h4 itemprop="name">李女士</h4>
+                                <p>软件工程师</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card" role="listitem" itemscope itemtype="https://schema.org/Review">
+                        <div class="testimonial-content">
+                            <p itemprop="reviewBody">"终于找到一个靠谱的软件推荐平台，这里的推荐和评测都非常客观公正，没有广告的痕迹，值得信赖！"</p>
+                        </div>
+                        <div class="testimonial-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                            <div class="author-avatar" style="background-color: #ffebee;">
+                                <span itemprop="name" aria-hidden="true">王</span>
+                            </div>
+                            <div class="author-info">
+                                <h4 itemprop="name">王先生</h4>
+                                <p>企业管理者</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 下载排行榜 -->
+        <section class="ranking">
+            <div class="container">
+                <h2>本周热门下载</h2>
+                <p>最受用户欢迎的软件排行榜</p>
+                <div class="ranking-list" role="list">
+                    <div class="ranking-item" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="ranking-number" aria-hidden="true">1</div>
+                        <div class="ranking-icon" style="background-color: #2563EB;" aria-hidden="true">
+                            <i class="fas fa-paint-brush"></i>
+                        </div>
+                        <div class="ranking-info">
+                            <h3 itemprop="name">Adobe Photoshop</h3>
+                            <p itemprop="applicationCategory">设计 · 图像处理</p>
+                        </div>
+                        <div class="ranking-stats">
+                            <div class="download-count">
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span itemprop="downloadCount">12,345</span>
+                            </div>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span itemprop="ratingValue">4.5</span>
+                                <i class="fas fa-star" aria-hidden="true"></i>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ranking-item" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="ranking-number" aria-hidden="true">2</div>
+                        <div class="ranking-icon" style="background-color: #3B82F6;" aria-hidden="true">
+                            <i class="fas fa-file-word"></i>
+                        </div>
+                        <div class="ranking-info">
+                            <h3 itemprop="name">Microsoft Office</h3>
+                            <p itemprop="applicationCategory">办公 · 文档处理</p>
+                        </div>
+                        <div class="ranking-stats">
+                            <div class="download-count">
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span itemprop="downloadCount">11,287</span>
+                            </div>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span itemprop="ratingValue">5.0</span>
+                                <i class="fas fa-star" aria-hidden="true"></i>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ranking-item" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="ranking-number" aria-hidden="true">3</div>
+                        <div class="ranking-icon" style="background-color: #60A5FA;" aria-hidden="true">
+                            <i class="fab fa-chrome"></i>
+                        </div>
+                        <div class="ranking-info">
+                            <h3 itemprop="name">Google Chrome</h3>
+                            <p itemprop="applicationCategory">浏览器 · 网页浏览</p>
+                        </div>
+                        <div class="ranking-stats">
+                            <div class="download-count">
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span itemprop="downloadCount">10,932</span>
+                            </div>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span itemprop="ratingValue">4.8</span>
+                                <i class="fas fa-star" aria-hidden="true"></i>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ranking-item" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="ranking-number" aria-hidden="true">4</div>
+                        <div class="ranking-icon" style="background-color: #1E40AF;" aria-hidden="true">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="ranking-info">
+                            <h3 itemprop="name">Visual Studio Code</h3>
+                            <p itemprop="applicationCategory">开发 · 编程工具</p>
+                        </div>
+                        <div class="ranking-stats">
+                            <div class="download-count">
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span itemprop="downloadCount">9,874</span>
+                            </div>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span itemprop="ratingValue">4.9</span>
+                                <i class="fas fa-star" aria-hidden="true"></i>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ranking-item" role="listitem" itemscope itemtype="https://schema.org/SoftwareApplication">
+                        <div class="ranking-number" aria-hidden="true">5</div>
+                        <div class="ranking-icon" style="background-color: #FF9500;" aria-hidden="true">
+                            <i class="fas fa-headphones"></i>
+                        </div>
+                        <div class="ranking-info">
+                            <h3 itemprop="name">Spotify</h3>
+                            <p itemprop="applicationCategory">音乐 · 流媒体</p>
+                        </div>
+                        <div class="ranking-stats">
+                            <div class="download-count">
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span itemprop="downloadCount">8,652</span>
+                            </div>
+                            <div class="rating" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                <span itemprop="ratingValue">4.7</span>
+                                <i class="fas fa-star" aria-hidden="true"></i>
+                                <meta itemprop="bestRating" content="5" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 注册区域 -->
+        <section class="signup">
+            <div class="container">
+                <div class="signup-content">
+                    <h2>加入我们的社区</h2>
+                    <p>注册账号，获取个性化软件推荐，参与评论讨论，分享您的使用体验</p>
+                    <form class="signup-form" novalidate>
+                        <label for="signup-email" class="sr-only">邮箱地址</label>
+                        <input type="email" id="signup-email" placeholder="您的邮箱地址" required>
+                        <button type="submit" class="signup-btn">免费注册</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部栏 -->
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-about">
+                    <div class="logo">软件推荐</div>
+                    <p>专业的软件推荐平台，致力于帮助用户发现最适合自己的软件工具。</p>
+                    <div class="social-icons" aria-label="社交媒体链接">
+                        <a href="#" aria-label="微信"><i class="fab fa-weixin" aria-hidden="true"></i></a>
+                        <a href="#" aria-label="微博"><i class="fab fa-weibo" aria-hidden="true"></i></a>
+                        <a href="#" aria-label="QQ"><i class="fab fa-qq" aria-hidden="true"></i></a>
+                        <a href="#" aria-label="GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
+                    </div>
+                </div>
+                <div class="footer-links-container">
+                    <div class="footer-links-column">
+                        <h3>关于我们</h3>
+                        <div class="footer-links">
+                            <a href="#">公司简介</a>
+                            <a href="#">团队介绍</a>
+                            <a href="#">联系我们</a>
+                        </div>
+                    </div>
+                    <div class="footer-links-column">
+                        <h3>帮助支持</h3>
+                        <div class="footer-links">
+                            <a href="#">使用指南</a>
+                            <a href="#">常见问题</a>
+                            <a href="#">意见反馈</a>
+                        </div>
+                    </div>
+                    <div class="footer-links-column">
+                        <h3>法律条款</h3>
+                        <div class="footer-links">
+                            <a href="#">使用条款</a>
+                            <a href="#">隐私政策</a>
+                            <a href="#">版权声明</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">软件推荐网站 © 2024 版权所有</div>
+        </div>
+    </footer>
+
+    <!-- 移动导航菜单覆盖层 -->
+    <div class="mobile-nav" id="mobile-nav">
+        <nav role="navigation" aria-label="移动端导航">
+            <ul>
+                <li class="active"><a href="#" aria-current="page">首页</a></li>
+                <li><a href="#">分类</a></li>
+                <li><a href="#">排行榜</a></li>
+                <li><a href="#">专业评测</a></li>
+                <li><a href="#">社区</a></li>
+                <li><a href="#">登录 / 注册</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- 通知消息容器 -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- 底部固定导航（移动端） -->
+    <nav class="mobile-bottom-nav">
+        <a href="#" class="mobile-bottom-nav-item active">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a href="#" class="mobile-bottom-nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>分类</span>
+        </a>
+        <a href="#" class="mobile-bottom-nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>排行榜</span>
+        </a>
+        <a href="#" class="mobile-bottom-nav-item">
+            <i class="fas fa-clipboard-check"></i>
+            <span>专业评测</span>
+        </a>
+        <a href="#" class="mobile-bottom-nav-item">
+            <i class="fas fa-users"></i>
+            <span>社区</span>
+        </a>
+    </nav>
+
+    <!-- 返回顶部按钮会由JS动态创建 -->
+
+    <script src="script.js"></script>
+</body>
+</html> 

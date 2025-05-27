@@ -84,6 +84,21 @@
       opacity: 0.4;
       transform-origin: center center;
       transition: opacity 0.3s;
+      filter: blur(1px);
+      animation: trail-fade 0.8s ease-out;
+      will-change: transform, opacity;
+    }
+    
+    /* 拖尾淡出动画 */
+    @keyframes trail-fade {
+      0% { opacity: 0.6; filter: blur(0px); transform: scale(1.05); }
+      100% { opacity: 0.3; filter: blur(2px); transform: scale(0.95); }
+    }
+
+    /* 元素淡出动画 */
+    @keyframes fadeOut {
+      0% { opacity: 0.4; }
+      100% { opacity: 0; }
     }
 
     /* 叶子淡出动画 */
@@ -270,7 +285,11 @@ const NUMBER_OF_LEAVES = 30;
 // 存储每片叶子的历史位置
 let leafPositions = {};
 // 拖尾长度
-const TRAIL_LENGTH = 5;
+const TRAIL_LENGTH = 12;
+// 近鼠标的叶子拖尾更长
+const MOUSE_TRAIL_LENGTH = 18;
+// 鼠标影响半径
+const MOUSE_INFLUENCE_RADIUS = 150;
 
 // 叶子容器
 let leafContainer;
@@ -295,6 +314,9 @@ function init() {
     for (let i = 0; i < NUMBER_OF_LEAVES; i++) {
       leafContainer.appendChild(createALeaf(i));
     }
+    
+    // 清除所有拖尾
+    clearAllTrails();
   });
   
   // 添加页面可见性变化监听
@@ -324,30 +346,57 @@ function resetLeafContainer() {
 // 清除所有拖尾
 function clearAllTrails() {
   const trails = document.querySelectorAll('.leaf-trail');
-  trails.forEach(trail => trail.remove());
+  trails.forEach(trail => {
+    // 添加淡出动画
+    trail.style.animation = 'fadeOut 0.3s forwards';
+    // 延迟移除DOM元素，让动画有时间完成
+    setTimeout(() => trail.remove(), 300);
+  });
 }
 
 function updateTrails() {
-  // 更新所有叶子的拖尾
-  for (let id in leafPositions) {
-    const positions = leafPositions[id];
-    const leaf = document.getElementById('leaf-' + id);
+  // 优化：使用requestAnimationFrame限制更新频率
+  const now = performance.now();
+  if (!updateTrails.lastUpdate || now - updateTrails.lastUpdate > 16) { // 约60fps
+    updateTrails.lastUpdate = now;
     
-    if (leaf && positions.length > 0) {
-      const rect = leaf.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
+    // 更新所有叶子的拖尾
+    for (let id in leafPositions) {
+      const positions = leafPositions[id];
+      const leaf = document.getElementById('leaf-' + id);
       
-      // 添加新位置
-      positions.push({ x, y, rotation: leaf.style.transform });
-      
-      // 限制拖尾长度
-      if (positions.length > TRAIL_LENGTH) {
-        positions.shift();
+      if (leaf && positions.length > 0) {
+        const rect = leaf.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        
+        // 计算移动距离
+        let shouldAddPosition = true;
+        if (positions.length > 0) {
+          const lastPos = positions[positions.length - 1];
+          const distance = Math.sqrt(Math.pow(x - lastPos.x, 2) + Math.pow(y - lastPos.y, 2));
+          // 只有移动足够距离才添加新位置，避免静止时产生太多点
+          shouldAddPosition = distance > 3;
+        }
+        
+        if (shouldAddPosition) {
+          // 添加新位置
+          positions.push({ 
+            x, 
+            y, 
+            rotation: leaf.style.transform,
+            timestamp: now
+          });
+          
+          // 限制拖尾长度
+          if (positions.length > TRAIL_LENGTH) {
+            positions.shift();
+          }
+          
+          // 更新拖尾元素
+          updateTrailElements(id, positions, leaf);
+        }
       }
-      
-      // 更新拖尾元素
-      updateTrailElements(id, positions, leaf);
     }
   }
   
@@ -355,15 +404,36 @@ function updateTrails() {
 }
 
 function updateTrailElements(id, positions, leaf) {
-  const leafColor = getLeafColor(leaf);
-  
   // 移除旧的拖尾
   const oldTrails = document.querySelectorAll('.leaf-trail[data-leaf-id="' + id + '"]');
   oldTrails.forEach(trail => trail.remove());
   
-  // 创建新的拖尾
+  // 如果位置太少，不显示拖尾
+  if (positions.length < 2) return;
+  
+  // 准备拖尾数据
+  const trailData = [];
   for (let i = 0; i < positions.length - 1; i++) {
-    const pos = positions[i];
+    trailData.push({
+      position: positions[i],
+      leaf,
+      id,
+      index: i,
+      total: positions.length
+    });
+  }
+  
+  // 批量创建拖尾
+  createTrailBatch(trailData);
+}
+
+// 新增：批量创建拖尾元素，提高性能
+function createTrailBatch(trailData) {
+  // 创建文档片段，减少DOM操作
+  const fragment = document.createDocumentFragment();
+  
+  trailData.forEach(data => {
+    const { position, leaf, id, index, total } = data;
     const trailElement = document.createElement('div');
     trailElement.className = 'leaf-trail';
     trailElement.dataset.leafId = id;
@@ -371,31 +441,63 @@ function updateTrailElements(id, positions, leaf) {
     // 复制叶子的SVG内容
     const svgContent = leaf.querySelector('svg').outerHTML;
     
-    // 计算透明度
-    const opacity = (i + 1) / positions.length * 0.3;
+    // 其余设置保持不变...
+    const opacity = (index + 1) / total * 0.5;
+    const scale = 0.7 + (index / total * 0.3);
     
-    // 缩放比例
-    const scale = 0.6 + (i / positions.length * 0.4);
+    // 添加随机偏移和旋转，使拖尾看起来更自然
+    const randomOffset = leaf.classList.contains('mouse-influenced') ? 3 : 1;
+    const offsetX = (Math.random() - 0.5) * randomOffset;
+    const offsetY = (Math.random() - 0.5) * randomOffset;
+    const randomRotation = (Math.random() - 0.5) * 10; // -5度到5度的随机旋转
     
     // 设置样式
-    trailElement.style.position = 'absolute';
-    trailElement.style.left = pos.x + 'px';
-    trailElement.style.top = pos.y + 'px';
-    trailElement.style.width = leaf.offsetWidth * scale + 'px';
-    trailElement.style.height = leaf.offsetHeight * scale + 'px';
-    trailElement.style.transform = `translate(-50%, -50%) ${pos.rotation || ''}`;
-    trailElement.style.opacity = opacity;
+    Object.assign(trailElement.style, {
+      position: 'absolute',
+      left: (position.x + offsetX) + 'px',
+      top: (position.y + offsetY) + 'px',
+      width: leaf.offsetWidth * scale + 'px',
+      height: leaf.offsetHeight * scale + 'px',
+      transform: `translate(-50%, -50%) ${position.rotation || ''} rotate(${randomRotation}deg)`,
+      opacity: opacity,
+      zIndex: 1
+    });
+    
+    // 如果是受鼠标影响的叶子，使拖尾更明显
+    if (leaf.classList.contains('mouse-influenced')) {
+      trailElement.style.filter = `blur(${(1 - index / total) * 2}px) brightness(1.2)`;
+      // 添加更多光效
+      trailElement.style.boxShadow = '0 0 5px rgba(255,255,255,0.3)';
+    } else {
+      trailElement.style.filter = `blur(${(1 - index / total) * 3}px)`;
+    }
+    
     trailElement.innerHTML = svgContent;
     
     // 给SVG路径设置新的颜色和透明度
     const path = trailElement.querySelector('path');
-    if (path && leafColor) {
-      path.setAttribute('fill', `${leafColor}${opacity})`);
+    if (path) {
+      const leafColor = getLeafColor(leaf);
+      if (leafColor) {
+        // 受鼠标影响的叶子拖尾颜色更亮
+        if (leaf.classList.contains('mouse-influenced')) {
+          const color = leafColor.replace('rgba(', '').split(',')[0];
+          if (color === '238' || color === '255') { // 黄色或白色
+            path.setAttribute('fill', `rgba(255, 255, ${index % 2 ? '180' : '220'}, ${opacity})`);
+          } else { // 绿色
+            path.setAttribute('fill', `rgba(120, 255, ${index % 2 ? '180' : '220'}, ${opacity})`);
+          }
+        } else {
+          path.setAttribute('fill', `${leafColor}${opacity})`);
+        }
+      }
     }
     
-    // 添加到页面
-    document.body.appendChild(trailElement);
-  }
+    fragment.appendChild(trailElement);
+  });
+  
+  // 一次性添加所有拖尾元素
+  document.body.appendChild(fragment);
 }
 
 function getLeafColor(leafElement) {
@@ -507,11 +609,19 @@ function createALeaf(id) {
 
 // 页面加载完成后初始化
 window.addEventListener('load', function() {
-  // 初始化叶子
-  init();
+  // 添加页面载入动画效果
+  document.body.classList.add('fade-in');
   
-  // 添加鼠标移动效果
-  initMouseEffect();
+  // 初始化叶子
+  setTimeout(() => {
+    init();
+    
+    // 添加鼠标移动效果
+    initMouseEffect();
+    
+    // 显示卡片
+    document.querySelector('.card').style.opacity = '1';
+  }, 300);
 });
 
 // 初始化鼠标效果
@@ -519,8 +629,31 @@ function initMouseEffect() {
   const cursorEffect = document.getElementById('cursorEffect');
   const container = document.getElementById('container');
   
-  // 鼠标移动时显示效果
-  container.addEventListener('mousemove', function(e) {
+  // 防抖函数：限制函数调用频率
+  function debounce(func, wait) {
+    let timeout;
+    return function() {
+      const context = this, args = arguments;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  }
+  
+  // 节流函数：确保函数在一定时间内最多执行一次
+  function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+      const context = this, args = arguments;
+      if (!inThrottle) {
+        func.apply(context, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    };
+  }
+  
+  // 使用节流处理鼠标移动事件，减少计算负担
+  const throttledMouseMove = throttle(function(e) {
     // 更新光效位置
     cursorEffect.style.left = e.clientX + 'px';
     cursorEffect.style.top = e.clientY + 'px';
@@ -528,18 +661,65 @@ function initMouseEffect() {
     
     // 影响附近的叶子
     influenceNearbyLeaves(e.clientX, e.clientY);
-  });
+  }, 16); // 约60fps
+  
+  // 鼠标移动时显示效果
+  container.addEventListener('mousemove', throttledMouseMove);
   
   // 鼠标离开时隐藏效果
   container.addEventListener('mouseleave', function() {
     cursorEffect.style.opacity = '0';
   });
+  
+  // 添加鼠标点击效果
+  container.addEventListener('click', function(e) {
+    // 创建点击波纹效果
+    const ripple = document.createElement('div');
+    ripple.className = 'cursor-ripple';
+    ripple.style.left = e.clientX + 'px';
+    ripple.style.top = e.clientY + 'px';
+    document.body.appendChild(ripple);
+    
+    // 强烈影响点击区域的叶子
+    influenceNearbyLeaves(e.clientX, e.clientY, true);
+    
+    // 动画结束后移除波纹
+    setTimeout(() => {
+      ripple.remove();
+    }, 1000);
+  });
 }
 
-// 影响鼠标附近的叶子
-function influenceNearbyLeaves(mouseX, mouseY) {
+// 添加鼠标波纹效果的CSS
+const style = document.createElement('style');
+style.textContent = `
+  .cursor-ripple {
+    position: absolute;
+    pointer-events: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 70%);
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    animation: ripple 1s ease-out forwards;
+  }
+  
+  @keyframes ripple {
+    0% { width: 20px; height: 20px; opacity: 1; }
+    100% { width: 300px; height: 300px; opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
+// 改进影响鼠标附近的叶子函数，添加强烈影响参数
+function influenceNearbyLeaves(mouseX, mouseY, strongEffect = false) {
   const leaves = document.querySelectorAll('#leafContainer > div');
-  const influenceRadius = 150; // 影响半径
+  // 强烈影响时扩大半径
+  const influenceRadius = strongEffect ? MOUSE_INFLUENCE_RADIUS * 1.5 : MOUSE_INFLUENCE_RADIUS;
+  
+  // 计算影响的叶子数量
+  let affectedCount = 0;
   
   leaves.forEach(leaf => {
     const rect = leaf.getBoundingClientRect();
@@ -551,23 +731,71 @@ function influenceNearbyLeaves(mouseX, mouseY) {
     
     // 如果叶子在影响范围内
     if (distance < influenceRadius) {
+      affectedCount++;
+      
+      // 添加受影响标记
+      leaf.classList.add('mouse-influenced');
+      
+      // 为受影响的叶子更新拖尾长度
+      const id = leaf.id.split('-')[1];
+      if (leafPositions[id]) {
+        // 强烈影响时拖尾更长
+        const maxTrailLength = strongEffect ? MOUSE_TRAIL_LENGTH * 1.5 : MOUSE_TRAIL_LENGTH;
+        while (leafPositions[id].length > maxTrailLength) {
+          leafPositions[id].shift();
+        }
+      }
+      
       // 计算影响力度
       const influence = 1 - (distance / influenceRadius);
       
-      // 计算偏移方向
-      const directionX = (leafX - mouseX) * influence * 0.5;
-      const directionY = (leafY - mouseY) * influence * 0.5;
+      // 计算偏移方向和强度
+      const multiplier = strongEffect ? 1.5 : 0.8;
+      const directionX = (leafX - mouseX) * influence * multiplier;
+      const directionY = (leafY - mouseY) * influence * multiplier;
       
       // 应用临时样式
       leaf.style.transition = 'transform 0.3s ease';
       leaf.style.transform = `translate(${directionX}px, ${directionY}px)`;
       
+      // 添加发光效果
+      const brightness = strongEffect ? 1.4 : 1.2;
+      leaf.style.filter = `brightness(${brightness}) drop-shadow(0 0 ${strongEffect ? '8px' : '3px'} rgba(255,255,255,0.5))`;
+      
       // 淡出效果
       setTimeout(() => {
         leaf.style.transform = '';
-      }, 300);
+        leaf.style.filter = '';
+        // 移除受影响标记
+        leaf.classList.remove('mouse-influenced');
+      }, strongEffect ? 800 : 500);
     }
   });
+  
+  // 如果是强烈影响，添加额外的视觉效果
+  if (strongEffect && affectedCount > 0) {
+    // 改变背景渐变方向
+    document.body.style.background = `linear-gradient(${Math.random() * 360}deg, #f0f4f8 0%, #d9e6f2 100%)`;
+    
+    // 震动效果
+    document.body.style.animation = 'none';
+    setTimeout(() => {
+      document.body.style.animation = 'slight-shake 0.5s ease-out';
+    }, 10);
+    
+    // 添加轻微震动动画
+    const shakeStyle = document.createElement('style');
+    shakeStyle.innerHTML = `
+      @keyframes slight-shake {
+        0% { transform: translate(0, 0) rotate(0); }
+        25% { transform: translate(2px, 2px) rotate(0.5deg); }
+        50% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+        75% { transform: translate(-3px, 1px) rotate(0.25deg); }
+        100% { transform: translate(0, 0) rotate(0); }
+      }
+    `;
+    document.head.appendChild(shakeStyle);
+  }
 }
 </script>
 </body>

@@ -360,13 +360,46 @@ document.addEventListener('keydown', (e) => {
 const mgmtOverlay = document.getElementById('mgmtOverlay');
 const mgmtList = document.getElementById('mgmtList');
 
-// ---------- 管理员密码（可自行修改）----------
+// ---------- 管理员验证 ----------
 const ADMIN_PASSWORD = 'ruantui2025';
+const AUTH_KEY = 'mytoolbox_admin';
+
+function isAdmin() {
+    return localStorage.getItem(AUTH_KEY) === 'true';
+}
 
 function checkAdmin() {
+    // 已认证直接过
+    if (isAdmin()) return true;
     const pwd = prompt('请输入管理员密码：');
-    return pwd === ADMIN_PASSWORD;
+    if (pwd === ADMIN_PASSWORD) {
+        localStorage.setItem(AUTH_KEY, 'true');
+        return true;
+    }
+    return false;
 }
+
+// 管理员状态同步
+function syncAdminUI() {
+    const btn = document.getElementById('mgmtBtn');
+    if (isAdmin()) {
+        btn.innerHTML = '<i class="fas fa-cog"></i> 管理';
+        btn.style.borderColor = 'var(--primary-color)';
+        btn.style.color = 'var(--primary-color)';
+    } else {
+        btn.innerHTML = '<i class="fas fa-cog"></i> 管理';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+    }
+}
+syncAdminUI();
+
+// 退出管理
+window.logoutAdmin = function() {
+    localStorage.removeItem(AUTH_KEY);
+    syncAdminUI();
+    showToast('已退出管理', 'info');
+};
 
 // 打开管理弹窗
 document.getElementById('mgmtBtn').addEventListener('click', () => {
@@ -374,6 +407,7 @@ document.getElementById('mgmtBtn').addEventListener('click', () => {
         showToast('密码错误', 'error');
         return;
     }
+    syncAdminUI();
     renderMgmtList();
     mgmtOverlay.setAttribute('aria-hidden', 'false');
     mgmtOverlay.classList.add('active');

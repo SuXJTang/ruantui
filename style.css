@@ -668,6 +668,26 @@ ul { list-style: none; }
 }
 .mgmt-add-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
+.mgmt-logout-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: var(--transition);
+    cursor: pointer;
+}
+.mgmt-logout-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239,68,68,0.06);
+}
+
 .mgmt-list { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
 
 .mgmt-row {

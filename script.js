@@ -360,8 +360,20 @@ document.addEventListener('keydown', (e) => {
 const mgmtOverlay = document.getElementById('mgmtOverlay');
 const mgmtList = document.getElementById('mgmtList');
 
+// ---------- 管理员密码（可自行修改）----------
+const ADMIN_PASSWORD = 'ruantui2025';
+
+function checkAdmin() {
+    const pwd = prompt('请输入管理员密码：');
+    return pwd === ADMIN_PASSWORD;
+}
+
 // 打开管理弹窗
 document.getElementById('mgmtBtn').addEventListener('click', () => {
+    if (!checkAdmin()) {
+        showToast('密码错误', 'error');
+        return;
+    }
     renderMgmtList();
     mgmtOverlay.setAttribute('aria-hidden', 'false');
     mgmtOverlay.classList.add('active');

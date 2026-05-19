@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="我的工具箱 — 个人软件推荐与使用心得">
+    <meta name="theme-color" content="#FF7D20">
+    <title>🧰 我的工具箱</title>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<!-- ===== 顶栏 ===== -->
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="topbar-brand">
+            <span class="brand-icon">🧰</span>
+            <span class="brand-text">我的工具箱</span>
+        </div>
+        <div class="topbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索工具名称、标签..." aria-label="搜索工具">
+        </div>
+        <div class="topbar-right">
+            <div class="theme-palette" role="radiogroup" aria-label="主题色">
+                <button class="theme-swatch active" data-target="sunrise" aria-label="暖阳" role="radio" aria-checked="true"></button>
+                <button class="theme-swatch" data-target="ocean" aria-label="碧波" role="radio" aria-checked="false"></button>
+                <button class="theme-swatch" data-target="aurora" aria-label="霓裳" role="radio" aria-checked="false"></button>
+                <button class="theme-swatch" data-target="forest" aria-label="翠微" role="radio" aria-checked="false"></button>
+                <button class="theme-swatch" data-target="crimson" aria-label="红妆" role="radio" aria-checked="false"></button>
+            </div>
+            <button class="theme-toggle" aria-label="切换亮暗模式">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ===== 个人简介 ===== -->
+<div class="container">
+
+<section class="profile">
+    <div class="profile-inner">
+        <div class="profile-avatar">
+            <span>👤</span>
+        </div>
+        <div class="profile-info">
+            <h1>我的工具箱</h1>
+            <p class="profile-bio">日常工作中沉淀下来的精选软件，每一个都经过长期使用检验。</p>
+            <div class="profile-stats">
+                <span><strong id="totalCount">0</strong> 款工具</span>
+                <span><strong id="categoryCount">0</strong> 个分类</span>
+                <span><strong>持续更新</strong></span>
+                <button class="mgmt-btn" id="mgmtBtn" title="管理我的工具箱"><i class="fas fa-cog"></i> 管理</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 分类筛选 ===== -->
+<nav class="filter-bar" aria-label="分类筛选">
+    <button class="filter-tag active" data-filter="all">全部</button>
+</nav>
+
+<!-- ===== 工具卡片网格 ===== -->
+<section class="grid" id="toolGrid">
+</section>
+
+</div><!-- /container -->
+
+<!-- ===== 页脚 ===== -->
+<footer class="footer">
+    <p>🧰 我的工具箱 · 持续更新中</p>
+    <p class="footer-sub">用过的工具很多，留下来的才是真的好</p>
+</footer>
+
+<!-- ===== 详情弹窗 ===== -->
+<div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" id="modalClose" aria-label="关闭"><i class="fas fa-times"></i></button>
+        <div class="modal-body" id="modalBody">
+            <!-- 由 JS 填充 -->
+        </div>
+    </div>
+</div>
+
+<!-- ===== 管理弹窗 ===== -->
+<div class="modal-overlay" id="mgmtOverlay" aria-hidden="true">
+    <div class="modal modal-lg" role="dialog" aria-modal="true">
+        <button class="modal-close mgmt-close" aria-label="关闭"><i class="fas fa-times"></i></button>
+        <div class="modal-body">
+            <div class="mgmt-header">
+                <h2 class="mgmt-title">管理工具箱</h2>
+                <button class="mgmt-add-btn" id="mgmtAddBtn"><i class="fas fa-plus"></i> 添加工具</button>
+            </div>
+            <div class="mgmt-list" id="mgmtList">
+                <!-- 由 JS 渲染 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 编辑表单弹窗 ===== -->
+<div class="modal-overlay" id="formOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+        <button class="modal-close form-close" aria-label="关闭"><i class="fas fa-times"></i></button>
+        <div class="modal-body">
+            <h2 class="form-title" id="formTitle">添加工具</h2>
+            <form class="mgmt-form" id="toolForm">
+                <input type="hidden" id="formId" value="">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formName">名称 *</label>
+                        <input type="text" id="formName" required placeholder="如 VS Code">
+                    </div>
+                    <div class="form-group">
+                        <label for="formCategory">分类 *</label>
+                        <input type="text" id="formCategory" required placeholder="如 开发工具">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formRating">评分</label>
+                        <select id="formRating">
+                            <option value="5">⭐⭐⭐⭐⭐</option>
+                            <option value="4" selected>⭐⭐⭐⭐</option>
+                            <option value="3">⭐⭐⭐</option>
+                            <option value="2">⭐⭐</option>
+                            <option value="1">⭐</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="formColor">图标底色</label>
+                        <input type="color" id="formColor" value="#3B82F6">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="formComment">一句话评语</label>
+                    <input type="text" id="formComment" placeholder="简短评价这个工具">
+                </div>
+                <div class="form-group">
+                    <label for="formDetail">详细介绍</label>
+                    <textarea id="formDetail" rows="3" placeholder="详细的使用体验和推荐理由"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="formTags">标签（逗号分隔）</label>
+                    <input type="text" id="formTags" placeholder="如 日常必备, 免费, macOS">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formUrl">官网链接</label>
+                        <input type="url" id="formUrl" placeholder="https://">
+                    </div>
+                    <div class="form-group">
+                        <label for="formDownload">下载链接</label>
+                        <input type="url" id="formDownload" placeholder="https://">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="form-cancel" id="formCancel">取消</button>
+                    <button type="submit" class="form-submit">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

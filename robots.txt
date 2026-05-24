@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://suxjtang.github.io/ruantui/sitemap.xml

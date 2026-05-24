@@ -31,10 +31,21 @@ function showToast(msg, type) {
     document.head.appendChild(s);
 })();
 
-// 立即渲染卡片
+// 立即渲染卡片（从 localStorage）
 tools = getMergedTools();
 rebuildCategories();
 renderTools('all');
+
+// 异步从云端拉取最新数据
+if (typeof syncFromCloud === 'function') {
+    syncFromCloud(function(cloudData) {
+        localStorage.setItem('mytoolbox_data', JSON.stringify(cloudData));
+        tools = getMergedTools();
+        rebuildCategories();
+        renderTools(currentFilter);
+        console.log('Synced from Supabase');
+    });
+}
 
 // 分享面板
 var sb = document.getElementById('shareBtn'), sp = document.getElementById('sharePanel');
@@ -239,14 +250,16 @@ var toolForm = document.getElementById('toolForm');
 if (toolForm) toolForm.onsubmit = function(e) {
     e.preventDefault();
     var name = document.getElementById('formName').value.trim(), cat = document.getElementById('formCategory').value.trim();
+    var dl = document.getElementById('formDownload').value.trim();
     if (!name || !cat) { showToast('请填写名称和分类', 'error'); return; }
+    if (!dl) { showToast('请填写下载链接', 'error'); return; }
     var data = {
         name: name, category: cat, color: document.getElementById('formColor').value || '#3B82F6',
         comment: document.getElementById('formComment').value.trim(),
         detail: document.getElementById('formDetail').value.trim(),
         tags: document.getElementById('formTags').value.split(/[,，、\s]+/).filter(Boolean),
     };
-    ['url','download','usage','slug','iconUrl'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); if (v) data[k] = v; });
+    ['url','download','usage','slug','iconUrl'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); data[k] = v || undefined; });
     var store = loadUserData() || { deleted: [], edited: {}, added: [], nextId: 1000 };
     if (!store.edited) store.edited = {}; if (!store.added) store.added = []; if (!store.deleted) store.deleted = []; if (!store.nextId) store.nextId = 1000;
     var isEdit = !!document.getElementById('formId').value;

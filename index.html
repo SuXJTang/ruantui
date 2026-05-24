@@ -114,7 +114,7 @@
         <button class="modal-close form-close"><i class="fas fa-times"></i></button>
         <div class="modal-body">
             <h2 class="form-title" id="formTitle">添加工具</h2>
-            <form id="toolForm" style="display:flex;flex-direction:column;gap:8px;">
+            <form id="toolForm" novalidate style="display:flex;flex-direction:column;gap:8px;">
                 <input type="hidden" id="formId">
                 <div class="form-section">基本信息</div>
                 <div class="form-row"><div class="form-group"><label>名称 *</label><input type="text" id="formName" required placeholder="如 VS Code"></div><div class="form-group"><label>分类 *</label><input type="text" id="formCategory" required placeholder="如 开发工具"></div></div>
@@ -127,7 +127,7 @@
                 <div class="form-group"><label>详细介绍</label><div class="form-input-row"><textarea id="formDetail" rows="3" placeholder="详细的使用体验"></textarea><button type="button" class="ai-btn ai-btn-ta" onclick="aiGenerateDetail()">🤖</button></div></div>
                 <div class="form-group"><label>使用说明（可选）</label><div class="form-input-row"><textarea id="formUsage" rows="2" placeholder="安装步骤、配置技巧"></textarea><button type="button" class="ai-btn ai-btn-ta" onclick="aiGenerateUsage()">🤖</button></div></div>
                 <div class="form-section">链接</div>
-                <div class="form-row"><div class="form-group"><label>官网</label><input type="url" id="formUrl" placeholder="https://"></div><div class="form-group"><label>下载</label><input type="url" id="formDownload" placeholder="https://"></div></div>
+                <div class="form-row"><div class="form-group"><label>官网（可选）</label><input type="url" id="formUrl" placeholder="https://"></div><div class="form-group"><label>下载</label><input type="url" id="formDownload" placeholder="https://"></div></div>
                 <div class="form-actions"><button type="button" class="form-cancel" id="formCancel">取消</button><button type="submit" class="form-submit">保存</button></div>
                 <div style="text-align:center;font-size:11px;color:var(--text-light);margin-top:4px;">🤖 AI 生成 <button type="button" onclick="resetApiKey()" style="background:none;border:none;color:var(--primary);cursor:pointer;text-decoration:underline;font-size:11px;">更换 Key</button></div>
             </form>
@@ -171,6 +171,7 @@
     </div>
 </div>
 
+<script src="supabase.js"></script>
 <script src="data.js"></script>
 <script src="ui.js"></script>
 <script src="modal.js"></script>

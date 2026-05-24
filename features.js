@@ -127,18 +127,30 @@ function renderMgmtList() {
     if (!mgmtList) return;
     var q = ((document.getElementById('mgmtSearchInput') || {}).value || '').toLowerCase().trim();
     var filtered = q ? tools.filter(function(t) { return t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q); }) : tools;
+    var pinned = (loadUserData() || {}).pinned || [];
     mgmtList.innerHTML = filtered.map(function(t) {
         var icon = t.iconUrl ? '<img src="' + t.iconUrl + '" alt="">' : t.slug ? '<img src="https://cdn.simpleicons.org/' + t.slug + '/ffffff" alt="">' : '<i class="' + (t.icon || 'fa-cube') + '"></i>';
         var badge = t._userAdded ? '<span>[自定义]</span>' : '';
-        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + t.color + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + t.name + badge + '</h4><p>' + t.category + ' · ' + t.rating + '星</p></div><div class="mgmt-row-actions"><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
+        var isPinned = pinned.includes(t.id);
+        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + t.color + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:11px;margin-right:3px;"></i>' : '') + t.name + badge + '</h4><p>' + t.category + ' · ' + t.rating + '星</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + t.id + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
     }).join('');
     mgmtList.querySelectorAll('.edit-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var t = tools.find(function(x) { return x.id === parseInt(this.dataset.id); }.bind(this)); if (t) openForm(t); }; });
     mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); if (confirm('确定删除？')) deleteTool(id); }; });
+    mgmtList.querySelectorAll('.pin-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); togglePin(parseInt(this.dataset.id)); }; });
 }
 function deleteTool(id) {
     var d = loadUserData() || { deleted: [], edited: {}, added: [], nextId: 1000 };
     if (!d.deleted.includes(id)) d.deleted.push(id); if (d.added) d.added = d.added.filter(function(t) { return t.id !== id; }); delete d.edited[id];
     saveUserData(d); refreshTools(); renderMgmtList(); showToast('已删除', 'info');
+}
+function togglePin(id) {
+    var d = loadUserData() || { deleted: [], edited: {}, added: [], nextId: 1000 };
+    if (!d.pinned) d.pinned = [];
+    var idx = d.pinned.indexOf(id);
+    if (idx > -1) d.pinned.splice(idx, 1);
+    else d.pinned.push(id);
+    saveUserData(d); refreshTools(); renderMgmtList();
+    showToast(idx > -1 ? '已取消置顶' : '已置顶', 'success');
 }
 
 // 表单

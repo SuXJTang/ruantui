@@ -331,6 +331,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .mgmt-row-actions button { width: 26px; height: 26px; border-radius: 50%; background: transparent; color: var(--text-light); font-size: 11px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
 .mgmt-row-actions .edit-btn:hover { background: rgba(var(--primary-rgb),0.1); color: var(--primary); }
 .mgmt-row-actions .del-btn:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+.mgmt-row-actions .pin-btn:hover { background: rgba(var(--primary-rgb),0.1); color: var(--primary); }
 
 /* ---------- QQ/反馈/赞赏弹窗 ---------- */
 .qq-box { display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; border: 2px dashed var(--border); border-radius: var(--radius-sm); }

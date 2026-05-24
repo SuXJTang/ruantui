@@ -214,8 +214,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.25) 100%);
     border-radius: inherit; pointer-events: none;
 }
-.tool-icon img { width: 28px; height: 28px; object-fit: contain; position: relative; z-index: 1; }
-.tool-icon i { font-size: 24px; color: #fff; position: relative; z-index: 1; }
+.tool-icon img { width: 32px; height: 32px; object-fit: contain; position: relative; z-index: 1; }
+.tool-icon i { font-size: 28px; color: #fff; position: relative; z-index: 1; }
 
 .tool-body { flex: 1; min-width: 0; }
 .tool-body h3 { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

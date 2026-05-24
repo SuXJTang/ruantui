@@ -330,8 +330,13 @@ window.aiGenerateUsage = async function() {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function() {});
 }
+window.installApp = function() {
+    if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function() { deferredPrompt = null; }); }
+    else { showToast('请使用浏览器菜单中的「添加到主屏幕」功能', 'info'); }
+};
 var deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
+    console.log('beforeinstallprompt fired');
     e.preventDefault();
     deferredPrompt = e;
     setTimeout(function() {

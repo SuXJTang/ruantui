@@ -39,5 +39,5 @@ document.getElementById('toolGrid').addEventListener('click', function(e) {
     if (tool) openModal(tool);
 });
 document.getElementById('modalClose').addEventListener('click', closeModal);
-overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
+overlay.addEventListener('click', function(e) { if (!e.target.closest('.modal')) closeModal(); });
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });

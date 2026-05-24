@@ -27,8 +27,10 @@ function renderTools(filter) {
         var card = document.createElement('article'); card.className = 'tool-card'; card.style.animationDelay = (i * 0.05) + 's';
         var iconHTML = t.iconUrl ? '<img src="' + t.iconUrl + '" alt="">' : t.slug ? '<img src="https://cdn.simpleicons.org/' + t.slug + '/ffffff" alt="">' : '<i class="' + (t.icon || 'fa-cube') + '"></i>';
         var tagsHTML = t.tags.map(function(tag) { return '<span class="tool-tag">' + tag + '</span>'; }).join('');
+        var pinnedArr = (loadUserData() || {}).pinned || [];
+        var isPinned = pinnedArr.includes(t.id);
         card.dataset.id = t.id;
-        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span><span class="tool-rating"><i class="fas fa-star"></i> ' + t.rating + '</span></div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
+        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:11px;margin-right:3px;"></i>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span><span class="tool-rating"><i class="fas fa-star"></i> ' + t.rating + '</span></div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
         grid.appendChild(card);
     });
     document.getElementById('totalCount').textContent = tools.length;

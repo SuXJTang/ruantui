@@ -40,8 +40,14 @@ function saveUserData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 function getMergedTools() {
     var d = loadUserData() || {};
     var deleted = d.deleted || [], edited = d.edited || {}, added = d.added || [];
-    var m = BASE_TOOLS.filter(function(t) { return !deleted.includes(t.id); }).map(function(t) { return edited[t.id] ? Object.assign({}, t, edited[t.id]) : t; });
+    var pinned = d.pinned || [];
+    var m = BASE_TOOLS.filter(function(t) { return !deleted.includes(t.id); }).map(function(t) { return Object.assign({}, t, edited[t.id] || {}); });
     added.forEach(function(t) { t._userAdded = true; m.push(t); });
+    m.sort(function(a, b) {
+        var ap = pinned.includes(a.id) ? 0 : 1;
+        var bp = pinned.includes(b.id) ? 0 : 1;
+        return ap - bp;
+    });
     return m;
 }
 

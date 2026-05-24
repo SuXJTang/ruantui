@@ -525,7 +525,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     .skeleton-card { flex-direction: column; padding: 12px; gap: 8px; }
     .sk-icon { width: 36px; height: 36px; }
     .tool-icon { width: 36px; height: 36px; }
-    .tool-icon img { width: 18px; height: 18px; }
+    .tool-icon img { width: 24px; height: 24px; }
     .tool-body h3 { font-size: 13px; }
     .tool-body p { font-size: 12px; }
     .tool-tag { font-size: 10px; padding: 1px 8px; }

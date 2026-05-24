@@ -1,5 +1,5 @@
 const CACHE = 'mytoolbox-v1';
-const URLS = ['/', '/index.html', '/style.css', '/data.js', '/ui.js', '/modal.js', '/features.js', '/theme.js', '/manifest.json'];
+const URLS = ['/', '/index.html', '/style.css', '/data.js', '/ui.js', '/modal.js', '/features.js', '/theme.js', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', function(e) {
     e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(URLS); }));

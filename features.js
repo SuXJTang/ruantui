@@ -326,4 +326,18 @@ window.aiGenerateUsage = async function() {
 
 })();
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function() {});
+// PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function() {});
+}
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(function() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+        }
+    }, 30000);
+});

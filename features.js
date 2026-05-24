@@ -79,9 +79,6 @@ window.downloadQR = function(id) {
 
 // 管理
 var ADMIN_PASSWORD = 'ruantui2025', AUTH_KEY = 'mytoolbox_admin';
-var GITHUB_TOKEN = localStorage.getItem('github_token') || '';
-var GITHUB_REPO = 'SuXJTang/ruantui';
-var GITHUB_BRANCH = 'master';
 function isAdmin() { return localStorage.getItem(AUTH_KEY) === 'true'; }
 window.logoutAdmin = function() { localStorage.removeItem(AUTH_KEY); showToast('已退出管理', 'info'); };
 function checkAdmin() {
@@ -184,51 +181,13 @@ var addBtn = document.getElementById('mgmtAddBtn');
 if (addBtn) addBtn.onclick = function() { openForm(null); };
 var exportBtn = document.getElementById('mgmtExportBtn');
 if (exportBtn) exportBtn.onclick = function() {
-    if (!GITHUB_TOKEN) {
-        var t = prompt('输入 GitHub Personal Access Token（repo 权限）：\nhttps://github.com/settings/tokens');
-        if (t && t.trim()) { GITHUB_TOKEN = t.trim(); localStorage.setItem('github_token', GITHUB_TOKEN); }
-        else { showToast('需要 Token 才能同步到 GitHub', 'error'); return; }
-    }
-    showToast('正在同步到 GitHub...', 'info');
-    var merged = getMergedTools();
-    var newData = 'const BASE_TOOLS = ' + JSON.stringify(merged, null, 4) + ';\n\n' +
-        'const STORAGE_KEY = \'mytoolbox_data\';\nvar tools = [];\nvar currentFilter = \'all\';\nvar currentSearch = \'\';\n\n' +
-        'function loadUserData() { try { var r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }\n' +
-        'function saveUserData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }\n\n' +
-        'function getMergedTools() {\n    var d = loadUserData() || {};\n    var deleted = d.deleted || [], edited = d.edited || {}, added = d.added || [];\n    var pinned = d.pinned || [];\n    var m = BASE_TOOLS.filter(function(t) { return !deleted.includes(t.id); }).map(function(t) { return Object.assign({}, t, edited[t.id] || {}); });\n    added.forEach(function(t) { t._userAdded = true; m.push(t); });\n    m.sort(function(a, b) { var ap = pinned.includes(a.id) ? 0 : 1; var bp = pinned.includes(b.id) ? 0 : 1; return ap - bp; });\n    return m;\n}\n\nfunction refreshTools() { tools = getMergedTools(); rebuildCategories(); renderTools(currentFilter); }\n';
-
-    var url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/data.js';
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.setRequestHeader('Authorization', 'token ' + GITHUB_TOKEN);
-    xhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
-    xhr.onload = function() {
-        if (xhr.status === 200 || xhr.status === 404) {
-            var sha = xhr.status === 200 ? JSON.parse(xhr.responseText).sha : null;
-            var putXhr = new XMLHttpRequest();
-            putXhr.open('PUT', url, true);
-            putXhr.setRequestHeader('Authorization', 'token ' + GITHUB_TOKEN);
-            putXhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
-            putXhr.setRequestHeader('Content-Type', 'application/json');
-            putXhr.onload = function() {
-                if (putXhr.status === 200 || putXhr.status === 201) {
-                    showToast('同步成功！GitHub Pages 1-2 分钟后更新', 'success');
-                    localStorage.setItem('mytoolbox_synced', JSON.stringify({ time: Date.now(), count: merged.length }));
-                } else {
-                    showToast('同步失败：' + putXhr.status, 'error');
-                }
-            };
-            putXhr.send(JSON.stringify({
-                message: '🔄 从管理面板同步工具数据',
-                content: btoa(unescape(encodeURIComponent(newData))),
-                sha: sha,
-                branch: GITHUB_BRANCH
-            }));
-        } else {
-            showToast('获取文件失败：' + xhr.status + ' - Token 可能无效', 'error');
-        }
-    };
-    xhr.send();
+    var blob = new Blob([JSON.stringify(tools, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mytoolbox-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast('已导出 ' + tools.length + ' 个工具', 'success');
 };
 var cancelBtn = document.getElementById('formCancel');
 if (cancelBtn) cancelBtn.onclick = closeForm;
@@ -242,7 +201,6 @@ if (toolForm) toolForm.onsubmit = function(e) {
     var name = document.getElementById('formName').value.trim(), cat = document.getElementById('formCategory').value.trim();
     var dl = document.getElementById('formDownload').value.trim();
     if (!name || !cat) { showToast('请填写名称和分类', 'error'); return; }
-    if (!dl) { showToast('请填写下载链接', 'error'); return; }
     var data = {
         name: name, category: cat, color: document.getElementById('formColor').value || '#3B82F6',
         comment: document.getElementById('formComment').value.trim(),

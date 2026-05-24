@@ -135,7 +135,7 @@ var mgmtOverlay = document.getElementById('mgmtOverlay');
 (function() {
     var c = document.querySelector('.mgmt-close');
     if (c && mgmtOverlay) c.onclick = function() { mgmtOverlay.classList.remove('active'); mgmtOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
-    if (mgmtOverlay) mgmtOverlay.onclick = function(e) { if (e.target === mgmtOverlay) { mgmtOverlay.classList.remove('active'); mgmtOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } };
+    if (mgmtOverlay) mgmtOverlay.onclick = function(e) { if (!e.target.closest('.modal')) { mgmtOverlay.classList.remove('active'); mgmtOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } };
 })();
 
 var mgmtList = document.getElementById('mgmtList');
@@ -150,7 +150,7 @@ function renderMgmtList() {
         return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + t.color + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + t.name + badge + '</h4><p>' + t.category + '</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + t.id + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
     }).join('');
     mgmtList.querySelectorAll('.edit-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var t = tools.find(function(x) { return x.id === parseInt(this.dataset.id); }.bind(this)); if (t) openForm(t); }; });
-    mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); if (confirm('确定删除？')) deleteTool(id); }; });
+    mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); showConfirm('确定删除「' + (tools.find(function(x){return x.id===id})||{}).name + '」？', function() { deleteTool(id); }); }; });
     mgmtList.querySelectorAll('.pin-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); togglePin(parseInt(this.dataset.id)); }; });
 }
 function deleteTool(id) {
@@ -159,6 +159,22 @@ function deleteTool(id) {
         showToast('已删除', 'info');
     }).catch(function() { showToast('删除失败', 'error'); });
 }
+function showConfirm(msg, onOk) {
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    box.innerHTML = '<div style="background:var(--card);border-radius:16px;padding:24px 28px 20px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:toastIn .25s ease;">'
+        + '<p style="font-size:15px;font-weight:600;margin-bottom:4px;">' + msg + '</p>'
+        + '<p style="font-size:12px;color:var(--text-light);margin-bottom:18px;">此操作不可撤销</p>'
+        + '<div style="display:flex;gap:8px;">'
+        + '<button class="confirm-cancel" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:14px;font-weight:600;">取消</button>'
+        + '<button class="confirm-ok" style="flex:1;padding:9px;border-radius:10px;border:none;background:#ef4444;color:#fff;font-size:14px;font-weight:600;">删除</button>'
+        + '</div></div>';
+    document.body.appendChild(box);
+    box.querySelector('.confirm-cancel').onclick = function() { box.remove(); };
+    box.querySelector('.confirm-ok').onclick = function() { box.remove(); onOk(); };
+    box.onclick = function(e) { if (e.target === box) box.remove(); };
+}
+
 function togglePin(id) {
     var t = tools.find(function(x) { return x.id === id; });
     if (!t) return;
@@ -209,7 +225,7 @@ var cancelBtn = document.getElementById('formCancel');
 if (cancelBtn) cancelBtn.onclick = closeForm;
 var formClose = document.querySelector('.form-close');
 if (formClose) formClose.onclick = closeForm;
-if (formOverlay) formOverlay.onclick = function(e) { if (e.target === formOverlay) closeForm(); };
+if (formOverlay) formOverlay.onclick = function(e) { if (!e.target.closest('.modal')) closeForm(); };
 
 var toolForm = document.getElementById('toolForm');
 if (toolForm) toolForm.onsubmit = function(e) {
@@ -262,7 +278,7 @@ function bindModal(btnId, overlayId, closeClass) {
     b.onclick = function() { o.setAttribute('aria-hidden', 'false'); o.classList.add('active'); document.body.style.overflow = 'hidden'; };
     var c = document.querySelector('.' + closeClass);
     if (c) c.onclick = function() { o.classList.remove('active'); o.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
-    o.onclick = function(e) { if (e.target === o) { o.classList.remove('active'); o.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } };
+    o.onclick = function(e) { if (!e.target.closest('.modal')) { o.classList.remove('active'); o.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } };
 }
 bindModal('qqBtn', 'qqOverlay', 'qq-close');
 bindModal('feedbackBtn', 'feedbackOverlay', 'feedback-close');

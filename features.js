@@ -165,7 +165,6 @@ function openForm(tool) {
     document.getElementById('formId').value = tool ? tool.id : '';
     document.getElementById('formName').value = tool ? tool.name : '';
     document.getElementById('formCategory').value = tool ? tool.category : '';
-    document.getElementById('formRating').value = tool ? tool.rating : '4';
     document.getElementById('formColor').value = tool ? tool.color : '#3B82F6';
     document.getElementById('formComment').value = tool ? tool.comment : '';
     document.getElementById('formDetail').value = tool ? (tool.detail || '') : '';
@@ -243,8 +242,7 @@ if (toolForm) toolForm.onsubmit = function(e) {
     var name = document.getElementById('formName').value.trim(), cat = document.getElementById('formCategory').value.trim();
     if (!name || !cat) { showToast('请填写名称和分类', 'error'); return; }
     var data = {
-        name: name, category: cat, rating: parseInt(document.getElementById('formRating').value) || 4,
-        color: document.getElementById('formColor').value || '#3B82F6',
+        name: name, category: cat, color: document.getElementById('formColor').value || '#3B82F6',
         comment: document.getElementById('formComment').value.trim(),
         detail: document.getElementById('formDetail').value.trim(),
         tags: document.getElementById('formTags').value.split(/[,，、\s]+/).filter(Boolean),

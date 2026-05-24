@@ -267,6 +267,30 @@ function bindModal(btnId, overlayId, closeClass) {
 bindModal('qqBtn', 'qqOverlay', 'qq-close');
 bindModal('feedbackBtn', 'feedbackOverlay', 'feedback-close');
 bindModal('donateBtn', 'donateOverlay', 'donate-close');
+
+// 赞赏码点击放大
+(function() {
+    var qrOverlay = document.createElement('div');
+    qrOverlay.id = 'qrZoomOverlay';
+    qrOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;cursor:pointer;';
+    var qrImg = document.createElement('img');
+    qrImg.style.cssText = 'max-width:80vw;max-height:80vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);transform:scale(.5);transition:transform .35s cubic-bezier(.25,.46,.45,.94);background:#fff;padding:12px;';
+    qrOverlay.appendChild(qrImg);
+    document.body.appendChild(qrOverlay);
+    qrOverlay.onclick = function() { qrOverlay.style.opacity = '0'; qrOverlay.style.visibility = 'hidden'; qrImg.style.transform = 'scale(.5)'; };
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') qrOverlay.click(); });
+
+    var donateOverlay = document.getElementById('donateOverlay');
+    if (donateOverlay) {
+        donateOverlay.addEventListener('click', function(e) {
+            var qr = e.target.closest('.donate-qr');
+            if (!qr) return;
+            qrImg.src = qr.src;
+            qrOverlay.style.visibility = 'visible'; qrOverlay.style.opacity = '1';
+            requestAnimationFrame(function() { qrImg.style.transform = 'scale(1)'; });
+        });
+    }
+})();
 window.copyQQNumber = function() { copyToClipboard(document.getElementById('qqNumber').textContent, 'QQ 群号已复制'); };
 
 // AI

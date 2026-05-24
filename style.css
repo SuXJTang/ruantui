@@ -398,10 +398,93 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .form-submit:hover { opacity: .85; transform: translateY(-1px); }
 
 /* ---------- 响应式 ---------- */
+/* ---------- 移动端适配 ---------- */
 @media (max-width: 768px) {
-    .profile-inner { flex-direction: column; text-align: center; }
-    .profile-stats { justify-content: center; }
-    .theme-palette { display: none; }
+    .topbar-inner { gap: 8px; }
+    .brand-text { font-size: 15px; }
     .topbar-search { max-width: none; }
+    .topbar-search input { font-size: 12px; }
+    .theme-palette { display: none; }
+    .header-btn { width: 30px; height: 30px; font-size: 13px; }
+
+    .profile { padding: 24px 0 16px; }
+    .profile-inner { flex-direction: column; text-align: center; gap: 12px; }
+    .profile-avatar { width: 52px; height: 52px; font-size: 22px; }
+    .profile-info h1 { font-size: 20px; }
+    .profile-bio { font-size: 13px; }
+    .profile-stats { justify-content: center; gap: 10px; font-size: 12px; flex-wrap: wrap; }
+
+    .filter-tag { padding: 5px 14px; font-size: 12px; }
+
+    .grid { padding: 0 0 24px; }
+    .grid > * { flex: 1 1 160px; }
+    .tool-card { padding: 10px; gap: 10px; }
+
+    .share-panel { right: 4px; width: 240px; }
+
+    .modal { max-width: 95vw !important; }
+    .modal-body { padding: 20px; }
+    .modal-lg { max-width: 95vw !important; min-width: auto; }
+    .modal-form { max-width: 95vw !important; min-width: auto; }
+    .modal-lg .modal-body { padding: 16px; }
+    .modal-form .modal-body { padding: 44px 16px 20px; max-height: 80vh; }
+
+    .modal-header { gap: 10px; }
+    .modal-icon { width: 42px; height: 42px; }
+    .modal-icon img { width: 20px; height: 20px; }
+    .modal-icon i { font-size: 18px; }
+    .modal-hinfo h2 { font-size: 17px; }
+    .modal-section p { font-size: 13px; }
+
     .share-body { flex-direction: column; }
+    .share-qr-img { width: 72px; height: 72px; }
+
+    .mgmt-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .mgmt-row { padding: 6px 8px; min-height: 38px; gap: 6px; }
+    .mgmt-row-info h4 { font-size: 12px; }
+    .mgmt-row-info p { font-size: 10px; }
+
+    .form-row { flex-direction: column; gap: 8px; }
+    .form-section { margin: 10px 0 6px; }
+
+    .footer { padding: 20px 16px; }
+    .footer-actions { gap: 6px; }
+    .footer-btn { padding: 6px 14px; font-size: 12px; }
+
+    .ad-container { min-height: 60px; }
+}
+
+@media (max-width: 480px) {
+    .topbar-inner { padding: 0 8px; }
+    .brand-text { font-size: 14px; }
+    .topbar-search input { height: 30px; font-size: 11px; }
+    .header-btn { width: 28px; height: 28px; font-size: 12px; }
+
+    .profile { padding: 16px 0 12px; }
+    .profile-avatar { width: 44px; height: 44px; font-size: 18px; }
+    .profile-info h1 { font-size: 18px; }
+    .profile-bio { font-size: 12px; }
+    .profile-stats { font-size: 11px; gap: 8px; }
+
+    .filter-tag { padding: 4px 12px; font-size: 11px; }
+
+    .grid { padding: 0 0 16px; }
+    .grid > * { flex: 1 1 140px; }
+    .tool-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .tool-icon { width: 36px; height: 36px; }
+    .tool-icon img { width: 18px; height: 18px; }
+    .tool-body h3 { font-size: 13px; }
+    .tool-body p { font-size: 12px; }
+    .tool-tag { font-size: 10px; padding: 1px 8px; }
+
+    .modal-body { padding: 16px; }
+    .modal-form .modal-body { padding: 40px 12px 16px; }
+
+    .qq-box { padding: 10px 16px; flex-wrap: wrap; justify-content: center; }
+    .qq-box strong { font-size: 18px; }
+    .fb-option { padding: 10px 12px; }
+    .donate-qr { width: 130px; height: 130px; }
+
+    .mgmt-list { max-height: 60vh; }
+    .mgmt-row-info p { white-space: normal; }
 }

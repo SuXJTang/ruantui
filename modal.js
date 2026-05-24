@@ -20,7 +20,7 @@ function openModal(tool) {
         + (tool.usage ? '<div class="modal-section"><h4>使用说明</h4><p>📖 ' + tool.usage + '</p></div>' : '')
         + (links.length ? '<div class="modal-section"><h4>链接</h4><div class="modal-links">' + links.join('') + '</div></div>' : '')
         + '<div class="modal-section"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></div>'
-        + '<div class="modal-section"><h4>评分</h4><p class="tool-rating" style="font-size:22px;">' + stars + '</p></div>'
+
         + '<div class="modal-section modal-share"><h4>分享此工具</h4><div class="share-body">'
         + '<div class="share-qr-col"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(pageUrl + '?tool=' + tool.id) + '" alt="" class="share-qr-img"><span class="share-qr-label">扫码查看</span></div>'
         + '<div class="share-actions"><button class="share-act-btn" onclick="window.copyToolLink(' + tool.id + ')"><i class="fas fa-link"></i> 复制链接</button>'

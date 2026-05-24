@@ -97,7 +97,7 @@
     <div class="modal modal-lg" role="dialog">
         <button class="modal-close mgmt-close"><i class="fas fa-times"></i></button>
         <div class="modal-body">
-            <div class="mgmt-header"><h2>管理工具箱</h2><div class="mgmt-header-right"><button class="mgmt-add-btn" id="mgmtAddBtn"><i class="fas fa-plus"></i> 添加</button><button class="mgmt-logout" onclick="logoutAdmin()" title="退出登录"><i class="fas fa-sign-out-alt"></i></button></div></div>
+            <div class="mgmt-header"><h2>管理工具箱</h2><div class="mgmt-header-right"><button class="mgmt-add-btn" id="mgmtExportBtn" title="导出数据替换 data.js"><i class="fas fa-download"></i> 导出</button><button class="mgmt-add-btn" id="mgmtAddBtn"><i class="fas fa-plus"></i> 添加</button><button class="mgmt-logout" onclick="logoutAdmin()" title="退出登录"><i class="fas fa-sign-out-alt"></i></button></div></div>
             <div class="mgmt-search"><i class="fas fa-search"></i><input type="text" id="mgmtSearchInput" placeholder="搜索工具名称..."></div>
             <div class="mgmt-list" id="mgmtList"></div>
         </div>
@@ -117,7 +117,7 @@
                 <div class="form-group"><label>标签（逗号分隔）</label><input type="text" id="formTags" placeholder="如 日常必备, 免费"></div>
                 <div class="form-section">图标</div>
                 <div class="form-group"><div class="form-input-row"><input type="text" id="formSlug" placeholder="品牌 slug"><input type="url" id="formIconUrl" placeholder="或图片 URL"></div><div class="form-hint">填品牌标识自动加载图标，或填图片链接</div></div>
-                <div class="form-row"><div class="form-group"><label>评分</label><select id="formRating"><option value="5">★★★★★</option><option value="4" selected>★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></div><div class="form-group"><label>底色</label><div class="icon-picker-group"><input type="color" id="formColor" value="#3B82F6"><div class="icon-preview-box" id="iconPreview" style="background:#3B82F6;"><img src="" id="previewImg"><i class="fas fa-cube" id="previewIcon"></i></div></div></div></div>
+                <div class="form-group"><label>底色</label><div class="icon-picker-group"><input type="color" id="formColor" value="#3B82F6"><div class="icon-preview-box" id="iconPreview" style="background:#3B82F6;"><img src="" id="previewImg"><i class="fas fa-cube" id="previewIcon"></i></div></div></div>
                 <div class="form-section">内容</div>
                 <div class="form-group"><label>一句话评语</label><div class="form-input-row"><input type="text" id="formComment" placeholder="简短评价"><button type="button" class="ai-btn" onclick="aiGenerateComment()">🤖</button></div></div>
                 <div class="form-group"><label>详细介绍</label><div class="form-input-row"><textarea id="formDetail" rows="3" placeholder="详细的使用体验"></textarea><button type="button" class="ai-btn ai-btn-ta" onclick="aiGenerateDetail()">🤖</button></div></div>

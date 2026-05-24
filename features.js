@@ -78,6 +78,9 @@ window.downloadQR = function(id) {
 
 // 管理
 var ADMIN_PASSWORD = 'ruantui2025', AUTH_KEY = 'mytoolbox_admin';
+var GITHUB_TOKEN = localStorage.getItem('github_token') || '';
+var GITHUB_REPO = 'SuXJTang/ruantui';
+var GITHUB_BRANCH = 'master';
 function isAdmin() { return localStorage.getItem(AUTH_KEY) === 'true'; }
 window.logoutAdmin = function() { localStorage.removeItem(AUTH_KEY); showToast('已退出管理', 'info'); };
 function checkAdmin() {
@@ -132,7 +135,7 @@ function renderMgmtList() {
         var icon = t.iconUrl ? '<img src="' + t.iconUrl + '" alt="">' : t.slug ? '<img src="https://cdn.simpleicons.org/' + t.slug + '/ffffff" alt="">' : '<i class="' + (t.icon || 'fa-cube') + '"></i>';
         var badge = t._userAdded ? '<span>[自定义]</span>' : '';
         var isPinned = pinned.includes(t.id);
-        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + t.color + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:11px;margin-right:3px;"></i>' : '') + t.name + badge + '</h4><p>' + t.category + ' · ' + t.rating + '星</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + t.id + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
+        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + t.color + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:11px;margin-right:3px;"></i>' : '') + t.name + badge + '</h4><p>' + t.category + '</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + t.id + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
     }).join('');
     mgmtList.querySelectorAll('.edit-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var t = tools.find(function(x) { return x.id === parseInt(this.dataset.id); }.bind(this)); if (t) openForm(t); }; });
     mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); if (confirm('确定删除？')) deleteTool(id); }; });
@@ -149,6 +152,7 @@ function togglePin(id) {
     var idx = d.pinned.indexOf(id);
     if (idx > -1) d.pinned.splice(idx, 1);
     else d.pinned.push(id);
+    console.log('Saving to localStorage:', JSON.stringify(d));
     saveUserData(d); refreshTools(); renderMgmtList();
     showToast(idx > -1 ? '已取消置顶' : '已置顶', 'success');
 }
@@ -179,6 +183,54 @@ function closeForm() { if (formOverlay) { formOverlay.classList.remove('active')
 
 var addBtn = document.getElementById('mgmtAddBtn');
 if (addBtn) addBtn.onclick = function() { openForm(null); };
+var exportBtn = document.getElementById('mgmtExportBtn');
+if (exportBtn) exportBtn.onclick = function() {
+    if (!GITHUB_TOKEN) {
+        var t = prompt('输入 GitHub Personal Access Token（repo 权限）：\nhttps://github.com/settings/tokens');
+        if (t && t.trim()) { GITHUB_TOKEN = t.trim(); localStorage.setItem('github_token', GITHUB_TOKEN); }
+        else { showToast('需要 Token 才能同步到 GitHub', 'error'); return; }
+    }
+    showToast('正在同步到 GitHub...', 'info');
+    var merged = getMergedTools();
+    var newData = 'const BASE_TOOLS = ' + JSON.stringify(merged, null, 4) + ';\n\n' +
+        'const STORAGE_KEY = \'mytoolbox_data\';\nvar tools = [];\nvar currentFilter = \'all\';\nvar currentSearch = \'\';\n\n' +
+        'function loadUserData() { try { var r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }\n' +
+        'function saveUserData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }\n\n' +
+        'function getMergedTools() {\n    var d = loadUserData() || {};\n    var deleted = d.deleted || [], edited = d.edited || {}, added = d.added || [];\n    var pinned = d.pinned || [];\n    var m = BASE_TOOLS.filter(function(t) { return !deleted.includes(t.id); }).map(function(t) { return Object.assign({}, t, edited[t.id] || {}); });\n    added.forEach(function(t) { t._userAdded = true; m.push(t); });\n    m.sort(function(a, b) { var ap = pinned.includes(a.id) ? 0 : 1; var bp = pinned.includes(b.id) ? 0 : 1; return ap - bp; });\n    return m;\n}\n\nfunction refreshTools() { tools = getMergedTools(); rebuildCategories(); renderTools(currentFilter); }\n';
+
+    var url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/data.js';
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('Authorization', 'token ' + GITHUB_TOKEN);
+    xhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
+    xhr.onload = function() {
+        if (xhr.status === 200 || xhr.status === 404) {
+            var sha = xhr.status === 200 ? JSON.parse(xhr.responseText).sha : null;
+            var putXhr = new XMLHttpRequest();
+            putXhr.open('PUT', url, true);
+            putXhr.setRequestHeader('Authorization', 'token ' + GITHUB_TOKEN);
+            putXhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
+            putXhr.setRequestHeader('Content-Type', 'application/json');
+            putXhr.onload = function() {
+                if (putXhr.status === 200 || putXhr.status === 201) {
+                    showToast('同步成功！GitHub Pages 1-2 分钟后更新', 'success');
+                    localStorage.setItem('mytoolbox_synced', JSON.stringify({ time: Date.now(), count: merged.length }));
+                } else {
+                    showToast('同步失败：' + putXhr.status, 'error');
+                }
+            };
+            putXhr.send(JSON.stringify({
+                message: '🔄 从管理面板同步工具数据',
+                content: btoa(unescape(encodeURIComponent(newData))),
+                sha: sha,
+                branch: GITHUB_BRANCH
+            }));
+        } else {
+            showToast('获取文件失败：' + xhr.status + ' - Token 可能无效', 'error');
+        }
+    };
+    xhr.send();
+};
 var cancelBtn = document.getElementById('formCancel');
 if (cancelBtn) cancelBtn.onclick = closeForm;
 var formClose = document.querySelector('.form-close');
@@ -196,13 +248,8 @@ if (toolForm) toolForm.onsubmit = function(e) {
         comment: document.getElementById('formComment').value.trim(),
         detail: document.getElementById('formDetail').value.trim(),
         tags: document.getElementById('formTags').value.split(/[,，、\s]+/).filter(Boolean),
-        url: document.getElementById('formUrl').value.trim() || undefined,
-        download: document.getElementById('formDownload').value.trim() || undefined,
-        sponsor: document.getElementById('formSponsor').value.trim() || undefined,
-        usage: document.getElementById('formUsage').value.trim() || undefined,
-        slug: document.getElementById('formSlug').value.trim() || undefined,
-        iconUrl: document.getElementById('formIconUrl').value.trim() || undefined,
     };
+    ['url','download','sponsor','usage','slug','iconUrl'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); if (v) data[k] = v; });
     var store = loadUserData() || { deleted: [], edited: {}, added: [], nextId: 1000 };
     if (!store.edited) store.edited = {}; if (!store.added) store.added = []; if (!store.deleted) store.deleted = []; if (!store.nextId) store.nextId = 1000;
     var isEdit = !!document.getElementById('formId').value;

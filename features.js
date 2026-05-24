@@ -35,7 +35,26 @@ function showToast(msg, type) {
 loadTools().then(function() {
     rebuildCategories();
     renderTools('all');
+    // 显示最后更新日期
+    var fd = document.getElementById('footerDate');
+    if (fd) fd.textContent = '· ' + new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' }) + ' 更新';
+    // 深链接：数据加载完后再检查 URL 参数
+    var p = new URLSearchParams(window.location.search);
+    var toolId = p.get('tool');
+    if (toolId) { var t = tools.find(function(x) { return x.id === parseInt(toolId); }); if (t) openModal(t); }
 });
+
+// 排序
+var sortSelect = document.getElementById('sortSelect');
+if (sortSelect) {
+    sortSelect.onchange = function() {
+        var val = this.value;
+        if (val === 'name') tools.sort(function(a, b) { return a.name.localeCompare(b.name, 'zh'); });
+        else if (val === 'newest') tools.sort(function(a, b) { return b.id - a.id; });
+        else tools.sort(function(a, b) { return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id; });
+        renderTools(currentFilter);
+    };
+}
 
 // 分享面板
 var sb = document.getElementById('shareBtn'), sp = document.getElementById('sharePanel');
@@ -45,15 +64,10 @@ if (sb && sp) {
 }
 ['shareCopyLink', 'shareUrlCopyBtn'].forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.onclick = function() { copyToClipboard(window.location.href, '链接已复制'); };
+    if (el) el.onclick = function() { copyToClipboard(window.location.origin + window.location.pathname, '链接已复制'); };
 });
 
-// 深链接
-(function() {
-    var p = new URLSearchParams(window.location.search);
-    var id = p.get('tool');
-    if (id) setTimeout(function() { var t = tools.find(function(x) { return x.id === parseInt(id); }); if (t) openModal(t); }, 600);
-})();
+
 
 function copyToClipboard(text, msg) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -173,6 +187,7 @@ function openForm(tool) {
     document.getElementById('formUsage').value = tool ? (tool.usage || '') : '';
     document.getElementById('formSlug').value = tool ? (tool.slug || '') : '';
     document.getElementById('formIconUrl').value = tool ? (tool.iconUrl || '') : '';
+    document.getElementById('formIcon').value = tool ? (tool.icon || '') : '';
     updateIconPreview();
     formOverlay.setAttribute('aria-hidden', 'false'); formOverlay.classList.add('active'); document.body.style.overflow = 'hidden';
 }
@@ -208,7 +223,7 @@ if (toolForm) toolForm.onsubmit = function(e) {
         detail: document.getElementById('formDetail').value.trim(),
         tags: document.getElementById('formTags').value.split(/[,，、\s]+/).filter(Boolean),
     };
-    ['url','download','usage','slug','iconUrl'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); data[k] = v || null; });
+    ['url','download','usage','slug','iconUrl','icon'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); data[k] = v || null; });
     var isEdit = !!document.getElementById('formId').value;
     var savePromise;
     if (isEdit) {

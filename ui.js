@@ -22,6 +22,7 @@ function renderTools(filter) {
         return (filter === 'all' || t.category === filter) && (!q || t.name.toLowerCase().includes(q) || t.tags.some(function(tag) { return tag.toLowerCase().includes(q); }) || (t.comment && t.comment.toLowerCase().includes(q)));
     });
     grid.innerHTML = '';
+    if (loading) { grid.innerHTML = '<div class="grid-empty"><div class="loading-spinner"></div><p>加载中...</p></div>'; return; }
     if (!filtered.length) { grid.innerHTML = '<div class="grid-empty"><i class="fas fa-box-open"></i><p>没有找到匹配的工具</p></div>'; return; }
     filtered.forEach(function(t, i) {
         var card = document.createElement('article'); card.className = 'tool-card'; card.style.animationDelay = (i * 0.05) + 's';

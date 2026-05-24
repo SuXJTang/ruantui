@@ -1,9 +1,11 @@
 // ============================================
-// data.js — 工具数据（从 Supabase 加载）
+// data.js — 工具数据（从 Supabase 加载，localStorage 缓存兜底）
 // ============================================
 var tools = [];
 var currentFilter = 'all';
 var currentSearch = '';
+var loading = false;
+var CACHE_KEY = 'mytoolbox_cache';
 
 // 从 Supabase 加载工具列表
 function loadTools() {
@@ -11,11 +13,21 @@ function loadTools() {
         console.warn('supabase.js not loaded');
         return Promise.resolve([]);
     }
+    loading = true;
     return fetchTools().then(function(data) {
         tools = data;
+        // 缓存到 localStorage 供离线使用
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+        loading = false;
         return data;
     }).catch(function(e) {
-        console.error('Failed to load tools:', e);
+        console.warn('Supabase 不可用，尝试本地缓存:', e);
+        loading = false;
+        // 离线兜底：读 localStorage 缓存
+        try {
+            var cached = localStorage.getItem(CACHE_KEY);
+            if (cached) { tools = JSON.parse(cached); return tools; }
+        } catch(e2) {}
         tools = [];
         return [];
     });

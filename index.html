@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="我的工具箱 — 个人软件推荐与使用心得">
+    <meta name="theme-color" content="#FF7D20">
+    <title>🧰 我的工具箱</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="topbar-brand">
+            <span class="brand-icon">🧰</span>
+            <span class="brand-text">我的工具箱</span>
+        </div>
+        <div class="topbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索工具名称、标签..." aria-label="搜索工具">
+        </div>
+        <div class="topbar-right">
+            <div class="theme-palette" role="radiogroup" aria-label="主题色">
+                <button class="theme-swatch active" data-target="sunrise" aria-label="暖阳" role="radio" aria-checked="true"></button>
+                <button class="theme-swatch" data-target="ocean" aria-label="碧波" role="radio" aria-checked="false"></button>
+                <button class="theme-swatch" data-target="aurora" aria-label="霓裳" role="radio" aria-checked="false"></button>
+                <button class="theme-swatch" data-target="forest" aria-label="翠微" role="radio" aria-checked="false"></button>
+                <button class="theme-swatch" data-target="crimson" aria-label="红妆" role="radio" aria-checked="false"></button>
+            </div>
+            <button class="header-btn" id="shareBtn" aria-label="分享" title="分享"><i class="fas fa-share-alt"></i></button>
+            <button class="header-btn theme-toggle" aria-label="切换亮暗模式"><i class="fas fa-moon"></i></button>
+        </div>
+    </div>
+</header>
+
+<!-- 分享面板 -->
+<div class="share-panel" id="sharePanel">
+    <div class="share-panel-arrow"></div>
+    <div class="share-panel-body">
+        <button class="share-option" id="shareCopyLink"><span class="share-icon"><i class="fas fa-link"></i></span><span class="share-text"><strong>复制链接</strong><small>分享给朋友</small></span></button>
+        <button class="share-option" id="shareCopyText"><span class="share-icon"><i class="fas fa-comment-dots"></i></span><span class="share-text"><strong>复制推荐语</strong><small>带链接的推荐文案</small></span></button>
+        <div class="share-qr-row" id="shareQrRow" style="display:none;"><img src="" alt="" class="share-qr" id="shareQrImg"><span>扫码打开</span></div>
+        <div class="share-url-row"><input type="text" id="shareUrlInput" readonly><button class="share-copy-btn" id="shareUrlCopyBtn"><i class="fas fa-copy"></i></button></div>
+    </div>
+</div>
+
+<div class="container">
+
+<section class="profile">
+    <div class="profile-inner">
+        <div class="profile-avatar"><span>👤</span></div>
+        <div class="profile-info">
+            <h1>我的工具箱</h1>
+            <p class="profile-bio">日常工作中沉淀下来的精选软件，每一个都经过长期使用检验。</p>
+            <div class="profile-stats">
+                <span><strong id="totalCount">0</strong> 款工具</span>
+                <span><strong id="categoryCount">0</strong> 个分类</span>
+                <button class="mgmt-btn" id="mgmtBtn"><i class="fas fa-cog"></i> 管理</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 广告位 ① -->
+<div class="ad-container ad-top"></div>
+
+<nav class="filter-bar" aria-label="分类筛选">
+    <button class="filter-tag active" data-filter="all">全部</button>
+</nav>
+
+<section class="grid" id="toolGrid"></section>
+
+<!-- 广告位 ② -->
+<div class="ad-container ad-bottom"></div>
+
+</div><!-- /container -->
+
+<footer class="footer">
+    <p>🧰 我的工具箱 · 持续更新中</p>
+    <p class="footer-sub">用过的工具很多，留下来的才是真的好</p>
+    <div class="footer-actions">
+        <button class="footer-btn" id="donateBtn">☕ 赞赏</button>
+        <button class="footer-btn" id="qqBtn"><i class="fab fa-qq"></i> QQ群</button>
+        <button class="footer-btn" id="feedbackBtn">💬 反馈</button>
+    </div>
+</footer>
+
+<!-- 详情弹窗 -->
+<div class="overlay" id="modalOverlay" aria-hidden="true">
+    <div class="modal" role="dialog"><button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button><div class="modal-body" id="modalBody"></div></div>
+</div>
+
+<!-- 管理弹窗 -->
+<div class="overlay" id="mgmtOverlay" aria-hidden="true">
+    <div class="modal modal-lg" role="dialog">
+        <button class="modal-close mgmt-close"><i class="fas fa-times"></i></button>
+        <div class="modal-body">
+            <div class="mgmt-header"><h2>管理工具箱</h2><div class="mgmt-header-right"><button class="mgmt-add-btn" id="mgmtAddBtn"><i class="fas fa-plus"></i> 添加</button><button class="mgmt-logout" onclick="logoutAdmin()" title="退出登录"><i class="fas fa-sign-out-alt"></i></button></div></div>
+            <div class="mgmt-search"><i class="fas fa-search"></i><input type="text" id="mgmtSearchInput" placeholder="搜索工具名称..."></div>
+            <div class="mgmt-list" id="mgmtList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑表单弹窗 -->
+<div class="overlay" id="formOverlay" aria-hidden="true">
+    <div class="modal modal-form" role="dialog">
+        <button class="modal-close form-close"><i class="fas fa-times"></i></button>
+        <div class="modal-body">
+            <h2 class="form-title" id="formTitle">添加工具</h2>
+            <form id="toolForm" style="display:flex;flex-direction:column;gap:8px;">
+                <input type="hidden" id="formId">
+                <div class="form-section">基本信息</div>
+                <div class="form-row"><div class="form-group"><label>名称 *</label><input type="text" id="formName" required placeholder="如 VS Code"></div><div class="form-group"><label>分类 *</label><input type="text" id="formCategory" required placeholder="如 开发工具"></div></div>
+                <div class="form-group"><label>标签（逗号分隔）</label><input type="text" id="formTags" placeholder="如 日常必备, 免费"></div>
+                <div class="form-section">图标</div>
+                <div class="form-group"><div class="form-input-row"><input type="text" id="formSlug" placeholder="品牌 slug"><input type="url" id="formIconUrl" placeholder="或图片 URL"></div><div class="form-hint">填品牌标识自动加载图标，或填图片链接</div></div>
+                <div class="form-row"><div class="form-group"><label>评分</label><select id="formRating"><option value="5">★★★★★</option><option value="4" selected>★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></div><div class="form-group"><label>底色</label><div class="icon-picker-group"><input type="color" id="formColor" value="#3B82F6"><div class="icon-preview-box" id="iconPreview" style="background:#3B82F6;"><img src="" id="previewImg"><i class="fas fa-cube" id="previewIcon"></i></div></div></div></div>
+                <div class="form-section">内容</div>
+                <div class="form-group"><label>一句话评语</label><div class="form-input-row"><input type="text" id="formComment" placeholder="简短评价"><button type="button" class="ai-btn" onclick="aiGenerateComment()">🤖</button></div></div>
+                <div class="form-group"><label>详细介绍</label><div class="form-input-row"><textarea id="formDetail" rows="3" placeholder="详细的使用体验"></textarea><button type="button" class="ai-btn ai-btn-ta" onclick="aiGenerateDetail()">🤖</button></div></div>
+                <div class="form-group"><label>使用说明（可选）</label><div class="form-input-row"><textarea id="formUsage" rows="2" placeholder="安装步骤、配置技巧"></textarea><button type="button" class="ai-btn ai-btn-ta" onclick="aiGenerateUsage()">🤖</button></div></div>
+                <div class="form-section">链接</div>
+                <div class="form-row"><div class="form-group"><label>官网</label><input type="url" id="formUrl" placeholder="https://"></div><div class="form-group"><label>下载</label><input type="url" id="formDownload" placeholder="https://"></div></div>
+                <div class="form-group"><label>推广链接（可选）</label><input type="url" id="formSponsor" placeholder="你的推广链接"></div>
+                <div class="form-actions"><button type="button" class="form-cancel" id="formCancel">取消</button><button type="submit" class="form-submit">保存</button></div>
+                <div style="text-align:center;font-size:11px;color:var(--text-light);margin-top:4px;">🤖 AI 生成 <button type="button" onclick="resetApiKey()" style="background:none;border:none;color:var(--primary);cursor:pointer;text-decoration:underline;font-size:11px;">更换 Key</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- QQ群弹窗 -->
+<div class="overlay" id="qqOverlay" aria-hidden="true">
+    <div class="modal" role="dialog"><button class="modal-close qq-close"><i class="fas fa-times"></i></button>
+        <div class="modal-body" style="text-align:center;">
+            <h2><i class="fab fa-qq"></i> 加入 QQ 群</h2>
+            <p style="color:var(--text-light);margin:8px 0 16px;">一起交流软件推荐和使用心得</p>
+            <div class="qq-box"><span>群号</span><strong id="qqNumber">743677902</strong><button class="qq-copy" onclick="copyQQNumber()"><i class="fas fa-copy"></i> 复制</button></div>
+            <p style="font-size:12px;color:var(--text-light);margin-top:12px;"><a href="https://qm.qq.com/cgi-bin/qm/qr?k=743677902" class="qq-join" target="_blank"><i class="fab fa-qq"></i> 打开 QQ 加入</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- 反馈弹窗 -->
+<div class="overlay" id="feedbackOverlay" aria-hidden="true">
+    <div class="modal" role="dialog"><button class="modal-close feedback-close"><i class="fas fa-times"></i></button>
+        <div class="modal-body">
+            <h2>💬 意见反馈</h2>
+            <p style="color:var(--text-light);margin:8px 0 16px;">工具推荐、改进建议或遇到的问题</p>
+            <a href="https://github.com/SuXJTang/ruantui/issues/new" class="fb-option" target="_blank"><span class="fb-icon"><i class="fab fa-github"></i></span><span><strong>GitHub Issue</strong><small>可追踪反馈进度</small></span><i class="fas fa-chevron-right"></i></a>
+            <a href="mailto:1557003690@qq.com" class="fb-option"><span class="fb-icon" style="background:rgba(239,68,68,0.1);color:#ef4444;"><i class="fas fa-envelope"></i></span><span><strong>发送邮件</strong><small>直接发邮件给我</small></span><i class="fas fa-chevron-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<!-- 赞赏弹窗 -->
+<div class="overlay" id="donateOverlay" aria-hidden="true">
+    <div class="modal" role="dialog"><button class="modal-close donate-close"><i class="fas fa-times"></i></button>
+        <div class="modal-body" style="text-align:center;">
+            <h2>☕ 赞赏支持</h2>
+            <p style="color:var(--text-light);margin:8px 0 16px;">如果工具箱对你有帮助，欢迎赞赏 🙏</p>
+            <div class="donate-qr-box"><img src="https://via.placeholder.com/180x180/FFF3E0/FF7D20?text=收款码" alt="收款码" class="donate-qr"></div>
+            <p style="font-size:12px;color:var(--text-light);margin-top:12px;">微信 / 支付宝 均可</p>
+        </div>
+    </div>
+</div>
+
+<script src="data.js"></script>
+<script src="ui.js"></script>
+<script src="modal.js"></script>
+<script src="features.js"></script>
+<script src="theme.js"></script>
+</body>
+</html>

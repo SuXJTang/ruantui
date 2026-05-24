@@ -226,6 +226,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-size: 13px; transition: var(--transition);
 }
 .footer-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(var(--primary-rgb),0.05); }
+.install-btn { border-color: var(--primary); color: var(--primary); background: rgba(var(--primary-rgb),0.06); font-weight: 600; }
 
 /* ---------- 弹窗 ---------- */
 .overlay {

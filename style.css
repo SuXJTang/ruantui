@@ -212,7 +212,6 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-meta { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; }
 .tool-cat { font-size: 11px; color: var(--text-light); background: rgba(128,128,128,0.08); padding: 1px 10px; border-radius: 10px; }
 .tool-rating { font-size: 12px; color: #f59e0b; font-weight: 600; }
-.tool-stars { font-size: 12px; color: #f59e0b; letter-spacing: 1px; margin-left: auto; white-space: nowrap; }
 .tool-body p { font-size: 13px; color: var(--text-light); line-height: 1.5; margin-bottom: 6px; }
 .tool-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .tool-tag {

@@ -34,8 +34,7 @@ function renderTools(filter) {
         var tagsHTML = t.tags.map(function(tag) { return '<span class="tool-tag">' + tag + '</span>'; }).join('');
         var isPinned = t.pinned;
         card.dataset.id = t.id;
-        var stars = '<span class="tool-stars">' + '★'.repeat(t.rating) + '☆'.repeat(5 - t.rating) + '</span>';
-        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:10px;margin-right:2px;"></i>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span>' + stars + '</div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
+        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:10px;margin-right:2px;"></i>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span></div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
         grid.appendChild(card);
     });
     document.getElementById('totalCount').textContent = tools.length;

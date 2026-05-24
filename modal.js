@@ -11,7 +11,7 @@ function openModal(tool) {
     var links = [];
     if (tool.url) links.push('<a href="' + tool.url + '" class="modal-link primary" target="_blank"><i class="fas fa-globe"></i> 官网</a>');
     if (tool.download) links.push('<a href="' + tool.download + '" class="modal-link" target="_blank"><i class="fas fa-download"></i> 下载</a>');
-    if (tool.sponsor) links.push('<a href="' + tool.sponsor + '" class="modal-link sponsor" target="_blank"><i class="fas fa-heart"></i> 支持我</a>');
+    
     var stars = '★'.repeat(tool.rating) + '☆'.repeat(5 - tool.rating);
     var pageUrl = window.location.href;
 

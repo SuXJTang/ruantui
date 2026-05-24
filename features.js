@@ -171,7 +171,6 @@ function openForm(tool) {
     document.getElementById('formTags').value = tool ? (tool.tags || []).join(', ') : '';
     document.getElementById('formUrl').value = tool ? (tool.url || '') : '';
     document.getElementById('formDownload').value = tool ? (tool.download || '') : '';
-    document.getElementById('formSponsor').value = tool ? (tool.sponsor || '') : '';
     document.getElementById('formUsage').value = tool ? (tool.usage || '') : '';
     document.getElementById('formSlug').value = tool ? (tool.slug || '') : '';
     document.getElementById('formIconUrl').value = tool ? (tool.iconUrl || '') : '';
@@ -247,7 +246,7 @@ if (toolForm) toolForm.onsubmit = function(e) {
         detail: document.getElementById('formDetail').value.trim(),
         tags: document.getElementById('formTags').value.split(/[,，、\s]+/).filter(Boolean),
     };
-    ['url','download','sponsor','usage','slug','iconUrl'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); if (v) data[k] = v; });
+    ['url','download','usage','slug','iconUrl'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); if (v) data[k] = v; });
     var store = loadUserData() || { deleted: [], edited: {}, added: [], nextId: 1000 };
     if (!store.edited) store.edited = {}; if (!store.added) store.added = []; if (!store.deleted) store.deleted = []; if (!store.nextId) store.nextId = 1000;
     var isEdit = !!document.getElementById('formId').value;

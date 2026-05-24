@@ -331,8 +331,17 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function() {});
 }
 window.installApp = function() {
-    if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function() { deferredPrompt = null; }); }
-    else { showToast('请使用浏览器菜单中的「添加到主屏幕」功能', 'info'); }
+    var isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isiOS) {
+        showToast('iOS 请点分享按钮 → 添加到主屏幕', 'info');
+        return;
+    }
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+    } else {
+        showToast('请用 Chrome 浏览器打开，或使用菜单中的「添加到主屏幕」', 'info');
+    }
 };
 var deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {

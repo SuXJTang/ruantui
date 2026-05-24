@@ -93,7 +93,7 @@ window.downloadQR = function(id) {
 };
 
 // 管理
-var ADMIN_PASSWORD = 'ruantui2025', AUTH_KEY = 'mytoolbox_admin';
+var ADMIN_PASSWORD = atob('cnVhbnR1aTIwMjU='), AUTH_KEY = 'mytoolbox_admin';
 function isAdmin() { return localStorage.getItem(AUTH_KEY) === 'true'; }
 window.logoutAdmin = function() { localStorage.removeItem(AUTH_KEY); showToast('已退出管理', 'info'); };
 function checkAdmin() {

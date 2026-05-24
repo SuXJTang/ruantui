@@ -14,13 +14,13 @@ const BASE_TOOLS = [
     { id:10, name:'Adobe Illustrator', category:'设计工具', rating:4, comment:'矢量设计标杆，Logo 和插画必备。', detail:'矢量图形设计的标杆工具。Logo、图标、插画、排版设计的最佳选择。无限缩放不模糊。', tags:['专业','付费'], slug:'adobeillustrator', color:'#FF9A00', url:'https://www.adobe.com/products/illustrator.html' },
     { id:11, name:'Canva', category:'设计工具', rating:4, comment:'快速出图的在线工具，非设计师也能用。', detail:'在线设计平台，内置海量模板，社交媒体图片、演示文稿、海报等都能在几分钟内完成。', tags:['入门友好','免费'], slug:'canva', color:'#00C4CC', url:'https://www.canva.com/' },
     { id:12, name:'Unsplash', category:'设计工具', rating:4, comment:'高质量免费图库，找素材第一站。', detail:'全球最大的免费高质量图库。所有照片均可免费用于商业和非商业用途。API 接口也很方便。', tags:['免费','资源'], icon:'fa-images', color:'#333333', url:'https://unsplash.com/' },
-    { id:13, name:'Notion', category:'效率工具', rating:5, comment:'第二大脑，笔记/文档/项目管理全搞定。', detail:'All-in-one 的知识管理与协作平台。笔记、文档、数据库、看板、日历、Wiki 全部集成。最强大的是数据库功能——可以把任何页面变成结构化数据。', tags:['日常必备','免费'], slug:'notion', color:'#000000', url:'https://www.notion.so/', sponsor:'https://www.notion.so/zh-cn?r=你的邀请码' },
+    { id:13, name:'Notion', category:'效率工具', rating:5, comment:'第二大脑，笔记/文档/项目管理全搞定。', detail:'All-in-one 的知识管理与协作平台。笔记、文档、数据库、看板、日历、Wiki 全部集成。最强大的是数据库功能——可以把任何页面变成结构化数据。', tags:['日常必备','免费'], slug:'notion', color:'#000000', url:'https://www.notion.so/' },
     { id:14, name:'Raycast', category:'效率工具', rating:5, comment:'macOS 效率启动器，比 Spotlight 强一百倍。', detail:'macOS 上的效率启动器。快速启动应用、文件搜索、剪贴板历史、计算器等。更厉害的是扩展生态——可以直接管理 Git 分支、搜索 Notion 页面等。', tags:['强烈推荐','免费','macOS'], slug:'raycast', color:'#FF6363', url:'https://www.raycast.com/' },
     { id:15, name:'Arc Browser', category:'效率工具', rating:4, comment:'重新定义浏览器的使用方式，分屏太优雅。', detail:'创新的浏览器。侧边栏标签管理和分屏功能——把浏览器重新想象成操作系统级别的工具。空间（Spaces）功能区分工作、个人场景。', tags:['强烈推荐','免费'], slug:'arc', color:'#FCBFBD', url:'https://arc.net/' },
     { id:16, name:'Obsidian', category:'效率工具', rating:4, comment:'本地优先的知识管理，双向链接很强大。', detail:'本地优先的知识管理工具，基于 Markdown 文件。双向链接和图谱视图是其核心特色。插件生态丰富，配合 Git 可免费多端同步。', tags:['免费','笔记'], slug:'obsidian', color:'#7C3FED', url:'https://obsidian.md/', download:'https://obsidian.md/download' },
     { id:17, name:'Alfred', category:'效率工具', rating:4, comment:'老牌效率工具，Workflow 功能无敌。', detail:'macOS 上老牌效率启动器。Workflow（工作流）是其独家优势——通过可视化编辑器创建自动化工作流。', tags:['macOS','付费'], slug:'alfred', color:'#5C5C5C', url:'https://www.alfredapp.com/' },
-    { id:18, name:'Spotify', category:'日常工具', rating:5, comment:'写代码的最佳伴侣，歌单推荐越来越懂我。', detail:'全球最大的音乐流媒体平台。歌单推荐算法非常智能，Discover Weekly 每周都会推荐符合你口味的新歌。写代码时听 Lo-fi 或 Deep Focus 歌单。', tags:['日常必备','付费'], slug:'spotify', color:'#1DB954', url:'https://www.spotify.com/', download:'https://www.spotify.com/download', sponsor:'https://www.spotify.com/zh-cn/premium/?ref=你的推广码' },
-    { id:19, name:'1Password', category:'日常工具', rating:5, comment:'密码管理，一个主密码管所有账号。', detail:'最好的密码管理器之一。只需要记住一个主密码，其他所有账号密码都由 1Password 生成和管理。自动填充、跨设备同步。', tags:['强烈推荐','付费','安全'], slug:'1password', color:'#3B66BC', url:'https://1password.com/', download:'https://1password.com/downloads', sponsor:'https://1password.com/zh-cn/sign-up/?ref=你的推广码' },
+    { id:18, name:'Spotify', category:'日常工具', rating:5, comment:'写代码的最佳伴侣，歌单推荐越来越懂我。', detail:'全球最大的音乐流媒体平台。歌单推荐算法非常智能，Discover Weekly 每周都会推荐符合你口味的新歌。写代码时听 Lo-fi 或 Deep Focus 歌单。', tags:['日常必备','付费'], slug:'spotify', color:'#1DB954', url:'https://www.spotify.com/', download:'https://www.spotify.com/download' },
+    { id:19, name:'1Password', category:'日常工具', rating:5, comment:'密码管理，一个主密码管所有账号。', detail:'最好的密码管理器之一。只需要记住一个主密码，其他所有账号密码都由 1Password 生成和管理。自动填充、跨设备同步。', tags:['强烈推荐','付费','安全'], slug:'1password', color:'#3B66BC', url:'https://1password.com/', download:'https://1password.com/downloads' },
     { id:20, name:'CleanShot X', category:'日常工具', rating:4, comment:'macOS 截图工具，滚动截图和录屏都好用。', detail:'macOS 上最好的截图和录屏工具。支持区域截图、窗口截图、滚动截图、录屏和 GIF 录制。标注功能也很强大。', tags:['macOS','付费'], icon:'fa-camera', color:'#3B82F6', url:'https://cleanshot.com/' },
     { id:21, name:'IINA', category:'日常工具', rating:4, comment:'macOS 上最好用的视频播放器，颜值和功能兼备。', detail:'macOS 上现代化的视频播放器，基于 mpv 引擎。支持几乎所有的视频格式，支持画中画、播放列表、字幕下载。开源免费。', tags:['macOS','免费','开源'], icon:'fa-film', color:'#E91E63', url:'https://iina.io/', download:'https://iina.io/download' },
     { id:22, name:'Transmit', category:'日常工具', rating:3, comment:'经典 FTP/SFTP 客户端，文件传输很稳定。', detail:'macOS 上经典的 FTP/SFTP 客户端。支持多连接管理、同步功能、磁盘挂载。传输速度快而稳定。', tags:['macOS','付费'], icon:'fa-upload', color:'#0D7A9E', url:'https://panic.com/transmit/' },
@@ -36,8 +36,23 @@ var tools = [];
 var currentFilter = 'all';
 var currentSearch = '';
 
-function loadUserData() { try { var r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }
-function saveUserData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+function loadUserData() {
+    // Try cloud first
+    var cloud = typeof loadCloudData === 'function' ? loadCloudData() : null;
+    if (cloud) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud));
+        return cloud;
+    }
+    // Fallback to local
+    try { var r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
+}
+function saveUserData(d) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+    // Sync to cloud
+    if (typeof saveCloudData === 'function') {
+        saveCloudData(d);
+    }
+}
 
 function getMergedTools() {
     var d = loadUserData() || {};

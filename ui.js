@@ -22,7 +22,11 @@ function renderTools(filter) {
         return (filter === 'all' || t.category === filter) && (!q || t.name.toLowerCase().includes(q) || t.tags.some(function(tag) { return tag.toLowerCase().includes(q); }) || (t.comment && t.comment.toLowerCase().includes(q)));
     });
     grid.innerHTML = '';
-    if (loading) { grid.innerHTML = '<div class="grid-empty"><div class="loading-spinner"></div><p>加载中...</p></div>'; return; }
+    if (loading) {
+        var sk = '';
+        for (var i = 0; i < 6; i++) sk += '<div class="skeleton-card"><div class="sk-icon"></div><div class="sk-body"><div class="sk-line sk-line-1"></div><div class="sk-line sk-line-2"></div><div class="sk-line sk-line-3"></div></div></div>';
+        grid.innerHTML = sk; return;
+    }
     if (!filtered.length) { grid.innerHTML = '<div class="grid-empty"><i class="fas fa-box-open"></i><p>没有找到匹配的工具</p></div>'; return; }
     filtered.forEach(function(t, i) {
         var card = document.createElement('article'); card.className = 'tool-card'; card.style.animationDelay = (i * 0.05) + 's';
@@ -30,7 +34,8 @@ function renderTools(filter) {
         var tagsHTML = t.tags.map(function(tag) { return '<span class="tool-tag">' + tag + '</span>'; }).join('');
         var isPinned = t.pinned;
         card.dataset.id = t.id;
-        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:11px;margin-right:3px;"></i>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span></div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
+        var stars = '<span class="tool-stars">' + '★'.repeat(t.rating) + '☆'.repeat(5 - t.rating) + '</span>';
+        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--primary);font-size:10px;margin-right:2px;"></i>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span>' + stars + '</div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
         grid.appendChild(card);
     });
     document.getElementById('totalCount').textContent = tools.length;

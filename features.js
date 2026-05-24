@@ -7,27 +7,27 @@ function showToast(msg, type) {
     var c = document.getElementById('tc');
     if (!c) {
         c = document.createElement('div'); c.id = 'tc';
-        c.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;';
+        c.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
         document.body.appendChild(c);
     }
+    var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    var colors = { success: '#22c55e', error: '#ef4444', info: '#3B82F6' };
     var t = document.createElement('div');
-    t.textContent = msg;
-    var colors = { error: '#ef4444', success: '#22c55e', info: '#3B82F6' };
-    t.style.cssText = 'padding:10px 24px;border-radius:999px;font-size:14px;font-weight:500;color:#fff;background:' + (colors[type] || '#6B7280') + ';box-shadow:0 8px 24px rgba(0,0,0,0.2);animation:ti .35s ease forwards;margin-top:4px;';
+    t.style.cssText = 'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:500;color:#fff;background:var(--card);color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,0.15);border-left:4px solid ' + (colors[type] || '#6B7280') + ';animation:toastIn .35s ease forwards;max-width:360px;';
+    t.innerHTML = '<i class="fas ' + (icons[type] || 'fa-info-circle') + '" style="color:' + (colors[type] || '#6B7280') + ';font-size:18px;flex-shrink:0;"></i><span>' + msg + '</span>';
     c.appendChild(t);
     setTimeout(function() {
         t.style.transition = 'all .3s ease';
-        t.style.opacity = '0';
-        t.style.transform = 'translateY(-10px)';
+        t.style.opacity = '0'; t.style.transform = 'translateX(40px)';
         setTimeout(function() { t.remove(); }, 300);
-    }, 2200);
+    }, 2500);
 }
 
 // 注入toast动画
 (function() {
     if (document.getElementById('ts')) return;
     var s = document.createElement('style'); s.id = 'ts';
-    s.textContent = '@keyframes ti{0%{opacity:0;transform:translateY(15px) scale(.9)}100%{opacity:1;transform:translateY(0) scale(1)}}';
+    s.textContent = '@keyframes toastIn{0%{opacity:0;transform:translateX(40px)}100%{opacity:1;transform:translateX(0)}}';
     document.head.appendChild(s);
 })();
 

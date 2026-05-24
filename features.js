@@ -331,31 +331,37 @@ window.aiGenerateUsage = async function() {
 })();
 
 // PWA
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function() {});
-}
-window.installApp = function() {
-    var ua = navigator.userAgent;
-    if (/iphone|ipad|ipod/i.test(ua)) { showToast('Safari 点底部分享 → 添加到主屏幕', 'info'); return; }
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function() { deferredPrompt = null; showToast('安装成功 🎉', 'success'); });
-    } else if (/chrome/i.test(ua)) {
-        showToast('Chrome 右上角 ⋮ → 安装应用「工具箱」', 'info');
-    } else {
-        showToast('浏览器菜单中找「添加到主屏幕」或「安装」', 'info');
-    }
-};
 var deferredPrompt = null;
+var installBtn = document.querySelector('.install-btn');
+if (installBtn) installBtn.style.display = 'none';
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+        console.log('SW registered');
+    }).catch(function() {});
+}
+
 window.addEventListener('beforeinstallprompt', function(e) {
-    console.log('beforeinstallprompt fired - PWA installable');
-    deferredPrompt = e;
     e.preventDefault();
     deferredPrompt = e;
-    setTimeout(function() {
-        if (deferredPrompt) {
-            try { deferredPrompt.prompt(); } catch(e) {}
-            deferredPrompt = null;
-        }
-    }, 60000);
+    if (installBtn) installBtn.style.display = '';
 });
+
+window.installApp = function() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(r) {
+            deferredPrompt = null;
+            if (r.outcome === 'accepted') showToast('安装成功 🎉', 'success');
+        });
+        return;
+    }
+    var ua = navigator.userAgent;
+    if (/iphone|ipad|ipod/i.test(ua)) {
+        showToast('Safari 点底部 <img src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect x=%222%22 y=%226%22 width=%2220%22 height=%2212%22 rx=%222%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%222%22/%3E%3Cpath d=%22M8 12l-5 8h18l-4-8%22 fill=%22%23fff%22 opacity=%220.3%22/%3E%3C/svg%3E" style="width:14px;vertical-align:middle;"> 分享 → 添加到主屏幕', 'info');
+    } else if (/chrome|edg/i.test(ua)) {
+        showToast('地址栏右侧 ⋮ → 安装「工具箱」', 'info');
+    } else {
+        showToast('浏览器菜单 → 添加到主屏幕', 'info');
+    }
+};

@@ -29,6 +29,8 @@ const BASE_TOOLS = [
     { id:25, name:'Hidden Bar', category:'系统工具', rating:3, comment:'简单实用的菜单栏隐藏工具，开源免费。', detail:'Bartender 的免费开源替代品。功能简单直接——把不常用的菜单栏图标收起来，点击箭头展开。', tags:['macOS','免费','开源'], icon:'fa-eye-slash', color:'#6B7280', url:'https://github.com/dwarvesf/hidden' },
 ];
 
+const DEFAULT_PINNED = [13];
+
 const STORAGE_KEY = 'mytoolbox_data';
 var tools = [];
 var currentFilter = 'all';
@@ -40,7 +42,8 @@ function saveUserData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 function getMergedTools() {
     var d = loadUserData() || {};
     var deleted = d.deleted || [], edited = d.edited || {}, added = d.added || [];
-    var pinned = d.pinned || [];
+    var pinned = d.pinned || []; if (!d.pinned) pinned = pinned.concat(DEFAULT_PINNED.filter(function(id) { return pinned.indexOf(id) === -1; }));
+    console.log('Loaded from localStorage - pinned:', JSON.stringify(pinned));
     var m = BASE_TOOLS.filter(function(t) { return !deleted.includes(t.id); }).map(function(t) { return Object.assign({}, t, edited[t.id] || {}); });
     added.forEach(function(t) { t._userAdded = true; m.push(t); });
     m.sort(function(a, b) {

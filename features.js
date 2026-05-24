@@ -340,7 +340,7 @@ window.installApp = function() {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
     } else {
-        showToast('请用 Chrome 浏览器打开，或使用菜单中的「添加到主屏幕」', 'info');
+        showToast('请在 Chrome 右上角菜单 → 安装应用', 'info');
     }
 };
 var deferredPrompt = null;
@@ -350,8 +350,8 @@ window.addEventListener('beforeinstallprompt', function(e) {
     deferredPrompt = e;
     setTimeout(function() {
         if (deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+            try { deferredPrompt.prompt(); } catch(e) {}
+            deferredPrompt = null;
         }
-    }, 30000);
+    }, 60000);
 });

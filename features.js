@@ -66,14 +66,15 @@ function fallbackCopy(text) {
     try { document.execCommand('copy'); showToast('已复制', 'success'); } catch(e) { showToast('复制失败', 'error'); }
     document.body.removeChild(ta);
 }
-window.copyToolLink = function(id) { copyToClipboard(window.location.href + '?tool=' + id, '链接已复制'); };
+window.copyToolLink = function(id) { copyToClipboard(window.location.origin + window.location.pathname + '?tool=' + id, '链接已复制'); };
 window.copyToolText = function(id) {
     var t = tools.find(function(x) { return x.id === id; });
-    if (t) copyToClipboard('🔧 ' + t.name + '\n⭐ ' + t.rating + '/5\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.location.href + '?tool=' + id, '已复制');
+    if (t) copyToClipboard('🔧 ' + t.name + '\n⭐ ' + t.rating + '/5\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.location.origin + window.location.pathname + '?tool=' + id, '已复制');
 };
 window.downloadQR = function(id) {
     var a = document.createElement('a');
-    a.href = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(window.location.href + '?tool=' + id);
+    var shareUrl = window.location.origin + window.location.pathname + '?tool=' + id;
+    a.href = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(shareUrl);
     a.download = 'tool-' + id + '-qrcode.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 };
 

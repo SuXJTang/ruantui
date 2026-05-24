@@ -12,10 +12,9 @@ function openModal(tool) {
     if (tool.url) links.push('<a href="' + tool.url + '" class="modal-link primary" target="_blank"><i class="fas fa-globe"></i> 官网</a>');
     if (tool.download) links.push('<a href="' + tool.download + '" class="modal-link" target="_blank"><i class="fas fa-download"></i> 下载</a>');
     
-    var stars = '★'.repeat(tool.rating) + '☆'.repeat(5 - tool.rating);
     var pageUrl = window.location.href;
 
-    modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + tool.color + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + tool.name + '</h2><div class="modal-hmeta"><span class="tool-rating"><i class="fas fa-star"></i> ' + tool.rating + '.0</span><span class="tool-cat">' + tool.category + '</span></div></div></div>'
+    modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + tool.color + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + tool.name + '</h2><div class="modal-hmeta"><span class="tool-cat">' + tool.category + '</span></div></div></div>'
         + '<div class="modal-section"><h4>详细介绍</h4><p>' + (tool.detail || tool.comment) + '</p></div>'
         + (tool.usage ? '<div class="modal-section"><h4>使用说明</h4><p>📖 ' + tool.usage + '</p></div>' : '')
         + (links.length ? '<div class="modal-section"><h4>链接</h4><div class="modal-links">' + links.join('') + '</div></div>' : '')

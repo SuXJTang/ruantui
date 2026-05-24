@@ -1,4 +1,4 @@
-const CACHE = 'mytoolbox-v4';
+const CACHE = 'mytoolbox-v5';
 const URLS = ['/', '/index.html', '/style.css', '/data.js', '/ui.js', '/modal.js', '/features.js', '/theme.js', '/supabase.js', '/particles.js', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', function(e) {

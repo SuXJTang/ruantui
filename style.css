@@ -211,7 +211,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-body h3 { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tool-meta { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; }
 .tool-cat { font-size: 11px; color: var(--text-light); background: rgba(128,128,128,0.08); padding: 1px 10px; border-radius: 10px; }
-.tool-rating { font-size: 12px; color: #f59e0b; font-weight: 600; }
+
 .tool-body p { font-size: 13px; color: var(--text-light); line-height: 1.5; margin-bottom: 6px; }
 .tool-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .tool-tag {

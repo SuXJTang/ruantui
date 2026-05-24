@@ -331,21 +331,21 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function() {});
 }
 window.installApp = function() {
-    var isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    if (isiOS) {
-        showToast('iOS 请点分享按钮 → 添加到主屏幕', 'info');
-        return;
-    }
+    var ua = navigator.userAgent;
+    if (/iphone|ipad|ipod/i.test(ua)) { showToast('Safari 点底部分享 → 添加到主屏幕', 'info'); return; }
     if (deferredPrompt) {
         deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+        deferredPrompt.userChoice.then(function() { deferredPrompt = null; showToast('安装成功 🎉', 'success'); });
+    } else if (/chrome/i.test(ua)) {
+        showToast('Chrome 右上角 ⋮ → 安装应用「工具箱」', 'info');
     } else {
-        showToast('请在 Chrome 右上角菜单 → 安装应用', 'info');
+        showToast('浏览器菜单中找「添加到主屏幕」或「安装」', 'info');
     }
 };
 var deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e) {
-    console.log('beforeinstallprompt fired');
+    console.log('beforeinstallprompt fired - PWA installable');
+    deferredPrompt = e;
     e.preventDefault();
     deferredPrompt = e;
     setTimeout(function() {

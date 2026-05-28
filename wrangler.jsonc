@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ruantui",
+  "compatibility_date": "2026-05-28",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": ".",
+    "not_found_404": "/index.html",
+    "ignore": [
+      ".git",
+      ".wrangler",
+      ".reasonix",
+      ".gitignore",
+      "wrangler.jsonc",
+      "node_modules"
+    ]
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false
+}

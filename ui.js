@@ -34,7 +34,7 @@ function renderTools(filter) {
         var tagsHTML = t.tags.map(function(tag) { return '<span class="tool-tag">' + tag + '</span>'; }).join('');
         var isPinned = t.pinned;
         card.dataset.id = t.id;
-        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span></div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
+        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span><span class="tool-views">👁 <span class="tool-views-num">' + (t.views || 0) + '</span></span></div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
         grid.appendChild(card);
     });
     document.getElementById('totalCount').textContent = tools.length;

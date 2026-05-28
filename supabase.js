@@ -55,3 +55,12 @@ function removeTool(id) {
             return true;
         });
 }
+
+// 递增浏览量
+function incrementView(id) {
+    var t = tools.find(function(x) { return x.id === id; });
+    if (!t) return Promise.resolve();
+    var newViews = (t.views || 0) + 1;
+    t.views = newViews;
+    return supabaseFetch('PATCH', 'tools?id=eq.' + id, { views: newViews });
+}

@@ -50,6 +50,7 @@ if (sortSelect) {
     sortSelect.onchange = function() {
         var val = this.value;
         if (val === 'name') tools.sort(function(a, b) { return a.name.localeCompare(b.name, 'zh'); });
+        else if (val === 'popular') tools.sort(function(a, b) { return (b.views || 0) - (a.views || 0); });
         else if (val === 'newest') tools.sort(function(a, b) { return b.id - a.id; });
         else tools.sort(function(a, b) { return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id; });
         renderTools(currentFilter);

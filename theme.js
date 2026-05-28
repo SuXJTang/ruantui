@@ -29,7 +29,4 @@ swatches.forEach(function(s) {
     if (s.getAttribute('data-target') === savedTheme) { s.classList.add('active'); s.setAttribute('aria-checked', 'true'); }
 });
 
-if (!localStorage.getItem('colorMode') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    document.body.setAttribute('data-mode', 'dark'); localStorage.setItem('colorMode', 'dark');
-    var ic = document.querySelector('.theme-toggle i'); if (ic) ic.className = 'fas fa-sun';
-}
+// 始终默认为白天模式，不再跟随系统暗色偏好

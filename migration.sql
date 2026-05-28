@@ -60,5 +60,8 @@ SELECT setval('tools_id_seq', 25, true);
 ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anon_crud" ON tools FOR ALL USING (true) WITH CHECK (true);
 
--- 5. 删除旧表（可选，确认迁移成功后再执行）
+-- 5. 添加浏览量字段（后续迁移）
+ALTER TABLE tools ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0;
+
+-- 6. 删除旧表（可选，确认迁移成功后再执行）
 -- DROP TABLE IF EXISTS toolbox_data;

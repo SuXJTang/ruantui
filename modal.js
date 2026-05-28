@@ -15,7 +15,7 @@ function openModal(tool) {
     var shareUrl = window.location.origin + window.location.pathname + '?tool=' + tool.id;
     var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(shareUrl);
 
-    modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + tool.color + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + tool.name + '</h2><div class="modal-hmeta"><span class="tool-cat">' + tool.category + '</span></div></div></div>'
+    modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + tool.color + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + tool.name + '</h2><div class="modal-hmeta"><span class="tool-cat">' + tool.category + '</span><span class="modal-views">👁 ' + (tool.views || 0) + ' 次浏览</span></div></div></div>'
         + '<div class="modal-section"><h4>详细介绍</h4><p>' + (tool.detail || tool.comment) + '</p></div>'
         + (tool.usage ? '<div class="modal-section"><h4>使用说明</h4><p>📖 ' + tool.usage + '</p></div>' : '')
         + (links.length ? '<div class="modal-section"><h4>链接</h4><div class="modal-links">' + links.join('') + '</div></div>' : '')
@@ -36,7 +36,15 @@ function closeModal() { overlay.classList.remove('active'); overlay.setAttribute
 document.getElementById('toolGrid').addEventListener('click', function(e) {
     var card = e.target.closest('.tool-card'); if (!card) return;
     var tool = tools.find(function(t) { return t.id === parseInt(card.dataset.id); });
-    if (tool) openModal(tool);
+    if (tool) {
+        openModal(tool);
+        // 递增浏览量 + 更新卡片计数
+        if (typeof incrementView === 'function') {
+            incrementView(tool.id);
+            var numEl = card.querySelector('.tool-views-num');
+            if (numEl) numEl.textContent = tool.views;
+        }
+    }
 });
 document.getElementById('modalClose').addEventListener('click', closeModal);
 overlay.addEventListener('click', function(e) { if (!e.target.closest('.modal')) closeModal(); });

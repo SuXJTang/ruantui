@@ -1,8 +1,6 @@
 // ============================================
-// apikey-config.js — 加密的 DeepSeek API Key
-// 在浏览器控制台运行 generateEncryptedConfig()
-// 把输出粘贴到下面，然后提交到 git
+// apikey-config.js — DeepSeek API Key 明文配置
+// 替换下方为你的 API Key，提交到 git
+// https://platform.deepseek.com/api_keys
 // ============================================
-var ENCRYPTED_API_KEY = '';       // 密文 (hex)
-var API_KEY_SALT = '';            // PBKDF2 盐 (hex)
-var API_KEY_IV = '';              // AES-GCM IV (hex)
+var DEEPSEEK_API_KEY = '';  // 填你的 sk-xxx

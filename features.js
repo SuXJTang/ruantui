@@ -119,14 +119,7 @@ function checkAdmin() {
     document.getElementById('_pwdSubmit').onclick = submitPwd;
     function submitPwd() {
         var v = input.value;
-        if (v === ADMIN_PASSWORD) {
-            localStorage.setItem(AUTH_KEY, 'true'); box.remove(); showToast('验证通过 ✓', 'success');
-            // 同步解密 API Key
-            if (ENCRYPTED_API_KEY && API_KEY_SALT && API_KEY_IV && !_cachedKey) {
-                decryptApiKey(v).then(function(dk) { if (dk) _cachedKey = dk; });
-            }
-            openMgmt();
-        }
+        if (v === ADMIN_PASSWORD) { localStorage.setItem(AUTH_KEY, 'true'); box.remove(); showToast('验证通过 ✓', 'success'); openMgmt(); }
         else { showToast('密码错误 ✗', 'error'); input.value = ''; input.focus(); input.style.borderColor = '#ef4444'; setTimeout(function() { input.style.borderColor = ''; }, 1500); }
     }
 }
@@ -319,85 +312,20 @@ window.copyQQNumber = function() { copyToClipboard(document.getElementById('qqNu
 
 // AI
 var DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-
-// —— 密码解密：从 apikey-config.js 的密文恢复 API Key ——
-async function decryptApiKey(password) {
-    try {
-        var enc = new TextEncoder();
-        var salt = _hexToBytes(API_KEY_SALT);
-        var iv = _hexToBytes(API_KEY_IV);
-        var ct = _hexToBytes(ENCRYPTED_API_KEY);
-        var km = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-        var ak = await crypto.subtle.deriveKey(
-            { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
-            km, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
-        );
-        var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, ak, ct);
-        return new TextDecoder().decode(pt);
-    } catch(e) { return null; }
-}
-
-// —— 获取 API Key（密码解密优先，回退明文 prompt） ——
-var _cachedKey = null;  // 本次会话解密后的 key 缓存在内存，不落盘
-async function getApiKey() {
-    // 1) 内存缓存（本次会话已解密过）
-    if (_cachedKey) return _cachedKey;
-    // 2) localStorage 明文（旧版兼容）
+function getApiKey() {
+    // 1) 配置文件明文（apikey-config.js）
+    if (typeof DEEPSEEK_API_KEY !== 'undefined' && DEEPSEEK_API_KEY) return DEEPSEEK_API_KEY;
+    // 2) localStorage（旧版兼容）
     var k = localStorage.getItem('deepseek_api_key');
     if (k) return k;
-    // 3) 密码解密（与管理密码同步）
-    if (ENCRYPTED_API_KEY && API_KEY_SALT && API_KEY_IV) {
-        var pw = prompt('🔐 输入密码（与管理密码一致）：');
-        if (pw && pw.trim()) {
-            pw = pw.trim();
-            if (pw === ADMIN_PASSWORD) { localStorage.setItem(AUTH_KEY, 'true'); }
-            var dk = await decryptApiKey(pw);
-            if (dk) { _cachedKey = dk; showToast('解密成功 ✓', 'success'); return dk; }
-            showToast('密码错误', 'error');
-        }
-    }
-    // 4) 回退：手动输入 API Key
+    // 3) 回退：手动输入
     k = prompt('输入 DeepSeek API Key：\nhttps://platform.deepseek.com/api_keys');
     if (k && k.trim()) { localStorage.setItem('deepseek_api_key', k.trim()); return k.trim(); }
     return null;
 }
-window.resetApiKey = function() {
-    localStorage.removeItem('deepseek_api_key');
-    _cachedKey = null;
-    showToast('已清除', 'info');
-};
-
-// —— 控制台工具：生成加密配置（管理员用，密码与管理密码一致） ——
-window.generateEncryptedConfig = async function() {
-    var key = prompt('输入 DeepSeek API Key：');
-    if (!key || !key.trim()) return console.log('❌ 未输入 Key');
-    var pw = ADMIN_PASSWORD;  // 与管理密码同步
-    try {
-        var enc = new TextEncoder();
-        var salt = crypto.getRandomValues(new Uint8Array(16));
-        var iv = crypto.getRandomValues(new Uint8Array(12));
-        var km = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveKey']);
-        var ak = await crypto.subtle.deriveKey(
-            { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
-            km, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
-        );
-        var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, ak, enc.encode(key.trim()));
-        var out = [
-            '/* 复制以下内容替换 apikey-config.js */',
-            'var ENCRYPTED_API_KEY = \'' + _bytesToHex(new Uint8Array(ct)) + '\';',
-            'var API_KEY_SALT = \'' + _bytesToHex(salt) + '\';',
-            'var API_KEY_IV = \'' + _bytesToHex(iv) + '\';'
-        ].join('\n');
-        console.log(out);
-        alert('✅ 已用管理密码加密，输出到控制台。\n复制后替换 apikey-config.js 并提交到 git。');
-    } catch(e) { console.error(e); alert('加密失败：' + e.message); }
-};
-
-function _hexToBytes(hex) { var b = new Uint8Array(hex.length/2); for (var i=0;i<hex.length;i+=2) b[i/2]=parseInt(hex.substr(i,2),16); return b; }
-function _bytesToHex(b) { return Array.from(b).map(function(x){return ('00'+x.toString(16)).slice(-2);}).join(''); }
-
+window.resetApiKey = function() { localStorage.removeItem('deepseek_api_key'); showToast('已清除', 'info'); };
 async function callDeepSeek(prompt) {
-    var k = await getApiKey(); if (!k) return null;
+    var k = getApiKey(); if (!k) return null;
     try { var r = await fetch(DEEPSEEK_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: '你是一个软件推荐专家，用简洁生动的中文写推荐语。直接输出内容。' }, { role: 'user', content: prompt }], temperature: .7, max_tokens: 500 }) });
         if (!r.ok) { var e = await r.json().catch(function() {}); showToast('AI 失败：' + ((e && e.error && e.error.message) || 'HTTP ' + r.status), 'error'); if (r.status === 401) localStorage.removeItem('deepseek_api_key'); return null; }
         var d = await r.json(); return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content.trim()) || null;

@@ -1,6 +1,7 @@
 // ============================================
-// apikey-config.js — DeepSeek API Key 明文配置
-// 替换下方为你的 API Key，提交到 git
-// https://platform.deepseek.com/api_keys
+// apikey-config.js — DeepSeek API Key（管理密码加密）
+// 密文对外不可见，输入管理密码即可解密使用
 // ============================================
-var DEEPSEEK_API_KEY = 'sk-REDACTED-REVOKED-KEY';
+var ENCRYPTED_API_KEY = '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+var API_KEY_SALT = '00000000000000000000000000000000';
+var API_KEY_IV = '000000000000000000000000';

@@ -4,6 +4,40 @@
 
 ---
 
+## [1.4.0] — 2026-05-31
+
+### 🔒 API Key 加密存储
+- DeepSeek API Key 使用管理密码加密存储，外人不可见
+- 加密采用 AES-GCM，密文写入 `apikey-config.js`
+- 解密仅在管理面板输入密码后生效，前后端分离模式下保护密钥安全
+
+### 🐛 修复
+- 修复 401 未授权响应导致的无限循环刷新和竞态条件
+
+---
+
+## [1.3.1] — 2026-05-29
+
+### ☁️ Cloudflare Pages 部署
+- 新增 `wrangler.jsonc` — Cloudflare Pages 部署配置
+- 新增 `.gitignore` — 排除 `.wrangler`、`node_modules`、`.env` 等无关文件
+- 配置 SPA fallback（`not_found_404` → `/index.html`）
+
+### 👁 工具浏览计数
+- 卡片和弹窗新增浏览量显示
+- 支持按浏览量热门排序
+- 新增 `migration.sql` — 包含 `views` 字段迁移 SQL
+- 新增 `incrementView` API（`supabase.js`）
+
+### ☀️ 默认主题优化
+- 默认主题改为白天模式，不再跟随系统暗色偏好
+- 用户手动切换的暗色/亮色模式不受影响
+
+### 🖼 其他
+- 头像更换为 `img/touxiang.jpg`
+
+---
+
 ## [1.3.0] — 2026-05-25
 
 ### 🏷️ 品牌升级

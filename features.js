@@ -426,3 +426,14 @@ window.installApp = function() {
         showToast('浏览器菜单 → 添加到主屏幕', 'info');
     }
 };
+
+// 回到顶部
+(function() {
+    var btn = document.getElementById('backTop');
+    if (!btn) return;
+    var ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) { requestAnimationFrame(function() { btn.classList.toggle('visible', window.scrollY > 300); ticking = false; }); ticking = true; }
+    });
+    btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+})();

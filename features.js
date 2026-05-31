@@ -117,11 +117,11 @@ function checkAdmin() {
     input.onkeydown = function(e) { if (e.key === 'Enter') submitPwd(); };
     document.getElementById('_pwdCancel').onclick = function() { box.remove(); };
     document.getElementById('_pwdSubmit').onclick = submitPwd;
-    function submitPwd() {
+    async function submitPwd() {
         var v = input.value;
         if (v === ADMIN_PASSWORD) {
             localStorage.setItem(AUTH_KEY, 'true'); box.remove(); showToast('验证通过 ✓', 'success');
-            tryDecrypt(v);  // 同步解密 API Key
+            await tryDecrypt(v);  // 同步解密 API Key
             openMgmt();
         }
         else { showToast('密码错误 ✗', 'error'); input.value = ''; input.focus(); input.style.borderColor = '#ef4444'; setTimeout(function() { input.style.borderColor = ''; }, 1500); }
@@ -365,7 +365,7 @@ function _hexToBytes(hex) { var b = new Uint8Array(hex.length/2); for (var i=0;i
 async function callDeepSeek(prompt) {
     var k = await getApiKey(); if (!k) return null;
     try { var r = await fetch(DEEPSEEK_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: '你是一个软件推荐专家，用简洁生动的中文写推荐语。直接输出内容。' }, { role: 'user', content: prompt }], temperature: .7, max_tokens: 500 }) });
-        if (!r.ok) { var e = await r.json().catch(function() {}); showToast('AI 失败：' + ((e && e.error && e.error.message) || 'HTTP ' + r.status), 'error'); if (r.status === 401) localStorage.removeItem('deepseek_api_key'); return null; }
+        if (!r.ok) { var e = await r.json().catch(function() {}); showToast('AI 失败：' + ((e && e.error && e.error.message) || 'HTTP ' + r.status), 'error'); if (r.status === 401) { localStorage.removeItem('deepseek_api_key'); _cachedKey = null; } return null; }
         var d = await r.json(); return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content.trim()) || null;
     } catch(e) { showToast('网络错误', 'error'); return null; }
 }

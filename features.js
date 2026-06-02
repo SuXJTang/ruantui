@@ -13,7 +13,7 @@ function showToast(msg, type) {
     var icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
     var colors = { success: '#22c55e', error: '#ef4444', info: '#3B82F6' };
     var t = document.createElement('div');
-    t.style.cssText = 'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:500;color:#fff;background:var(--card);color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,0.15);border-left:4px solid ' + (colors[type] || '#6B7280') + ';animation:toastIn .35s ease forwards;max-width:360px;';
+    t.style.cssText = 'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:500;background:var(--card);color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,0.15);border-left:4px solid ' + (colors[type] || '#6B7280') + ';animation:toastIn .35s ease forwards;max-width:360px;';
     t.innerHTML = '<i class="fas ' + (icons[type] || 'fa-info-circle') + '" style="color:' + (colors[type] || '#6B7280') + ';font-size:18px;flex-shrink:0;"></i><span>' + msg + '</span>';
     c.appendChild(t);
     setTimeout(function() {
@@ -67,6 +67,10 @@ if (sb && sp) {
     var el = document.getElementById(id);
     if (el) el.onclick = function() { copyToClipboard(window.location.origin + window.location.pathname, '链接已复制'); };
 });
+var shareCopyTextEl = document.getElementById('shareCopyText');
+if (shareCopyTextEl) shareCopyTextEl.onclick = function() {
+    copyToClipboard('🧰 软推 — 精选软件推荐\n🔗 ' + window.location.origin + window.location.pathname + '\n日常工作中沉淀下来的精选软件，每一个都经过长期使用检验。', '已复制');
+};
 
 
 

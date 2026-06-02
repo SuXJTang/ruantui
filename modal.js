@@ -40,9 +40,10 @@ document.getElementById('toolGrid').addEventListener('click', function(e) {
         openModal(tool);
         // 递增浏览量 + 更新卡片计数
         if (typeof incrementView === 'function') {
-            incrementView(tool.id);
-            var numEl = card.querySelector('.tool-views-num');
-            if (numEl) numEl.textContent = tool.views;
+            incrementView(tool.id).then(function() {
+                var numEl = card.querySelector('.tool-views-num');
+                if (numEl) numEl.textContent = tool.views;
+            }).catch(function() {});
         }
     }
 });

@@ -19,7 +19,7 @@ function rebuildCategories() {
 function renderTools(filter) {
     var q = currentSearch.toLowerCase().trim();
     var filtered = tools.filter(function(t) {
-        return (filter === 'all' || t.category === filter) && (!q || t.name.toLowerCase().includes(q) || t.tags.some(function(tag) { return tag.toLowerCase().includes(q); }) || (t.comment && t.comment.toLowerCase().includes(q)));
+        return (filter === 'all' || t.category === filter) && (!q || t.name.toLowerCase().includes(q) || (Array.isArray(t.tags) && t.tags.some(function(tag) { return tag.toLowerCase().includes(q); })) || (t.comment && t.comment.toLowerCase().includes(q)));
     });
     grid.innerHTML = '';
     if (loading) {

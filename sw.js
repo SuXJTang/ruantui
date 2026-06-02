@@ -1,8 +1,13 @@
-var CACHE = 'mytoolbox-' + Date.now();
+var CACHE = 'mytoolbox-v5';
 var URLS = ['/', '/index.html', '/style.css', '/data.js', '/ui.js', '/modal.js', '/features.js', '/theme.js', '/supabase.js', '/particles.js', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', function(e) {
-    e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(URLS); }));
+    e.waitUntil(caches.open(CACHE).then(function(c) {
+        // 逐个缓存，任一失败不影响整体安装
+        return Promise.all(URLS.map(function(url) {
+            return c.add(url).catch(function(err) { console.warn('SW cache skip:', url, err); });
+        }));
+    }));
     self.skipWaiting();
 });
 

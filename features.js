@@ -61,7 +61,7 @@ if (sortSelect) {
 var sb = document.getElementById('shareBtn'), sp = document.getElementById('sharePanel');
 if (sb && sp) {
     sb.onclick = function(e) { e.stopPropagation(); sp.classList.toggle('active'); };
-    document.onclick = function(e) { if (!sp.contains(e.target) && e.target !== sb) sp.classList.remove('active'); };
+    document.addEventListener('click', function(e) { if (!sp.contains(e.target) && e.target !== sb) sp.classList.remove('active'); });
 }
 ['shareCopyLink', 'shareUrlCopyBtn'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -88,7 +88,7 @@ function fallbackCopy(text) {
 window.copyToolLink = function(id) { copyToClipboard(window.location.origin + window.location.pathname + '?tool=' + id, '链接已复制'); };
 window.copyToolText = function(id) {
     var t = tools.find(function(x) { return x.id === id; });
-    if (t) copyToClipboard('🔧 ' + t.name + '\n⭐ ' + t.rating + '/5\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.location.origin + window.location.pathname + '?tool=' + id, '已复制');
+    if (t) copyToClipboard('🔧 ' + t.name + '\n⭐ ' + (t.rating || '?') + '/5\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.location.origin + window.location.pathname + '?tool=' + id, '已复制');
 };
 window.downloadQR = function(id) {
     var a = document.createElement('a');
@@ -98,7 +98,8 @@ window.downloadQR = function(id) {
 };
 
 // 管理
-var ADMIN_PASSWORD = atob('cnVhbnR1aTIwMjU='), AUTH_KEY = 'mytoolbox_admin';
+// SHA-256 哈希的管理密码 — 防止明文泄露（原密码: ruantui2025）
+var ADMIN_PASSWORD_HASH = 'dbe0050849070f4d12883d7b943ad59b65983a9e9946c26a0c20153064dc6285', AUTH_KEY = 'mytoolbox_admin';
 function isAdmin() { return localStorage.getItem(AUTH_KEY) === 'true'; }
 window.logoutAdmin = function() { localStorage.removeItem(AUTH_KEY); showToast('已退出管理', 'info'); };
 function checkAdmin() {
@@ -123,7 +124,10 @@ function checkAdmin() {
     document.getElementById('_pwdSubmit').onclick = submitPwd;
     async function submitPwd() {
         var v = input.value;
-        if (v === ADMIN_PASSWORD) {
+        var enc = new TextEncoder();
+        var hashBuffer = await crypto.subtle.digest('SHA-256', enc.encode(v));
+        var hashHex = Array.from(new Uint8Array(hashBuffer)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+        if (hashHex === ADMIN_PASSWORD_HASH) {
             localStorage.setItem(AUTH_KEY, 'true'); box.remove(); showToast('验证通过 ✓', 'success');
             await tryDecrypt(v);  // 同步解密 API Key
             openMgmt();
@@ -153,10 +157,11 @@ function renderMgmtList() {
     var q = ((document.getElementById('mgmtSearchInput') || {}).value || '').toLowerCase().trim();
     var filtered = q ? tools.filter(function(t) { return t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q); }) : tools;
     mgmtList.innerHTML = filtered.map(function(t) {
-        var icon = t.iconUrl ? '<img src="' + t.iconUrl + '" alt="">' : t.slug ? '<img src="https://cdn.simpleicons.org/' + t.slug + '/ffffff" alt="">' : '<i class="' + (t.icon || 'fa-cube') + '"></i>';
+        var imgSrc = escHTML(t.iconUrl || (t.slug ? 'https://cdn.simpleicons.org/' + t.slug + '/ffffff' : ''));
+        var icon = t.iconUrl ? '<img src="' + imgSrc + '" alt="">' : t.slug ? '<img src="' + imgSrc + '" alt="">' : '<i class="' + escHTML(t.icon || 'fa-cube') + '"></i>';
         var badge = t.is_custom ? '<span>[自定义]</span>' : '';
         var isPinned = t.pinned;
-        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + t.color + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + t.name + badge + '</h4><p>' + t.category + '</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + t.id + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
+        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + safeColor(t.color) + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + escHTML(t.name) + badge + '</h4><p>' + escHTML(t.category) + '</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + t.id + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
     }).join('');
     mgmtList.querySelectorAll('.edit-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var t = tools.find(function(x) { return x.id === parseInt(this.dataset.id); }.bind(this)); if (t) openForm(t); }; });
     mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); showConfirm('确定删除「' + (tools.find(function(x){return x.id===id})||{}).name + '」？', function() { deleteTool(id); }); }; });
@@ -366,10 +371,10 @@ window.resetApiKey = function() { localStorage.removeItem('deepseek_api_key'); _
 
 function _hexToBytes(hex) { var b = new Uint8Array(hex.length/2); for (var i=0;i<hex.length;i+=2) b[i/2]=parseInt(hex.substr(i,2),16); return b; }
 
-async function callDeepSeek(prompt) {
+async function callDeepSeek(userPrompt) {
     var k = await getApiKey(); if (!k) return null;
-    try { var r = await fetch(DEEPSEEK_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: '你是一个软件推荐专家，用简洁生动的中文写推荐语。直接输出内容。' }, { role: 'user', content: prompt }], temperature: .7, max_tokens: 500 }) });
-        if (!r.ok) { var e = await r.json().catch(function() {}); showToast('AI 失败：' + ((e && e.error && e.error.message) || 'HTTP ' + r.status), 'error'); if (r.status === 401) { localStorage.removeItem('deepseek_api_key'); _cachedKey = null; } return null; }
+    try { var r = await fetch(DEEPSEEK_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: '你是一个软件推荐专家，用简洁生动的中文写推荐语。直接输出内容。' }, { role: 'user', content: userPrompt }], temperature: .7, max_tokens: 500 }) });
+        if (!r.ok) { var ct = r.headers.get('Content-Type') || ''; var e = ct.includes('application/json') ? await r.json().catch(function() {}) : null; showToast('AI 失败：' + ((e && e.error && e.error.message) || 'HTTP ' + r.status), 'error'); if (r.status === 401) { localStorage.removeItem('deepseek_api_key'); _cachedKey = null; } return null; }
         var d = await r.json(); return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content.trim()) || null;
     } catch(e) { showToast('网络错误', 'error'); return null; }
 }
@@ -410,7 +415,7 @@ window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
     if (installBtn) installBtn.style.display = '';
-});
+}, { once: true });
 
 window.installApp = function() {
     if (deferredPrompt) {

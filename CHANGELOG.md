@@ -4,6 +4,51 @@
 
 ---
 
+## [1.4.2] — 2026-06-02
+
+### 🔒 安全修复
+- **XSS 防护**：`ui.js`、`modal.js`、`features.js` 中所有 `innerHTML` 拼接用户数据处改用 `escHTML()` 转义输出，防止跨站脚本注入
+- 新增 `safeColor()` 校验函数，防止 CSS 注入
+- **密码加固**：管理密码改为 SHA-256 哈希比较，不再以 base64 明文存储
+
+### 🐛 修复
+- `t.tags` 为空时 `.map()` 崩溃 → `Array.isArray` 守卫（`ui.js`、`modal.js`）
+- `theme.js` `querySelector('i')` 返回 null 时崩溃 → 添加 null 检查
+- `renderTools` / `renderMgmtList` 入口添加 `if (!tools || !grid)` 守卫
+- 分享推荐语 `t.rating` 为 undefined 时显示 `"⭐ undefined/5"` → `|| '?'` 兜底
+- `symbol` 参数名 `prompt` 遮蔽 `window.prompt` → 重命名为 `userPrompt`
+- `callDeepSeek` 非 JSON 响应体调用 `.json()` 崩溃 → 检查 Content-Type
+- QR 图片内联 `onerror` + `nextElementSibling` 可能为 null → 改用 JS 事件绑定
+- 分享面板 `document.onclick` 直接覆盖 → 改用 `addEventListener`
+- `beforeinstallprompt` 重复监听 → 添加 `{ once: true }`
+
+### 🔄 Service Worker
+- CACHE 名从 `Date.now()` 改为固定 `mytoolbox-v5`，避免孤立缓存堆积
+- `c.addAll` 改为逐个 `c.add` + `.catch` 容错，单文件 404 不再阻止 SW 安装
+
+---
+
+## [1.4.1] — 2026-06-02
+
+### 💰 广告接入
+- 接入 Google AdSense 广告
+- 新建 `adsense.js` 广告初始化模块
+- `<head>` 加入 AdSense 脚本，启用 Auto Ads
+- 顶部/底部广告占位替换为手动广告单元
+- 广告激活后自动隐藏占位虚线框
+
+### 🐛 修复
+- 修复 AdSense 广告不显示：补充 `data-ad-client` 和 inline push
+- 修复分享按钮无效：`shareCopyText` 补充点击事件绑定
+- 修复 `tags` 为空时页面崩溃：`renderTools` 增加 `Array.isArray` 防御性检查
+- 修复浏览量无回滚：`incrementView` 改为服务器响应成功后再更新本地计数
+- 清理 `showToast` 中无效的 `color:#fff` 死代码
+
+### ✨ 新增
+- 添加「回到顶部」按钮
+
+---
+
 ## [1.4.0] — 2026-05-31
 
 ### 🔒 API Key 加密存储

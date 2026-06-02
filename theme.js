@@ -9,6 +9,7 @@ if (savedMode === 'dark') document.body.setAttribute('data-mode', 'dark');
 var toggleBtn = document.querySelector('.theme-toggle');
 if (toggleBtn) {
     var icon = toggleBtn.querySelector('i');
+    if (!icon) return;
     function updateIcon(dark) { icon.className = dark ? 'fas fa-sun' : 'fas fa-moon'; toggleBtn.title = dark ? '亮色' : '暗色'; }
     updateIcon(savedMode === 'dark');
     toggleBtn.onclick = function() {

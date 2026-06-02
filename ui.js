@@ -1,6 +1,17 @@
 // ============================================
 // ui.js — 卡片渲染 + 搜索 + 分类
 // ============================================
+// HTML 转义 — 防 XSS
+function escHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+// 校验颜色值 — 防 CSS 注入
+function safeColor(c) {
+    if (!c) return '#3B82F6';
+    return /^#[0-9a-fA-F]{3,8}$/.test(c) || /^rgb/.test(c) || /^[a-z]+$/.test(c) ? c : '#3B82F6';
+}
+
 var grid = document.getElementById('toolGrid');
 var filterBar = document.querySelector('.filter-bar');
 
@@ -11,12 +22,13 @@ function rebuildCategories() {
         var b = document.createElement('button'); b.className = 'filter-tag'; b.dataset.filter = c; b.textContent = c;
         filterBar.appendChild(b);
     });
-    var active = filterBar.querySelector('[data-filter="' + currentFilter + '"]');
+    var active = filterBar.querySelector('[data-filter="' + escHTML(currentFilter) + '"]');
     if (active) active.classList.add('active');
     else { var all = filterBar.querySelector('[data-filter="all"]'); if (all) all.classList.add('active'); currentFilter = 'all'; }
 }
 
 function renderTools(filter) {
+    if (!tools || !grid) return;
     var q = currentSearch.toLowerCase().trim();
     var filtered = tools.filter(function(t) {
         return (filter === 'all' || t.category === filter) && (!q || t.name.toLowerCase().includes(q) || (Array.isArray(t.tags) && t.tags.some(function(tag) { return tag.toLowerCase().includes(q); })) || (t.comment && t.comment.toLowerCase().includes(q)));
@@ -30,11 +42,13 @@ function renderTools(filter) {
     if (!filtered.length) { grid.innerHTML = '<div class="grid-empty"><i class="fas fa-box-open"></i><p>没有找到匹配的工具</p></div>'; return; }
     filtered.forEach(function(t, i) {
         var card = document.createElement('article'); card.className = 'tool-card'; card.style.animationDelay = (i * 0.05) + 's';
-        var iconHTML = t.iconUrl ? '<img src="' + t.iconUrl + '" alt="">' : t.slug ? '<img src="https://cdn.simpleicons.org/' + t.slug + '/ffffff" alt="">' : '<i class="' + (t.icon || 'fa-cube') + '"></i>';
-        var tagsHTML = t.tags.map(function(tag) { return '<span class="tool-tag">' + tag + '</span>'; }).join('');
+        var imgSrc = escHTML(t.iconUrl || (t.slug ? 'https://cdn.simpleicons.org/' + t.slug + '/ffffff' : ''));
+        var iconHTML = t.iconUrl ? '<img src="' + imgSrc + '" alt="">' : t.slug ? '<img src="' + imgSrc + '" alt="">' : '<i class="' + escHTML(t.icon || 'fa-cube') + '"></i>';
+        var tagsArr = Array.isArray(t.tags) ? t.tags : [];
+        var tagsHTML = tagsArr.map(function(tag) { return '<span class="tool-tag">' + escHTML(tag) + '</span>'; }).join('');
         var isPinned = t.pinned;
         card.dataset.id = t.id;
-        card.innerHTML = '<div class="tool-icon" style="background:' + t.color + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + t.name + '</h3><div class="tool-meta"><span class="tool-cat">' + t.category + '</span><span class="tool-views">👁 <span class="tool-views-num">' + (t.views || 0) + '</span></span></div><p>' + t.comment + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + t.usage + '</div>' : '') + '</div>';
+        card.innerHTML = '<div class="tool-icon" style="background:' + safeColor(t.color) + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + escHTML(t.name) + '</h3><div class="tool-meta"><span class="tool-cat">' + escHTML(t.category) + '</span><span class="tool-views">👁 <span class="tool-views-num">' + (t.views || 0) + '</span></span></div><p>' + escHTML(t.comment) + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">📖 ' + escHTML(t.usage) + '</div>' : '') + '</div>';
         grid.appendChild(card);
     });
     document.getElementById('totalCount').textContent = tools.length;

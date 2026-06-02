@@ -164,8 +164,9 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     color: var(--text-light); font-size: 12px;
 }
 .ad-container::before { content: '广告'; opacity: 0.3; letter-spacing: 2px; }
-.ad-container.adsbygoogle { background: none; border: none; min-height: auto; }
-.ad-container.adsbygoogle::before { content: none; }
+.ad-container.ad-active { background: none; border: none; min-height: auto; }
+.ad-container.ad-active::before { content: none; }
+.ad-container .adsbygoogle { width: 100%; min-height: 90px; }
 .ad-top { margin-bottom: 16px; }
 .ad-bottom { margin-top: 8px; }
 

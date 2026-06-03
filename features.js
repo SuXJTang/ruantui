@@ -398,6 +398,191 @@ window.aiGenerateUsage = async function() {
     if (t) { el.value = t.replace(/^[""'']|[""'']$/g, ''); showToast('已生成 ✓', 'success'); } else { el.value = '下载安装后按向导配置即可使用。'; }
 };
 
+// ============================================
+// 公告系统
+// ============================================
+
+// 自动创建公告
+function createAnnouncement(title, content, type) {
+    if (typeof insertAnnouncement !== 'function') return;
+    insertAnnouncement({ title: title, content: content, type: type }).then(function() {
+        loadAnnouncements().then(function() { renderAnnouncements(); });
+    }).catch(function() {});
+}
+
+// 工具操作触发自动公告
+var _origDeleteTool = deleteTool;
+deleteTool = function(id) {
+    var t = tools.find(function(x) { return x.id === id; });
+    _origDeleteTool(id);
+    if (t) createAnnouncement('已移除工具', '移除了「' + t.name + '」(' + t.category + ')', 'delete');
+};
+toolForm.onsubmit = function(e) {
+    e.preventDefault();
+    var isEdit = !!document.getElementById('formId').value;
+    var name = document.getElementById('formName').value.trim();
+    var cat = document.getElementById('formCategory').value.trim();
+    if (!name || !cat) { showToast('请填写名称和分类', 'error'); return; }
+
+    var data = {
+        name: name, category: cat, color: document.getElementById('formColor').value || '#3B82F6',
+        comment: document.getElementById('formComment').value.trim(),
+        detail: document.getElementById('formDetail').value.trim(),
+        tags: document.getElementById('formTags').value.split(/[,，、\s]+/).filter(Boolean),
+    };
+    ['url','download','usage','slug','iconUrl','icon'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); data[k] = v || null; });
+
+    var savePromise;
+    if (isEdit) {
+        var id = parseInt(document.getElementById('formId').value);
+        savePromise = updateTool(id, data);
+    } else {
+        data.is_custom = true;
+        savePromise = insertTool(data);
+    }
+    savePromise.then(function() {
+        closeForm(); refreshTools().then(function() { renderMgmtList(); });
+        showToast(isEdit ? '已更新 ✓' : '已添加 ✓', 'success');
+        if (isEdit) {
+            createAnnouncement('工具已更新', '「' + name + '」(' + cat + ') 信息已更新', 'update');
+        } else {
+            createAnnouncement('新工具上架', '新增推荐工具「' + name + '」(' + cat + ')', 'add');
+        }
+    }).catch(function() { showToast('保存失败，请重试', 'error'); });
+};
+
+// 管理标签页切换
+(function() {
+    var tabs = document.querySelectorAll('.mgmt-tab');
+    tabs.forEach(function(tab) {
+        tab.onclick = function() {
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            document.querySelectorAll('.mgmt-tab-content').forEach(function(c) { c.classList.remove('active'); });
+            var target = document.getElementById('mgmtTab' + this.dataset.tab.charAt(0).toUpperCase() + this.dataset.tab.slice(1));
+            if (target) target.classList.add('active');
+            if (this.dataset.tab === 'announcements') renderAnnouncementList();
+        };
+    });
+})();
+
+// 渲染公告管理列表
+var annMgmtList = document.getElementById('annMgmtList');
+var typeLabels = { manual: '📢 公告', update: '🔄 更新', fix: '🐛 修复', add: '✨ 新增', delete: '🗑 移除' };
+
+function renderAnnouncementList() {
+    if (!annMgmtList) return;
+    var countEl = document.getElementById('annCount');
+    if (countEl) countEl.textContent = announcements.length;
+    if (!announcements.length) {
+        annMgmtList.innerHTML = '<div class="grid-empty" style="padding:30px 20px;"><i class="fas fa-bullhorn"></i><p>暂无公告</p></div>';
+        return;
+    }
+    annMgmtList.innerHTML = announcements.map(function(a) {
+        return '<div class="mgmt-row" style="align-items:flex-start;"><div class="mgmt-row-info" style="flex:1;"><h4>' + escHTML(a.title) + ' <span style="font-size:10px;font-weight:500;color:var(--text-light);">' + (typeLabels[a.type] || '📢') + '</span></h4><p style="white-space:normal;font-size:12px;margin-top:2px;">' + escHTML(a.content) + '</p><span style="font-size:10px;color:var(--text-light);opacity:.5;">' + new Date(a.created_at).toLocaleDateString('zh-CN') + '</span></div><div class="mgmt-row-actions"><button class="del-btn ann-del-btn" data-id="' + a.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
+    }).join('');
+    annMgmtList.querySelectorAll('.ann-del-btn').forEach(function(b) {
+        b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); showConfirm('确定删除此公告？', function() { deleteAnnouncement(id); }); };
+    });
+}
+
+function deleteAnnouncement(id) {
+    removeAnnouncement(id).then(function() {
+        announcements = announcements.filter(function(a) { return a.id !== id; });
+        renderAnnouncementList();
+        renderAnnouncements();
+        showToast('公告已删除', 'info');
+    }).catch(function() { showToast('删除失败', 'error'); });
+}
+
+// 公告编辑表单
+var annFormOverlay = document.getElementById('annFormOverlay');
+var annAddBtn = document.getElementById('annAddBtn');
+if (annAddBtn) annAddBtn.onclick = function() { openAnnForm(null); };
+
+function openAnnForm(ann) {
+    if (!annFormOverlay) return;
+    document.getElementById('annFormTitle').textContent = ann ? '编辑公告' : '发布公告';
+    document.getElementById('annFormId').value = ann ? ann.id : '';
+    document.getElementById('annFormTitleInput').value = ann ? ann.title : '';
+    document.getElementById('annFormContent').value = ann ? ann.content : '';
+    document.getElementById('annFormType').value = ann ? ann.type : 'manual';
+    annFormOverlay.setAttribute('aria-hidden', 'false'); annFormOverlay.classList.add('active'); document.body.style.overflow = 'hidden';
+}
+function closeAnnForm() { if (annFormOverlay) { annFormOverlay.classList.remove('active'); annFormOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } }
+
+document.getElementById('annFormCancel').onclick = closeAnnForm;
+document.querySelector('.ann-form-close').onclick = closeAnnForm;
+if (annFormOverlay) annFormOverlay.onclick = function(e) { if (!e.target.closest('.modal')) closeAnnForm(); };
+
+var annForm = document.getElementById('annForm');
+if (annForm) annForm.onsubmit = function(e) {
+    e.preventDefault();
+    var title = document.getElementById('annFormTitleInput').value.trim();
+    var content = document.getElementById('annFormContent').value.trim();
+    var type = document.getElementById('annFormType').value;
+    if (!title || !content) { showToast('请填写标题和内容', 'error'); return; }
+    var isEdit = !!document.getElementById('annFormId').value;
+    var data = { title: title, content: content, type: type };
+    var savePromise;
+    if (isEdit) {
+        savePromise = updateAnnouncement(parseInt(document.getElementById('annFormId').value), data);
+    } else {
+        savePromise = insertAnnouncement(data);
+    }
+    savePromise.then(function() {
+        closeAnnForm();
+        loadAnnouncements().then(function() {
+            renderAnnouncementList();
+            renderAnnouncements();
+        });
+        showToast(isEdit ? '公告已更新 ✓' : '公告已发布 ✓', 'success');
+    }).catch(function() { showToast('发布失败', 'error'); });
+};
+
+// 通知浮窗交互
+var annFloat = document.getElementById('annFloat');
+var annPanel = document.getElementById('annPanel');
+var annBadge = document.getElementById('annBadge');
+
+function renderAnnouncements() {
+    var body = document.getElementById('annPanelBody');
+    if (!body) return;
+    if (!announcements.length) {
+        body.innerHTML = '<div class="ann-empty">📢 暂无公告</div>';
+        if (annBadge) annBadge.style.display = 'none';
+        return;
+    }
+    var html = announcements.slice(0, 10).map(function(a) {
+        var typeClass = a.type || 'manual';
+        var typeLabel = typeLabels[a.type] || '📢';
+        var time = new Date(a.created_at).toLocaleDateString('zh-CN');
+        return '<div class="ann-item"><div class="ann-item-header"><span class="ann-item-type ' + typeClass + '">' + typeLabel + '</span><span class="ann-item-title">' + escHTML(a.title) + '</span></div><div class="ann-item-content">' + escHTML(a.content) + '</div><div class="ann-item-time">' + time + '</div></div>';
+    }).join('');
+    body.innerHTML = html;
+    if (annBadge) {
+        annBadge.textContent = announcements.length;
+        annBadge.style.display = '';
+    }
+}
+
+if (annFloat) {
+    annFloat.onclick = function(e) {
+        e.stopPropagation();
+        annPanel.classList.toggle('active');
+    };
+}
+var annPanelClose = document.getElementById('annPanelClose');
+if (annPanelClose) annPanelClose.onclick = function() { annPanel.classList.remove('active'); };
+document.addEventListener('click', function(e) {
+    if (annPanel && annFloat && !annPanel.contains(e.target) && e.target !== annFloat && !annFloat.contains(e.target)) {
+        annPanel.classList.remove('active');
+    }
+});
+
+// 页面加载时加载公告
+loadAnnouncements().then(function() { renderAnnouncements(); });
+
 })();
 
 // PWA

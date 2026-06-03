@@ -39,3 +39,26 @@ function refreshTools() {
         renderTools(currentFilter);
     });
 }
+
+// ============================================
+// 公告数据
+// ============================================
+var announcements = [];
+var ANNOUNCEMENT_CACHE_KEY = 'ruantui_announcements';
+
+function loadAnnouncements() {
+    if (typeof fetchAnnouncements !== 'function') return Promise.resolve([]);
+    return fetchAnnouncements().then(function(data) {
+        announcements = data;
+        try { localStorage.setItem(ANNOUNCEMENT_CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+        return data;
+    }).catch(function(e) {
+        console.warn('公告加载失败，使用缓存:', e);
+        try {
+            var cached = localStorage.getItem(ANNOUNCEMENT_CACHE_KEY);
+            if (cached) { announcements = JSON.parse(cached); return announcements; }
+        } catch(e2) {}
+        announcements = [];
+        return [];
+    });
+}

@@ -168,9 +168,13 @@ function renderMgmtList() {
     mgmtList.querySelectorAll('.pin-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); togglePin(parseInt(this.dataset.id)); }; });
 }
 function deleteTool(id) {
+    var t = tools.find(function(x) { return x.id === id; });
+    var tName = t ? t.name : '';
+    var tCat = t ? t.category : '';
     removeTool(id).then(function() {
         refreshTools().then(function() { renderMgmtList(); });
         showToast('已删除', 'info');
+        if (tName) createAnnouncement('已移除工具', '移除了「' + tName + '」(' + tCat + ')', 'delete');
     }).catch(function() { showToast('删除失败', 'error'); });
 }
 function showConfirm(msg, onOk) {
@@ -266,6 +270,11 @@ if (toolForm) toolForm.onsubmit = function(e) {
     savePromise.then(function() {
         closeForm(); refreshTools().then(function() { renderMgmtList(); });
         showToast(isEdit ? '已更新 ✓' : '已添加 ✓', 'success');
+        if (isEdit) {
+            createAnnouncement('工具已更新', '「' + name + '」(' + cat + ') 信息已更新', 'update');
+        } else {
+            createAnnouncement('新工具上架', '新增推荐工具「' + name + '」(' + cat + ')', 'add');
+        }
     }).catch(function() { showToast('保存失败，请重试', 'error'); });
 };
 
@@ -409,47 +418,6 @@ function createAnnouncement(title, content, type) {
         loadAnnouncements().then(function() { renderAnnouncements(); });
     }).catch(function() {});
 }
-
-// 工具操作触发自动公告
-var _origDeleteTool = deleteTool;
-deleteTool = function(id) {
-    var t = tools.find(function(x) { return x.id === id; });
-    _origDeleteTool(id);
-    if (t) createAnnouncement('已移除工具', '移除了「' + t.name + '」(' + t.category + ')', 'delete');
-};
-toolForm.onsubmit = function(e) {
-    e.preventDefault();
-    var isEdit = !!document.getElementById('formId').value;
-    var name = document.getElementById('formName').value.trim();
-    var cat = document.getElementById('formCategory').value.trim();
-    if (!name || !cat) { showToast('请填写名称和分类', 'error'); return; }
-
-    var data = {
-        name: name, category: cat, color: document.getElementById('formColor').value || '#3B82F6',
-        comment: document.getElementById('formComment').value.trim(),
-        detail: document.getElementById('formDetail').value.trim(),
-        tags: document.getElementById('formTags').value.split(/[,，、\s]+/).filter(Boolean),
-    };
-    ['url','download','usage','slug','iconUrl','icon'].forEach(function(k) { var v = document.getElementById('form' + k.charAt(0).toUpperCase() + k.slice(1)).value.trim(); data[k] = v || null; });
-
-    var savePromise;
-    if (isEdit) {
-        var id = parseInt(document.getElementById('formId').value);
-        savePromise = updateTool(id, data);
-    } else {
-        data.is_custom = true;
-        savePromise = insertTool(data);
-    }
-    savePromise.then(function() {
-        closeForm(); refreshTools().then(function() { renderMgmtList(); });
-        showToast(isEdit ? '已更新 ✓' : '已添加 ✓', 'success');
-        if (isEdit) {
-            createAnnouncement('工具已更新', '「' + name + '」(' + cat + ') 信息已更新', 'update');
-        } else {
-            createAnnouncement('新工具上架', '新增推荐工具「' + name + '」(' + cat + ')', 'add');
-        }
-    }).catch(function() { showToast('保存失败，请重试', 'error'); });
-};
 
 // 管理标签页切换
 (function() {

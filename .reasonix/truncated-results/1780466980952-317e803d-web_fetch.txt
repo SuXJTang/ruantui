@@ -1,0 +1,1031 @@
+OpenAI Codex 国内使用完全指南：Windows/macOS/Linux 三平台详细安装配置教程（现在最新的有gpt-5.3-codex和gpt-5.4）_codex注册-CSDN博客
+https://blog.csdn.net/nmdbbzcl/article/details/159380122
+
+<!DOCTYPE html>
+
+OpenAI Codex 国内使用完全指南：Windows/macOS/Linux 三平台详细安装配置教程（现在最新的有gpt-5.3-codex和gpt-5.4）_codex注册-CSDN博客
+
+OpenAI Codex 国内使用完全指南：Windows/macOS/Linux 三平台详细安装配置教程（现在最新的有gpt-5.3-codex和gpt-5.4）
+
+原创
+
+已于 2026-04-18 12:56:30 修改
+·
+置顶
+·
+8.7w 阅读
+
+·
+
+174
+
+·
+
+214
+
+·
+
+CC 4.0 BY-SA版权
+
+版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+
+文章标签：
+
+#windows
+#macos
+#linux
+#AI编程
+#codex
+#AI
+#gpt
+
+于 2026-03-23 08:58:24 首次发布
+
+该文章已生成可运行项目，预览并下载项目源码
+
+摘要：本文是国内开发者使用 OpenAI Codex 的终极配置指南，涵盖 Windows、macOS、Linux 三大主流操作系统的完整安装流程。通过 API独立站 解决网络访问难题，手把手教你完成从环境准备到实战使用的全部步骤，让你无需复杂操作即可体验 AI 编程的强大能力。如果你更多是学习编程语法，使用对话服务也是不错选择。
+
+1. Codex 概述与核心功能
+
+1.1 什么是 Codex
+
+Codex 是 OpenAI 官方推出的命令行 AI 编程助手工具，专为开发者打造。它基于 OpenAI 最新的大语言模型技术，能够理解自然语言描述并生成高质量的代码，是提升开发效率的利器。
+
+Codex 不仅仅是一个代码生成工具，更是一个全方位的编程助手，可以：
+
+根据自然语言描述生成完整的功能代码
+
+分析现有代码的结构和潜在问题
+
+协助调试和修复 Bug
+
+自动生成代码文档和注释
+
+与命令行环境无缝集成
+
+1.2 实际开发效率对比
+
+为了直观展示 Codex 的价值，我们来看一个典型开发场景的效率对比：
+
+开发阶段传统开发方式使用 Codex
+
+需求理解与研究30 分钟30 秒
+
+后端 API 编写45 分钟即时生成
+
+前端组件开发60 分钟即时生成
+
+调试与集成30 分钟2 分钟
+
+总耗时2.5 小时3 分钟
+
+效率提升基准50 倍
+
+从上表可以看出，使用 Codex 可以将原本需要数小时的开发工作压缩到几分钟内完成，效率提升高达 50 倍以上。这种效率的飞跃，让开发者能够将更多精力投入到架构设计和创新思考中。
+
+1.3 核心功能特性
+
+Codex 提供以下五大核心功能：
+
+功能模块功能描述适用场景
+
+智能代码生成根据自然语言描述快速生成高质量代码新功能开发、原型构建
+
+代码分析深度理解代码结构，提供优化建议代码重构、性能优化
+
+调试助手智能发现 Bug 并提供修复方案问题排查、错误修复
+
+文档生成自动生成代码注释和说明文档项目维护、团队协作
+
+命令行集成无缝嵌入终端工作流日常开发、快速迭代
+
+1.4 支持平台
+
+Codex 支持多种主流操作系统，覆盖绝大多数开发环境：
+
+操作系统支持版本安装方式
+
+WindowsWindows 10/11npm 全局安装
+
+macOSmacOS 12+npm 全局安装 / Homebrew
+
+LinuxUbuntu 20.04+、Debian 10+、CentOS、Fedora、Arch包管理器 + npm
+
+2. 环境准备与前置要求
+
+2.1 通用系统要求
+
+在开始安装 Codex 之前，请确保你的系统满足以下基本要求：
+
+要求项最低版本说明
+
+Node.js22+运行环境必需
+
+npm10+包管理工具
+
+网络连接-访问 API独立站
+
+终端工具-CMD、PowerShell、Terminal 等
+
+2.2 API 站点注册与配置
+
+由于网络环境限制，国内开发者需要通过镜像 API 站点来使用 Codex。以下是详细的注册配置流程：
+
+2.2.1 注册账号
+
+访问 API独立站 进行账号注册
+
+完成邮箱验证和基本信息填写
+
+登录后进入控制台界面
+
+2.2.2 创建 API 令牌
+
+点击左侧菜单「控制台」→「API令牌」页面
+
+点击「添加令牌」按钮
+
+重要：令牌分组请选择 “openai codex 专用”（务必选择此分组，否则无法使用）
+
+令牌名称可自定义，如 “codex-dev”
+
+额度建议设置为「无限额度」，避免使用中额度耗尽
+
+其他选项保持默认，点击「提交」
+
+复制生成的令牌密钥（格式为 sk-xxx），妥善保存
+
+2.2.3 配置文件说明
+
+Codex 需要两个核心配置文件：
+
+配置文件作用存放位置
+
+auth.json存储 API 密钥~/.codex/auth.json
+
+config.toml存储模型和站点配置~/.codex/config.toml
+
+3. Windows 系统安装教程
+
+3.1 系统要求
+
+Windows 10 或 Windows 11（64位）
+
+Node.js 22 或更高版本
+
+npm 10 或更高版本
+
+稳定的网络连接
+
+3.2 前置步骤：安装 Git Bash
+
+Windows 系统建议先安装 Git Bash，以获得更好的命令行体验：
+
+访问 Git 官网 下载 Windows 版本
+
+运行安装程序，保持默认选项一路点击「Next」
+
+安装完成后，可在开始菜单找到「Git Bash」
+
+3.3 安装 Node.js
+
+访问 Node.js 官网 下载最新 LTS 版本
+
+运行安装程序，按提示完成安装
+
+安装完成后，打开 CMD 或 PowerShell 验证：
+
+<code class="prism language-bash"><span class="token function">node</span> <span class="token parameter variable">--version</span>
+<span class="token function">npm</span> <span class="token parameter variable">--version</span>
+</code> 
+
+3.4 安装 Codex
+
+打开命令提示符（CMD）或 PowerShell，执行以下命令：
+
+<code class="prism language-bash"><span class="token function">npm</span> <span class="token function">install</span> <span class="token parameter variable">-g</span> @openai/codex
+</code> 
+
+安装过程可能需要几分钟，请耐心等待。
+
+3.5 验证安装
+
+安装完成后，验证 Codex 是否正确安装：
+
+<code class="prism language-bash">codex <span class="token parameter variable">--version</span>
+</code> 
+
+如果显示版本号，说明安装成功。
+
+3.6 配置 API
+
+重要提示：请将下方的 sk-xxx 替换为你在 API独立站 生成的实际 API 密钥！
+
+3.6.1 创建配置目录
+
+打开文件资源管理器，进入当前用户的用户目录
+
+找到或创建 .codex 文件夹（路径示例：C:\Users\你的用户名\.codex）
+
+如果看不到隐藏目录，请在文件资源管理器的「查看」选项卡中勾选「隐藏的项目」
+
+3.6.2 创建配置文件
+
+在 .codex 文件夹中创建两个文件：auth.json 和 config.toml
+
+auth.json 内容(需要将sk-xxx替换成刚才在API站点创建的真实的sk)：
+
+<code class="prism language-json"><span class="token punctuation">{<!-- --></span>
+<span class="token string-property property">"OPENAI_API_KEY"</span><span class="token operator">:</span> <span class="token string">"sk-xxx"</span>
+<span class="token punctuation">}</span>
+</code> 
+
+config.toml 内容：
+
+<code class="prism language-toml">model_provider = "aigcbar"
+model = "gpt-5.2-codex"
+model_reasoning_effort = "high"
+disable_response_storage = true
+preferred_auth_method = "apikey"
+
+[model_providers.aigcbar]
+name = "aigcbar"
+base_url = "https://api.aigc.bar/v1"
+wire_api = "responses"
+</code> 
+
+配置参数说明：
+
+参数可选值说明
+
+model_reasoning_efforthigh / medium / low模型思考努力程度，high 为最高质量
+
+modelgpt-5.2-codex / gpt-5-codex使用的模型版本
+
+base_url-API 端点地址，代码块中保留原样
+
+3.7 启动 Codex
+
+关键步骤：配置完成后，必须重启终端才能使配置生效！
+
+重启 CMD 或 PowerShell
+
+进入你的项目目录：
+
+<code class="prism language-bash"><span class="token builtin class-name">cd</span> your-project-folder
+</code> 
+
+启动 Codex：
+
+<code class="prism language-bash">codex
+</code> 
+
+4. macOS 系统安装教程
+
+4.1 系统要求
+
+macOS 12（Monterey）或更高版本
+
+Node.js 22 或更高版本
+
+npm 10 或更高版本
+
+管理员权限（安装时需要输入密码）
+
+4.2 安装 Node.js
+
+macOS 有两种安装方式：
+
+方式一：官网下载安装（推荐新手）
+
+访问 Node.js 官网 下载 macOS 版本
+
+运行安装包，按提示完成安装
+
+方式二：使用 Homebrew 安装（推荐开发者）
+
+如果你已安装 Homebrew，可直接使用命令安装：
+
+<code class="prism language-bash">brew <span class="token function">install</span> <span class="token function">node</span>
+</code> 
+
+如果尚未安装 Homebrew，先执行：
+
+<code class="prism language-bash">/bin/bash <span class="token parameter variable">-c</span> <span class="token string">"<span class="token variable"><span class="token variable">$(</span><span class="token function">curl</span> <span class="token parameter variable">-fsSL</span> https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="token variable">)</span></span>"</span>
+</code> 
+
+4.3 安装 Codex
+
+打开终端（Terminal），执行以下命令：
+
+<code class="prism language-bash"><span class="token function">sudo</span> <span class="token function">npm</span> <span class="token function">install</span> <span class="token parameter variable">-g</span> @openai/codex
+</code> 
+
+注意：命令执行时可能要求输入开机密码，输入时不会显示任何字符，输入完成后按 Enter 确认即可。
+
+4.4 验证安装
+
+<code class="prism language-bash">codex <span class="token parameter variable">--version</span>
+</code> 
+
+4.5 配置 API
+
+重要提示：请将下方的 sk-xxx 替换为你在 API独立站 生成的实际 API 密钥！
+
+4.5.1 创建配置目录
+
+<code class="prism language-bash"><span class="token function">mkdir</span> ~/.codex
+</code> 
+
+4.5.2 创建 auth.json
+
+<code class="prism language-bash"><span class="token function">vi</span> ~/.codex/auth.json
+</code> 
+
+按 i 进入编辑模式，粘贴以下内容：
+
+<code class="prism language-json"><span class="token punctuation">{<!-- --></span>
+<span class="token string-property property">"OPENAI_API_KEY"</span><span class="token operator">:</span> <span class="token string">"sk-xxx"</span>
+<span class="token punctuation">}</span>
+</code> 
+
+粘贴后按 ESC 键，输入 :wq 后按 Enter 保存退出。
+
+4.5.3 创建 config.toml
+
+<code class="prism language-bash"><span class="token function">vi</span> ~/.codex/config.toml
+</code> 
+
+按 i 进入编辑模式，粘贴以下内容：
+
+<code class="prism language-toml">model_provider = "aigcbar"
+model = "gpt-5-codex"
+model_reasoning_effort = "high"
+disable_response_storage = true
+preferred_auth_method = "apikey"
+
+[model_providers.aigcbar]
+name = "aigcbar"
+base_url = "https://api.aigc.bar/v1"
+wire_api = "responses"
+</code> 
+
+粘贴后按 ESC 键，输入 :wq 后按 Enter 保存退出。
+
+4.6 启动 Codex
+
+关键步骤：配置完成后，必须重启终端才能使配置生效！
+
+重启 Terminal
+
+进入项目目录：
+
+<code class="prism language-bash"><span class="token builtin class-name">cd</span> your-project-folder
+</code> 
+
+启动 Codex：
+
+<code class="prism language-bash">codex
+</code> 
+
+5. Linux 系统安装教程
+
+5.1 系统要求
+
+Linux 发行版：Ubuntu 20.04+、Debian 10+、CentOS 7+、Fedora、Arch Linux 等
+
+Node.js 22 或更高版本
+
+npm 10 或更高版本
+
+sudo 权限
+
+5.2 安装 Node.js
+
+不同发行版的安装命令有所不同：
+
+Ubuntu / Debian
+
+<code class="prism language-bash"><span class="token comment"># 更新包列表</span>
+<span class="token function">sudo</span> <span class="token function">apt</span> update
+
+<span class="token comment"># 安装 Node.js</span>
+<span class="token function">curl</span> <span class="token parameter variable">-fsSL</span> https://deb.nodesource.com/setup_22.x <span class="token operator">|</span> <span class="token function">sudo</span> <span class="token parameter variable">-E</span> <span class="token function">bash</span> -
+<span class="token function">sudo</span> <span class="token function">apt</span> <span class="token function">install</span> <span class="token parameter variable">-y</span> nodejs
+</code> 
+
+CentOS / RHEL / Fedora
+
+<code class="prism language-bash"><span class="token comment"># 使用 dnf (Fedora) 或 yum (CentOS/RHEL)</span>
+<span class="token function">sudo</span> dnf <span class="token function">install</span> nodejs <span class="token function">npm</span>
+<span class="token comment"># 或</span>
+<span class="token function">sudo</span> yum <span class="token function">install</span> nodejs <span class="token function">npm</span>
+</code> 
+
+Arch Linux
+
+<code class="prism language-bash"><span class="token function">sudo</span> pacman <span class="token parameter variable">-S</span> nodejs <span class="token function">npm</span>
+</code> 
+
+5.3 安装 Codex
+
+打开终端，执行：
+
+<code class="prism language-bash"><span class="token function">npm</span> <span class="token function">install</span> <span class="token parameter variable">-g</span> @openai/codex
+</code> 
+
+如果提示权限不足，使用 sudo：
+
+<code class="prism language-bash"><span class="token function">sudo</span> <span class="token function">npm</span> <span class="token function">install</span> <span class="token parameter variable">-g</span> @openai/codex
+</code> 
+
+5.4 验证安装
+
+<code class="prism language-bash">codex <span class="token parameter variable">--version</span>
+</code> 
+
+5.5 配置 API
+
+重要提示：请将下方的 sk-xxx 替换为你在 API独立站 生成的实际 API 密钥！
+
+5.5.1 创建配置目录
+
+<code class="prism language-bash"><span class="token function">mkdir</span> ~/.codex
+</code> 
+
+5.5.2 创建 auth.json
+
+<code class="prism language-bash"><span class="token function">vi</span> ~/.codex/auth.json
+</code> 
+
+按 i 进入编辑模式，粘贴：
+
+<code class="prism language-json"><span class="token punctuation">{<!-- --></span>
+<span class="token string-property property">"OPENAI_API_KEY"</span><span class="token operator">:</span> <span class="token string">"sk-xxx"</span>
+<span class="token punctuation">}</span>
+</code> 
+
+按 ESC，输入 :wq，按 Enter 保存退出。
+
+5.5.3 创建 config.toml
+
+<code class="prism language-bash"><span class="token function">vi</span> ~/.codex/config.toml
+</code> 
+
+按 i 进入编辑模式，粘贴：
+
+<code class="prism language-toml">model_provider = "aigcbar"
+model = "gpt-5-codex"
+model_reasoning_effort = "high"
+disable_response_storage = true
+preferred_auth_method = "apikey"
+
+[model_providers.aigcbar]
+name = "aigcbar"
+base_url = "https://api.aigc.bar/v1"
+wire_api = "responses"
+</code> 
+
+按 ESC，输入 :wq，按 Enter 保存退出。
+
+5.6 启动 Codex
+
+关键步骤：配置完成后，必须重启终端才能使配置生效！
+
+重启终端
+
+进入项目目录：
+
+<code class="prism language-bash"><span class="token builtin class-name">cd</span> your-project-folder
+</code> 
+
+启动 Codex：
+
+<code class="prism language-bash">codex
+</code> 
+
+6. 实战使用指南
+
+6.1 基本启动流程
+
+无论使用哪个操作系统，启动 Codex 的标准流程都是：
+
+<code class="prism language-bash"><span class="token comment"># 1. 进入项目目录</span>
+<span class="token builtin class-name">cd</span> your-project-folder
+
+<span class="token comment"># 2. 启动 codex</span>
+codex
+</code> 
+
+启动成功后，你会看到 Codex 的交互式命令行界面，可以开始输入自然语言指令。
+
+6.2 实战使用示例
+
+示例 1：代码生成
+
+<code>> 帮我写一个 Python 函数，实现快速排序算法
+</code> 
+
+Codex 会立即生成完整的快速排序实现代码，包括注释说明。
+
+示例 2：代码分析
+
+<code>> 分析这段代码的性能瓶颈
+</code> 
+
+将代码文件拖拽到对话框，Codex 会分析代码并指出潜在的性能问题。
+
+示例 3：Bug 修复
+
+<code>> 这段代码为什么报错，如何修复？
+</code> 
+
+粘贴报错代码后，Codex 会分析错误原因并提供修复方案。
+
+6.3 VSCode 插件使用
+
+除了命令行工具，Codex 还提供了 VSCode 插件：
+
+在 VSCode 扩展商店搜索 “OpenAI Codex”
+
+点击安装
+
+安装完成后，Codex 会出现在侧边栏
+
+完成上述 API 配置后即可直接使用
+
+7. 常见问题排查
+
+7.1 安装问题
+
+问题现象可能原因解决方案
+
+npm 命令不存在Node.js 未正确安装重新安装 Node.js 并重启终端
+
+安装权限不足缺少管理员权限Windows 以管理员身份运行，macOS/Linux 使用 sudo
+
+安装卡住网络问题检查网络连接，或更换 npm 镜像源
+
+7.2 配置问题
+
+问题现象可能原因解决方案
+
+提示 API Key 无效密钥错误或分组选择错误检查密钥是否正确，确认分组选择 “openai codex 专用”
+
+提示额度不足令牌额度设置过低在 API独立站 将额度设为无限
+
+配置不生效未重启终端配置完成后必须重启终端
+
+7.3 使用问题
+
+问题现象可能原因解决方案
+
+无法连接 API网络问题检查网络连接，确认能访问 API独立站
+
+响应缓慢模型推理级别设置过高将 model_reasoning_effort 改为 medium 或 low
+
+代码质量不佳提示词不够清晰提供更详细的需求描述
+
+8. 常用命令速查表
+
+8.1 内置斜杠命令
+
+Codex 提供了丰富的内置命令，通过输入 / 可以快速调用：
+
+命令功能描述
+
+/mode切换审批模式（Suggest / Auto Edit / Full Auto）
+
+/model切换 AI 模型和推理级别
+
+/approvals切换批准模式（Read Only / Auto / Full Access）
+
+/init创建 AGENTS.md 文件，为 Codex 提供项目指令
+
+/status显示当前会话配置和令牌使用情况
+
+/diff显示 Git 差异（包括未跟踪文件）
+
+/clear清除会话历史
+
+/prompts显示示例提示
+
+/help显示帮助信息
+
+8.2 审批模式说明
+
+模式说明适用场景
+
+Suggest仅提供建议，不直接修改代码学习参考、谨慎操作
+
+Auto Edit自动编辑代码，但需要确认日常开发、可控自动化
+
+Full Auto完全自动，无需确认批量处理、信任场景
+
+9. 总结与建议
+
+9.1 安装配置要点回顾
+
+恭喜！通过本文的详细指导，你已经完成了 OpenAI Codex 在 Windows、macOS 或 Linux 系统上的完整安装配置。让我们回顾一下关键步骤：
+
+环境准备：确保 Node.js 22+ 和 npm 10+ 已安装
+
+API 注册：在 API独立站 注册并创建专用令牌
+
+配置文件：正确创建 auth.json 和 config.toml
+
+重启终端：配置完成后务必重启终端使配置生效
+
+启动使用：进入项目目录，运行 codex 命令
+
+9.2 使用技巧与建议
+
+文件上传：建议将代码文件拖拽到对话框，让 Codex 更好地理解项目上下文
+
+清晰描述：提供详细、清晰的需求描述，能获得更高质量的代码
+
+迭代优化：不满意的结果可以通过补充说明让 Codex 继续优化
+
+版本控制：在重要项目上使用 Git，方便回溯 Codex 的修改
+
+9.3 进阶学习资源
+
+如需了解更多 Codex 的高级配置和使用技巧，可参考：
+
+Codex 官方文档
+
+OpenAI 开发者论坛
+
+最后更新：2025年3月
+
+适用版本：Codex CLI 最新版
+
+作者声明：本文内容基于官方文档和社区实践整理，如有更新请以官方文档为准。
+
+如果本文对你有帮助，欢迎点赞、收藏和分享！有任何问题欢迎在评论区留言讨论。
+
+本文章已经生成可运行项目 一键运行
+
+生成项目
+
+确定要放弃本次机会？
+
+福利倒计时
+
+:
+
+:
+
+立减 ¥
+
+普通VIP年卡可用
+
+立即使用
+
+智算菩萨
+
+关注
+关注
+
+174
+
+点赞
+
+踩
+
+214
+
+收藏
+
+觉得还不错?
+
+一键收藏
+
+知道了
+
+31
+
+评论
+
+分享
+
+复制链接
+
+分享到 QQ
+
+分享到新浪微博
+
+扫一扫
+
+打赏
+
+打赏
+
+打赏
+
+举报
+
+举报
+
+【AI 编程工具】Codex配置部署指南
+
+以实战经验介绍行业知识
+
+04-01
+
+1638
+
+目录一、环境准备与基础安装1. 系统兼容性检查2. 前置依赖安装3. 安装方式选择二、API密钥配置与认证1. 获取API密钥2. 配置文件设置3. 临时配置方式三、沙盒环境配置与安全策略1. 沙盒模式选择2. 安全最佳实践四、高级功能配置1. 模型上下文协议(MCP)配置2. 模型版本切换3. 自定义网关配置五、常见问题排查1. 安装失败2. API调用失败3. 处理速度慢4. 配置文件不生效六、生产环境部署建议macOS/Linux：官方提供稳定支持，推荐使用原生环境Windows：官方标注为实验性支持
+
+Codex APP 国内使用教程：安装、配置
+
+qq_35624199的博客
+
+05-07
+
+6164
+
+本文介绍了如何在国内环境中使用OpenAI Codex桌面应用。Codex APP相比命令行版本提供了更直观的AI开发工作台体验，支持项目管理、多任务并行、Git操作和代码预览等功能。文章详细说明了安装步骤（Windows/macOS）和关键配置方法，重点指导用户如何通过API中转服务配置config.toml文件，包括获取API token、设置环境变量和编写配置文件。最后还提供了基础使用示例，帮助开发者快速上手这一AI编程工具。
+
+31 条评论
+您还未登录，请先
+登录
+后发表或查看评论
+
+Codex app新手版使用教程，覆盖几大特性
+
+weixin_45966548的博客
+
+03-29
+
+5208
+
+Mac 用户最简单。搜索：Codex。然后根据提示下载安装即可。
+
+[特殊字符] 2026年国内 Codex 安装教程和使用教程：GPT-5.4 完整指南（新手也能10分钟上手）
+
+JavaPub
+
+04-07
+
+1665
+
+2026年AI编程进入"自动干活时代"，GPT-5.4+Codex让AI能完成完整工程任务。文章介绍Codex作为"执行型AI Agent"的三大使用方式，重点推荐CLI模式，并详细讲解国内安装、GPT-5.4接入及基础命令。强调Codex是任务执行器而非聊天工具，提供进阶玩法如API中转适配、自动压测等，同时指出常见使用误区。最终指出掌握Codex+GPT-5.4等工具将转型为AI工程生产线搭建者。
+
+2026年国内 Codex 安装教程和使用教程：GPT-5.4 完整指南
+
+JavaPub
+
+03-21
+
+9674
+
+从&ldquo;写代码&rdquo; &rarr; &ldquo;描述需求&rdquo;从&ldquo;工具&rdquo; &rarr; &ldquo;执行代理&rdquo;从&ldquo;开发&rdquo; &rarr; &ldquo;自动化&rdquo;人类负责思考，AI 负责实现。
+
+Claude Code / Gemini CLI / Codex CLI 安装大全（Linux 服务器版）
+
+2401_89507557的博客
+
+12-04
+
+2416
+
+本文提供了三大AI代码助手(ClaudeCode、GeminiCLI、CodeXCLI)在Linux服务器上的统一安装指南。适用于Ubuntu18.04+/CentOS7+/Debian9+系统，要求Node.js18+/20+环境。安装步骤包括：1)安装Node.js；2)通过npm安装对应工具；3)在数信云BIOAPI控制台获取专用Token；4)配置环境变量或设置文件；5)启动工具。三个工具分别需要配置不同的目录和参数，但都使用数信云API作为后端服务。文章最后提供了三大工具的对比表格，包括安装命令、
+
+为Windows系统安装Codex（保姆级教程）
+
+bynacqt的博客
+
+01-20
+
+3万+
+
+本文介绍了Git、Node.js和Codex的安装与配置方法。首先说明如何查看系统架构并下载对应版本的Git，完成安装后通过命令验证。其次介绍Node.js的下载安装步骤及版本检查方法。最后详细讲解Codex的安装流程，包括通过npm安装、版本检查、账号登录以及切换账号的操作步骤。全文提供了从环境搭建到工具配置的完整指引，帮助用户快速完成开发环境的部署。
+
+【Codex CLI 配置指南（小白速通版）】
+
+zsr154278963的博客
+
+09-20
+
+6712
+
+本文是Codex CLI配置的快速入门指南，介绍了三种优先级从高到低的配置方式：命令行参数、通用配置参数和配置文件。详细讲解了模型选择、提供商切换、批准策略、沙箱模式等核心配置项的使用方法，并提供了常见场景的配置示例。文章还包含配置优先级回顾、一键切换配置档、推理输出细节调整等实用技巧，以及易错点提醒，帮助用户快速上手Codex CLI的个性化配置。
+
+【Codex安装使用手册】
+
+qq_43392230的博客
+
+04-18
+
+2507
+
+Codex安装部署使用教程
+
+一文掌握 CodeX CLI 安装以及使用！
+
+叶庭云 成为自己的光
+
+10-17
+
+3万+
+
+CodeX CLI 是一个可在本地终端运行的编码智能体，能够在本机指定目录中读取、修改并执行代码。CodeX CLI 为开源项目，使用 Rust 开发，侧重性能与效率。该项目托管于 GitHub（https://github.com/openai/codex），并在持续迭代中不断完善。
+
+Codex 全面实战教程：从安装到工程协作，一篇跑通
+
+阿甘兄
+
+01-27
+
+5万+
+
+这不是一篇泛泛而谈的 AI 编程介绍，而是一份完整跑通的 Codex 实战指南。从账号与环境准备，到 IDE / CLI / Cloud 的真实使用，再到用一句话完成工程任务，本文详细拆解 Codex 在真实开发流程中如何读仓库、改代码、跑命令，帮你把 AI 从&ldquo;写代码的工具&rdquo;，真正用成&ldquo;工程协作者&rdquo;。
+
+玩转CodeX：CodeX安装教程（Windows+Linux+MacOS）
+
+踏雨歌青春，诗酒趁年华
+
+10-08
+
+3万+
+
+本文详细介绍如何在Windows、Linux和MacOS系统中安装AI编码工具CodeX。安装步骤包括：1)注册CodeX中国镜像站账户并获取API密钥；2)通过npm安装@openai/codex包；3)配置.auth.json和config.toml文件。安装完成后，用户可在项目目录中启动CodeX，并使用特定参数跳过授权流程。文中提供了详细的配置文件和命令行操作指南，确保用户能顺利完成安装并验证版本号。
+
+Codex 配置使用教程
+
+11-02
+
+4万+
+
+本文档是包含了Codex环境配置教程、基础使用方式，以及使用过程中的一些心得~
+
+白嫖codex
+
+2301_78856868的博客
+
+05-06
+
+1704
+
+今早发现 codex 的免费账号都有白嫖的周限额（4.25日记，不知道现在还有没有）于是假如 免费号池 + 丝滑切换 的话就可以爽爽白嫖。
+
+Windows安装Codex安装教程
+
+墨1024
+
+02-08
+
+1万+
+
+本文提供了Windows系统安装Codex CLI的详细教程，适合新手用户。主要内容包括：1）通过winget或官网安装Node.js（含npm）；2）使用npm全局安装Codex CLI；3）首次运行的登录与API Key配置方法；4）常见问题排查指南。教程强调安装过程中的关键注意事项，如重新打开PowerShell更新PATH、权限问题处理等，并提供了升级、卸载操作指引。文章采用分步骤说明方式，配合命令行示例和截图，帮助用户快速完成安装配置。
+
+2026国内安装使用codex，Claude Code教程
+
+最新发布
+
+2503_92748806的博客
+
+05-23
+
+1338
+
+Codex 是 OpenAI 旗下代码专项大模型，适配多语言编程开发，可实现代码生成、调试与工程自动化，开发适配性强。Claude 为 Anthropic 研发的通用大模型，具备超大文本上下文承载能力，逻辑推理扎实、信息失真率低，合规安全性突出。两款模型各有技术优势，Codex 适用于日常高效编码场景，Claude 更契合大型项目架构优化、复杂问题研判等场景，可依据实际开发需求灵活选用。
+
+OpenAI最强编程助手Codex：深度解析与应用指南（含使用方式、提示技巧、趋势）
+
+Code_流苏：在代码中寻诗意，在实践中觅真知
+
+05-19
+
+1万+
+
+OpenAI最近上线了最强编程助手基于o3的Codex，一起来看看吧！
+
+Windows 下 Codex 安装全记录：从零到一的保姆级图文教程
+
+热门推荐
+
+weixin_43178406的博客
+
+03-20
+
+5万+
+
+本文主要介绍了Windows 下 Codex 安装全记录：从零到一的保姆级图文教程，希望能对学习使用 Codex 的同学们有所帮助。
+
+文章目录
+
+1. 背景
+2. 实战教程
+2.1 方案一
+2.2 方案二
+3. 报错解决方案
+
+OpenAI Codex 入门使用教程
+
+牛奶夹心巧克力
+
+06-29
+
+2万+
+
+Codex是OpenAI推出的云端AI编程智能体，基于codex-1模型，专为软件开发任务优化。2025年6月更新后，Codex已向ChatGPT Plus用户开放，支持多方案代码生成、并行任务处理和智能代码理解，能够显著提升开发效率。下期将推出一篇详细的实战教程，欢迎持续关注。
+
+Codex 安装与使用教程
+
+weixin_50365451的博客
+
+02-28
+
+6778
+
+codex安装教程
+
+评论 31
+
+被折叠的 条评论
+为什么被折叠?
+
+到【灌水乐园】发言 
+
+查看更多评论
+
+添加红包
+
+祝福语
+
+请填写红包祝福语或标题
+
+红包数量
+
+个
+
+红包个数最小为10个
+
+红包总金额
+
+元
+
+红包金额最低5元
+
+余额支付
+
+当前余额3.43元
+前往充值 >
+
+需支付：10.00元
+
+取消
+确定
+
+下一步
+
+知道了
+
+成就一亿技术人!
+
+hope_wisdom
+发出的红包
+
+打赏作者
+
+智算菩萨
+
+欢迎阅读最新融合AI编程内容
+
+¥1
+¥2
+¥4
+¥6
+¥10
+¥20
+
+扫码支付：¥1
+
+获取中
+
+扫码支付
+
+您的余额不足，请更换扫码支付或充值
+
+打赏作者
+
+实付元
+
+使用余额支付
+
+点击重新获取
+
+扫码支付
+
+钱包余额
+0
+
+抵扣说明：
+
+1.余额是钱包充值的虚拟货币，按照1:1的比例进行支付金额的抵扣。
+
+2.余额无法直接购买下载，可以购买VIP、付费专栏及课程。
+
+余额充值

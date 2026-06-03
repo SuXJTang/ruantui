@@ -1,0 +1,1311 @@
+Releases · openai/codex · GitHub
+https://github.com/openai/codex/releases
+
+<!DOCTYPE html>
+
+Releases · openai/codex · GitHub
+
+Skip to content
+
+Navigation Menu
+
+Toggle navigation
+
+Sign in
+
+Appearance settings
+
+Search or jump to...
+
+Search code, repositories, users, issues, pull requests...
+
+Search
+
+Clear
+
+Search syntax tips 
+
+Provide feedback
+
+We read every piece of feedback, and take your input very seriously.
+
+Include my email address so I can be contacted
+
+Cancel
+
+Submit feedback
+
+Saved searches
+
+Use saved searches to filter your results more quickly
+
+Name
+
+Query
+
+To see all available qualifiers, see our documentation.
+
+Cancel
+
+Create saved search
+
+Sign in
+
+Sign up
+
+Appearance settings
+
+Resetting focus
+
+You signed in with another tab or window. Reload to refresh your session.
+You signed out in another tab or window. Reload to refresh your session.
+You switched accounts on another tab or window. Reload to refresh your session.
+
+Dismiss alert
+
+{{ message }}
+
+openai
+
+/
+
+codex
+
+Public
+
+Notifications
+You must be signed in to change notification settings
+
+Fork
+12.9k
+
+Star
+88.1k
+
+Releases: openai/codex
+
+Releases · openai/codex
+
+0.137.0-alpha.4
+
+03 Jun 01:26
+
+github-actions
+
+rust-v0.137.0-alpha.4
+
+de1021f
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.137.0-alpha.4
+
+Pre-release
+
+Pre-release
+
+Release 0.137.0-alpha.4
+
+Assets
+139
+
+Loading
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+👀
+13
+Lari-Cafe, Torro101, jghyuytug, GrahamHau, walijack-del, 0xnefertt, Arose-H, ingmaras, wistant, breakcraft, and 3 more reacted with eyes emoji
+
+All reactions
+
+👀
+13 reactions
+
+13 people reacted
+
+0.136.0
+
+01 Jun 17:49
+
+github-actions
+
+rust-v0.136.0
+
+7ca6113
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.136.0
+
+Latest
+
+Latest
+
+New Features
+
+TUI markdown now keeps web links clickable with OSC 8 metadata, and cramped tables switch to readable key/value records without losing link targets. (#24472, #24636, #24825)
+
+Sessions can now be archived from the TUI with /archive or from the CLI with codex archive / codex unarchive; archived sessions are protected from resume/fork until restored. (#25027, #25021)
+
+App-server integrations can resume a thread with its initial turns page, see richer MCP server status, and launch stdio mode with codex app-server --stdio. (#23534, #24698, #24940)
+
+Remote execution setup now supports CODEX_API_KEY registration for approved OpenAI hosts, while remote-control websockets use short-lived server tokens instead of ChatGPT access tokens. (#24666, #24141)
+
+Windows admins get an alpha codex sandbox setup --elevated provisioning path, plus requirements support for allowed Windows sandbox implementations. (#24831, #23766)
+
+A feature-gated standalone image generation extension can run through the native Codex image artifact completion pipeline. (#24723, #24972)
+
+Bug Fixes
+
+ChatGPT auth refreshes tokens before the five-minute expiry window and shows a relogin-required path for reused refresh tokens instead of collapsing into a generic cloud error. (#23546, #24830)
+
+Command-safety hardening prevents /diff from running repository-provided Git helpers/hooks, avoids PowerShell parser execution on non-Windows hosts, and rejects browser-origin exec-server websocket handshakes. (#24954, #24946, #24947)
+
+Sandboxed commands clean up more reliably after interruptions or denied Windows network attempts, and deny read rules stay enforced for safe-command and approval-bypass paths. (#22729, #19880, #23943)
+
+Resumed TUI sessions seed prompt history from the session transcript, multiline hook output renders as separate rows, and Vim normal-mode editing behaves correctly. (#24298, #24965, #25022)
+
+App-server filesystem watchers debounce later batches correctly, and standalone web search calls now show and restore completed search activity. (#24716, #24693)
+
+Bedrock auth now falls back to AWS_REGION / AWS_DEFAULT_REGION, and unsupported Bedrock GPT service tiers are no longer advertised or sent. (#25171, #25318)
+
+Documentation
+
+Python SDK beta docs and package metadata now present the standard pip install openai-codex path, refreshed quickstarts, API reference, FAQ, and examples. (#24836, #24866, #24868, #24870)
+
+Python SDK examples and docs now use the public CodexConfig name for configuring Codex / AsyncCodex. (#24800)
+
+The bundled OpenAI Docs skill was updated with current Codex manual routing and a cached manual fetch helper. (#24914)
+
+Built-in tool schema descriptions now clarify defaults, optional fields, bounds, and enums across shell, Code Mode, MCP, image, goal, plan, multi-agent, and related tools. (#24794)
+
+App-server and exec-server docs now cover API-key remote registration, --stdio, runtime extra skill roots, and remote-control server-token behavior. (#24666, #24940, #24977, #24141)
+
+Chores
+
+Python SDK releases can now be staged and published independently from runtime releases using python-v* tags while preserving the reviewed runtime dependency pin. (#24828, #24872)
+
+Updated MCP dependencies to rmcp 1.7.0 and refreshed compatibility code. (#24763)
+
+Refreshed Amazon Bedrock catalog metadata, including GPT-5.5, removal of unsupported OSS entries, and default-tier-only GPT model behavior. (#24701, #24960, #25318)
+
+Removed the stale app-server debug-client pieces and cleaned up the workspace after deletion. (#25063, #25064, #25065, #25066, #25067, #25068, #25069, #25070, #25075)
+
+Trimmed CI/build maintenance by moving Bazel Windows jobs to Codex runners, removing the libubsan workaround, and reverting the startup benchmark that broke musl builders. (#24952, #24782, #24937)
+
+Changelog
+
+Full Changelog: rust-v0.135.0...rust-v0.136.0
+
+#22729 fix(linux-sandbox): preserve shell cleanup on interruption @viyatb-oai
+
+#24472 feat(tui): add OSC 8 web links to rich content @fcoury-oai
+
+#24636 feat(tui): render cramped markdown tables as key-value records [2 of 2] @fcoury-oai
+
+#24666 Allow API-key auth for remote exec-server registration @sdcoffey
+
+#24763 Update rmcp to 1.7.0 @anp-oai
+
+#24825 [codex] Fix hyperlink-aware key-value table rendering @sayan-oai
+
+#24800 [codex] Rename Python SDK AppServerConfig to CodexConfig @aibrahim-oai
+
+#24819 [codex] Remove redundant SQLite dynamic tool storage @sayan-oai
+
+#24828 [codex] Add independent beta release for the Python SDK @aibrahim-oai
+
+#24836 [codex] Prepare Python SDK beta documentation and package metadata @aibrahim-oai
+
+#24830 Treat refresh_token_reused 400s as relogin-required @alexsong-oai
+
+#24866 [codex] Simplify Python SDK install guidance @aibrahim-oai
+
+#24868 [codex] Remove Python SDK language classifiers @aibrahim-oai
+
+#24870 [codex] Remove Python SDK beta warning note @aibrahim-oai
+
+#24872 [codex] Stage Python SDK beta versions from release tags @aibrahim-oai
+
+#24758 Move memories root setup out of core config @jif-oai
+
+#24891 Stabilize Guardian client cache key handling @jif-oai
+
+#24892 Export Guardian prompt cache key helper @jif-oai
+
+#24893 Add Guardian review prompt cache key @jif-oai
+
+#24894 Assert Guardian prompt cache key reuse @jif-oai
+
+#24895 Thread Guardian cache key through session @jif-oai
+
+#24803 Use stable Guardian prompt cache keys @jif-oai
+
+#24902 [codex] Fix Guardian argument comment lint @jif-oai
+
+#24898 Fix memories namespace for Responses API tools @jif-oai
+
+#24897 Add Guardian review metrics @jif-oai
+
+#23546 [codex-cli] Refresh near-expiry ChatGPT access tokens before requests @cooper-oai
+
+#24915 Add thread start contributor facts @jif-oai
+
+#24916 Add turn error lifecycle contributor @jif-oai
+
+#24865 [codex] Store pending response items directly @pakrym-oai
+
+#24914 [codex] Update OpenAI Docs skill @vb-openai
+
+#24651 Add app-server startup benchmark crate @anp-oai
+
+#24925 Gate goal tools by thread eligibility @jif-oai
+
+#24782 Remove libubsan CI workaround @anp-oai
+
+#24813 extension-api: add TurnItemEmitter to tool calls @sayan-oai
+
+#23534 feat(app-server): include turns page on thread resume @btraut-openai
+
+#24698 Expose MCP server info as part of server status @gpeal
+
+#24903 Reap stale multi-agent slots @jif-oai
+
+#24936 Fix extension turn item emitter test event ordering @bolinfest
+
+#24700 [codex] Support ui visibility meta for tools @gpeal
+
+#24701 chore: add GPT-5.5 to the Amazon Bedrock catalog @celia-oai
+
+#23363 TUI: Unified mentions tweaks + polish mentions rendering @canvrno-oai
+
+#24937 Revert "Add app-server startup benchmark crate" @anp-oai
+
+#24928 Wire task completion into thread-idle lifecycle @jif-oai
+
+#24723 Add feature-gated standalone image generation extension @won-openai
+
+#24952 Move Bazel Windows jobs onto codex-runners @anp-oai
+
+#24940 Add codex app-server --stdio alias @anp-oai
+
+#24954 fix(tui): prevent repository-configured code execution in /diff @fcoury-oai
+
+#24949 [codex] Handle PowerShell UTF-8 setup failures @iceweasel-oai
+
+#24960 [codex] Remove Bedrock OSS models from catalog @celia-oai
+
+#23768 runtime: prepend zsh fork bin dir to PATH @bolinfest
+
+#19880 fix: cancel Windows sandbox on network denial @viyatb-oai
+
+#24947 fix(exec-server): reject websocket requests with Origin headers @viyatb-oai
+
+#24653 [codex] Add user input client ids @alexi-openai
+
+#23924 Surface filesystem permission profiles in prompt context @bolinfest
+
+#24108 windows-sandbox: pass workspace roots to runner @bolinfest
+
+#24974 windows-sandbox: fix capture cancellation test roots @bolinfest
+
+#24962 Tighten hook output event schemas @abhinav-oai
+
+#24141 feat(app-server): migrate remote control to server tokens @apanasenko-oai
+
+#24970 fix(config): use deny for Unix socket permissions @viyatb-oai
+
+#24946 [codex] Avoid PowerShell safety parsing off Windows @adrian-openai
+
+#24977 Add runtime extra skill roots API @xl-openai
+
+#24298 Seed prompt history from resumed messages @etraut-openai
+
+#23943 fix: preserve deny-read sandboxing for safe commands @bolinfest
+
+#24716 Fix fs/watch debounce batching @etraut-openai
+
+#24918 Use internal model context fragments for goal steering @jif-oai
+
+#24924 Use inject_if_running for active goal steering @jif-oai
+
+#25063 Drop the stale debug-client manifest @jif-oai
+
+#25064 Remove the generated debug-client README @jif-oai
+
+#25065 Delete debug-client app-server process plumbing @jif-oai
+
+#25066 Retire debug-client interactive command parsing @jif-oai
+
+#25067 Remove the debug-client CLI entrypoint @jif-oai
+
+#25068 Delete debug-client JSONL output helper @jif-oai
+
+#25069 Remove debug-client server event reader @jif-oai
+
+#25070 Drop debug-client prompt state tracking @jif-oai
+
+#25075 fix: main @jif-oai
+
+#24794 [codex] Improve built-in tool schema docs @jif-oai
+
+#25095 Handle goal usage limits from turn errors @jif-oai
+
+#25106 Remove stale rollout TODO tests @jif-oai
+
+#24965 Render multiline hook output in TUI @abhinav-oai
+
+#25031 [codex] Add model tool mode selector @aibrahim-oai
+
+#24693 Show activity for standalone web search calls @sayan-oai
+
+#25110 Move config document helpers into their own module @jif-oai
+
+#25013 feat: Add focused diagnostics for MCP HTTP send failures @xl-openai
+
+#24964 [codex] Wait for MCP readiness in core integration tests @anp-oai
+
+#24972 Route extension image generation through the native image completion pipeline @won-openai
+
+#24831 Add Windows sandbox provisioning setup command @iceweasel-oai
+
+#25017 Align TUI permissions labels with app @etraut-openai
+
+#25027 Add /archive slash command @etraut-openai
+
+#25035 Use session wording in /rename confirmation @etraut-openai
+
+#24161 Add subagent lineage metadata for responsesapi @owenlin0
+
+#25116 [exec-server] Kill dropped filesystem helpers @erichorace...
+
+Read more
+
+Contributors
+
+cconger, erichoracek, and 30 other contributors
+
+Assets
+139
+
+argument-comment-lint
+
+sha256:aade42f96184776838259b3ab23bd567b2c3e55f9994fe0308e8b63e2bef6c08
+
+2.63 KB
+2026-06-01T18:51:30Z
+
+argument-comment-lint-aarch64-apple-darwin.tar.gz
+
+sha256:d87ea81a9c997e686fc3e47c9aa0c546426b16c261ff5e14b2ed19151fcc1f4e
+
+3.24 MB
+2026-06-01T18:50:01Z
+
+argument-comment-lint-aarch64-unknown-linux-gnu.tar.gz
+
+sha256:9ba14800471d4e5996240b30d86db4b61dbb04b6140e9da3da72fc3a40f3e56b
+
+3.59 MB
+2026-06-01T18:50:01Z
+
+argument-comment-lint-x86_64-pc-windows-msvc.zip
+
+sha256:dd1e08aef6c9728ff05561ae47817f0305169daf0714a365c305a642885d7c07
+
+3.11 MB
+2026-06-01T18:50:01Z
+
+argument-comment-lint-x86_64-unknown-linux-gnu.tar.gz
+
+sha256:03f6419da65c093e21c3f45ecc02dd8d9317a51edb27a107a7dc138ea927f908
+
+3.69 MB
+2026-06-01T18:50:01Z
+
+bwrap
+
+sha256:e54eeaa035cc6db4794698ca5f15d0652e4ffaba74f4d88ec2e81d2a7b4f72e5
+
+1.19 KB
+2026-06-01T18:51:15Z
+
+bwrap-aarch64-unknown-linux-musl.sigstore
+
+sha256:e69a817546064a9f1cedb88d033d17a70e7c1275bd843f3b91cea705c97324ed
+
+8.49 KB
+2026-06-01T18:50:01Z
+
+bwrap-aarch64-unknown-linux-musl.tar.gz
+
+sha256:03ed1cebaa6b7d8146af0759663ab4064eb3e4dc3546ba18e3da1fbec8c9af3d
+
+249 KB
+2026-06-01T18:50:01Z
+
+bwrap-aarch64-unknown-linux-musl.zst
+
+sha256:caef3904ad04a657694bbce38e06bfe89fff6ed8f1cc309e7f2442e11ccb6bed
+
+226 KB
+2026-06-01T18:50:01Z
+
+bwrap-x86_64-unknown-linux-musl.sigstore
+
+sha256:dae545bcd14f06faf8f7b7d5f783f993c82d2812204fcf9da22ba599ebeb8313
+
+8.47 KB
+2026-06-01T18:50:01Z
+
+Source code
+(zip)
+
+2026-06-01T16:00:24Z
+
+Source code
+(tar.gz)
+
+2026-06-01T16:00:24Z
+
+Show all 139 assets
+
+Loading
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+👍
+19
+BNTang, Syaiful313, steevin, FomalhautWeisszwerg, agantelin, darek8686, hoquoctrung98, Alex-Souslik, TroublemakerSt, binbjz, and 9 more reacted with thumbs up emoji
+😄
+4
+binbjz, OTHROPIC, sapanboy, and gh640 reacted with laugh emoji
+🎉
+7
+EDM115, cclilshy, 0xc0dec0ffee, binbjz, NoobPeople418, OTHROPIC, and sapanboy reacted with hooray emoji
+❤️
+8
+DovieW, yaadata, abdelfattahradwan, jjoanna2-debug, prestancedesign, binbjz, NoobPeople418, and OTHROPIC reacted with heart emoji
+🚀
+6
+samuelzcom, binbjz, NoobPeople418, armandogomezr, OTHROPIC, and sapanboy reacted with rocket emoji
+👀
+5
+LevyDeSales, hoquoctrung98, binbjz, OTHROPIC, and sapanboy reacted with eyes emoji
+
+All reactions
+
+👍
+19 reactions
+
+😄
+4 reactions
+
+🎉
+7 reactions
+
+❤️
+8 reactions
+
+🚀
+6 reactions
+
+👀
+5 reactions
+
+31 people reacted
+
+0.136.0-alpha.2
+
+31 May 19:40
+
+github-actions
+
+rust-v0.136.0-alpha.2
+
+4eac96b
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.136.0-alpha.2
+
+Pre-release
+
+Pre-release
+
+Release 0.136.0-alpha.2
+
+Assets
+139
+
+Loading
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+🎉
+5
+Ame7R, vladelaina, rickb3n, binbjz, and Mooshed88-a reacted with hooray emoji
+🚀
+4
+samuelzcom, junsung-cho, aaudin90, and binbjz reacted with rocket emoji
+👀
+11
+scottweiss, fanfan813, kehao99, 321Fontsize, cclilshy, changhow, elphe27, darek8686, PRO-2684, binbjz, and PiyuZhou reacted with eyes emoji
+
+All reactions
+
+🎉
+5 reactions
+
+🚀
+4 reactions
+
+👀
+11 reactions
+
+18 people reacted
+
+0.135.0
+
+28 May 17:31
+
+github-actions
+
+rust-v0.135.0
+
+4daceea
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.135.0
+
+New Features
+
+codex doctor now reports richer environment, Git, terminal, app-server, and thread inventory diagnostics for support cases. (#24261, #24311, #24305)
+
+/status shows remote connection details and server version when the TUI is connected over a remote transport. (#24420)
+
+Vim mode gained text-object editing, improved word/line-end behavior, and a configurable interrupt-turn binding. (#24382, #24380, #24766)
+
+/permissions now understands named permission profiles and displays configured custom profiles. (#21559)
+
+Packaged Codex builds can discover and use the bundled patched zsh helper across supported macOS and Linux targets. (#23756, #24171)
+
+The Python SDK now exposes friendly Sandbox presets for thread and turn APIs. (#24772)
+
+install.sh/install.ps1 supports a non-interactive installation mode when CODEX_NON_INTERACTIVE=1 is set. (#21567)
+
+Bug Fixes
+
+Markdown tables and multiline lists render more readably in the TUI, with better column sizing and app-style table formatting. (#24489, #24346, #24351)
+
+TUI output is more stable on macOS and Zellij, avoiding stderr/composer corruption and raw-output overlap. (#24459, #24479, #24593)
+
+Slash-command completion now preserves existing draft text for commands that accept inline arguments. (#23950)
+
+Older tmux/iTerm control-mode sessions no longer lose normal Ctrl-C handling from unsupported keyboard enhancement setup. (#24371)
+
+App mentions now exclude inaccessible or disabled apps instead of offering unusable $ suggestions. (#24625)
+
+Resume flows now include non-interactive exec sessions when requested and honor cwd overrides for idle cached threads. (#24503, #24528)
+
+Documentation
+
+Clarified image-viewing tool detail behavior and removed stale TUI composer documentation references. (#23949, #24641)
+
+Updated Python SDK docs, examples, and notebook content to use the new sandbox preset API. (#24772)
+
+Chores
+
+Updated Rust toolchain pins and SQLx/SQLite dependencies. (#24684, #24728)
+
+Moved memory runtime state into a dedicated SQLite database. (#24591)
+
+Removed remaining legacy config-profile consumers and routed more TUI config/plugin state through app-server-owned APIs. (#24076, #24254, #24255, #24265, #24266, #24257)
+
+Centralized Responses retry handling and MCP tool naming logic to reduce duplicated internal plumbing. (#24131, #21576)
+
+Changelog
+
+Full Changelog: rust-v0.134.0...rust-v0.135.0
+
+#24164 fix(remote-control): cap reconnect backoff @apanasenko-oai
+
+#23756 package: include zsh fork in Codex package @bolinfest
+
+#23757 Default function tools into tool hooks @abhinav-oai
+
+#24171 package: add x64 macOS codex-zsh artifact @bolinfest
+
+#24159 code-mode: merge stored values by key @cconger
+
+#23983 fix: plugin bundle archive handling for upload and install @xl-openai
+
+#24261 feat(doctor): add environment diagnostics @fcoury-oai
+
+#24311 Report app-server version in codex doctor @etraut-openai
+
+#24314 tui: label compact rate-limit percentages @etraut-openai
+
+#24420 Show remote connection details in /status @etraut-openai
+
+#24317 Respect hook trust bypass during TUI startup @etraut-openai
+
+#24254 TUI config cleanup: oss_provider @etraut-openai
+
+#24255 TUI config cleanup: trusted projects @etraut-openai
+
+#24265 TUI config cleanup: MCP inventory @etraut-openai
+
+#24305 Add doctor thread inventory audit @etraut-openai
+
+#24346 fix(tui): improve markdown table column allocation @fcoury-oai
+
+#24351 fix(tui): improve multiline markdown list readability @fcoury-oai
+
+#24459 fix(tui): prevent macos stderr from corrupting composer @fcoury-oai
+
+#24479 fix(process-hardening): preserve macos malloc diagnostics @fcoury-oai
+
+#24474 Log rollout writer OS errors @etraut-openai
+
+#24076 chore: stop consuming legacy config profiles @jif-oai
+
+#24131 centralize Responses retry policy @rhan-oai
+
+#23858 [wip] goal shift @jif-oai
+
+#24555 chore: drop orphaned codex memories MCP crate @jif-oai
+
+#24558 chore: move memory prompt builder into extension @jif-oai
+
+#24562 Add ad-hoc memory note tool @jif-oai
+
+#24567 Wire metrics client into memories extension @jif-oai
+
+#24588 fix: drop flake @jif-oai
+
+#24583 Add memory tool call metrics to memories extension @jif-oai
+
+#24586 Wire app-server extension event sink @jif-oai
+
+#24532 Use thread config for TUI MCP inventory @etraut-openai
+
+#24105 [codex] Make active turn task singular @pakrym-oai
+
+#21576 Move MCP tool naming mode into manager @pakrym-oai
+
+#24503 tui: include exec sessions in resume list @etraut-openai
+
+#24600 feat: gate dedicated memories tools in config @jif-oai
+
+#21559 tui: add named permission profile picker @viyatb-oai
+
+#24608 feat: add manual and remote_v2 tags to compaction metric @jif-oai
+
+#24611 test: clean up apply_patch allow-session artifact @jif-oai
+
+#24609 Remove reserved namespaces dedup @pakrym-oai
+
+#23964 Move slash input logic out of chat composer @canvrno-oai
+
+#24615 Add goal extension telemetry parity @jif-oai
+
+#24371 fix(tui): avoid modifyOtherKeys for unknown tmux formats @fcoury-oai
+
+#24626 fix: restore goal accounting after thread resume @jif-oai
+
+#24591 Move memory state to a dedicated SQLite DB @jif-oai
+
+#23823 standalone websearch extension @sayan-oai
+
+#24593 fix(tui): keep raw output above composer in zellij @fcoury-oai
+
+#24625 tui: keep inaccessible apps out of mentions @canvrno-oai
+
+#24154 Add experimental turn additional context @pakrym-oai
+
+#24473 fix(remote-control): surface websocket task stalls @apanasenko-oai
+
+#24528 Respect resume cwd overrides for idle cached threads @etraut-openai
+
+#24160 Add forked_from_thread_id turn metadata @owenlin0
+
+#24646 make direct only allowed caller for standalone websearch @sayan-oai
+
+#23949 Clarify view_image tool description @fjord-oai
+
+#24266 TUI config cleanup: plugin mentions @etraut-openai
+
+#24320 Avoid repeated marketplace upgrades for alternate layouts @etraut-openai
+
+#23813 windows-sandbox: remove SandboxPolicy runner plumbing @bolinfest
+
+#24652 [codex] remove plain image wrapper spans @pakrym-oai
+
+#24623 Attach Windows sandbox log to feedback reports @iceweasel-oai
+
+#24644 Restore legacy image detail values @rhan-oai
+
+#24655 [codex-analytics] add grouped session id to runtime events @marksteinbrick-oai
+
+#24658 [codex] Remove obsolete goal continuation turn marker @pakrym-oai
+
+#24660 fix: dont compact standalone websearch schema @sayan-oai
+
+#24667 fix(core): instrument stalled tool-listing handoff @apanasenko-oai
+
+#24684 Uprev Rust toolchain pins to 1.95.0 @anp-oai
+
+#21567 fix: add noninteractive install script mode @efrazer-oai
+
+#24707 Allow runtime enablement for remote plugins @xl-openai
+
+#24714 fix(auto-review) skip legacy notify for auto review threads @dylan-hurd-oai
+
+#24690 Revert "Add Bedrock Mantle GovCloud region (#23860)" @celia-oai
+
+#24628 feat: handle goal usage limits in goal extension @jif-oai
+
+#24746 Fix guardian review test user input @jif-oai
+
+#24744 feat: add thread idle lifecycle hook @jif-oai
+
+#24751 Drop startup context when truncating forked rollouts @jif-oai
+
+#24257 TUI config cleanup: plugin marketplace @etraut-openai
+
+#24380 fix(tui): complete vim word-end and line-end behavior @fcoury-oai
+
+#24728 Bump SQLx to pick up newer bundled SQLite @jif-oai
+
+#24637 fix: run standalone updates noninteractively @efrazer-oai
+
+#24778 make vercel webhook url an env secret @sayan-oai
+
+#23950 fix: Preserve draft text when completing argument-taking slash commands @canvrno-oai
+
+#24641 [codex] Remove stale composer narrative doc references @canvrno-oai
+
+#24368 [codex] add compaction metadata to turn headers @ningyi-oai
+
+#24772 [codex] Add friendly Python SDK sandbox presets @aibrahim-oai
+
+#24382 feat(tui): add vim text object bindings @fcoury-oai
+
+#24766 feat(tui): make turn interruption keybind configurable @fcoury-oai
+
+#24489 feat(tui): render markdown tables in app style [1 of 2] @fcoury-oai
+
+#24713 chore: enable namespace tools for Bedrock @celia-oai
+
+Contributors
+
+cconger, bolinfest, and 21 other contributors
+
+Assets
+139
+
+Loading
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+👍
+19
+atplsx, imengying, darek8686, yaadata, tanakornrawee-dev, MissedShot, rene-re, binbjz, abe-takahiro, Keramis, and 9 more reacted with thumbs up emoji
+🎉
+3
+binbjz, EDM115, and prestancedesign reacted with hooray emoji
+❤️
+4
+jjoanna2-debug, binbjz, sherichev, and Germanycode reacted with heart emoji
+🚀
+5
+binbjz, GuilhermeDellatin, sherichev, stefanodobrilla, and hation reacted with rocket emoji
+👀
+3
+iamkd, tanakornrawee-dev, and binbjz reacted with eyes emoji
+
+All reactions
+
+👍
+19 reactions
+
+🎉
+3 reactions
+
+❤️
+4 reactions
+
+🚀
+5 reactions
+
+👀
+3 reactions
+
+27 people reacted
+
+0.136.0-alpha.1
+
+29 May 00:38
+
+github-actions
+
+rust-v0.136.0-alpha.1
+
+9164fc9
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.136.0-alpha.1
+
+Pre-release
+
+Pre-release
+
+Release 0.136.0-alpha.1
+
+Assets
+139
+
+Loading
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+👍
+8
+mickyyy68, AggressiveCombo, GuilhermeDellatin, lifuyue, MissedShot, Apartman36, scottweiss, and binbjz reacted with thumbs up emoji
+🎉
+1
+binbjz reacted with hooray emoji
+🚀
+1
+binbjz reacted with rocket emoji
+
+All reactions
+
+👍
+8 reactions
+
+🎉
+1 reaction
+
+🚀
+1 reaction
+
+8 people reacted
+
+0.135.0-alpha.2
+
+27 May 21:38
+
+github-actions
+
+rust-v0.135.0-alpha.2
+
+75b2877
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.135.0-alpha.2
+
+Pre-release
+
+Pre-release
+
+Release 0.135.0-alpha.2
+
+Assets
+139
+
+Loading
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+👍
+16
+Brain-Space-Founder, SantanaJcp, meetpatek3, AlissonKawan, kkkano, GoodCoder666, GuilhermeDellatin, ajjuaire, wu858430049, DarkPrinceWarrior, and 6 more reacted with thumbs up emoji
+🎉
+2
+binbjz and rickb3n reacted with hooray emoji
+🚀
+2
+Statusnone420 and binbjz reacted with rocket emoji
+
+All reactions
+
+👍
+16 reactions
+
+🎉
+2 reactions
+
+🚀
+2 reactions
+
+18 people reacted
+
+0.135.0-alpha.1
+
+27 May 18:34
+
+github-actions
+
+rust-v0.135.0-alpha.1
+
+676a221
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.135.0-alpha.1
+
+Pre-release
+
+Pre-release
+
+Release 0.135.0-alpha.1
+
+Assets
+139
+
+Loading
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+👍
+7
+Brain-Space-Founder, SantanaJcp, GoodCoder666, GuilhermeDellatin, rfenouil, darek8686, and binbjz reacted with thumbs up emoji
+🎉
+1
+binbjz reacted with hooray emoji
+
+All reactions
+
+👍
+7 reactions
+
+🎉
+1 reaction
+
+7 people reacted
+
+0.134.0
+
+26 May 19:13
+
+github-actions
+
+rust-v0.134.0
+
+a75c443
+
+Compare
+
+Choose a tag to compare
+
+Sorry, something went wrong.
+
+Filter
+
+Loading
+
+Sorry, something went wrong.
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+No results found
+
+View all tags
+
+0.134.0
+
+New Features
+
+Added search across local conversation history, including case-insensitive content matches with result previews. (#23519, #23921)
+
+Made --profile the primary profile selector across CLI, TUI permissions, and sandbox flows, with legacy profile configs rejected through migration guidance. (#23708, #23883, #23890, #24051, #24055, #24059, #24067, #24110)
+
+Improved MCP setup with per-server environment targeting and OAuth options for streamable HTTP servers. (#23583, #24120)
+
+Made connector tool schemas more reliable by preserving local $ref/$defs structures and compacting oversized schemas before exposure. (#23357, #23904)
+
+Let read-only MCP tools run concurrently when they advertise readOnlyHint. (#23750)
+
+Added richer extension and hook context, including conversation history for extension tools and subagent identity in hook inputs. (#22882, #23963)
+
+Bug Fixes
+
+Improved remote reliability by reconnecting stale exec-server websocket clients, retrying remote control immediately after auth recovery, and retrying remote compaction v2 streams. (#23867, #23775, #23951)
+
+Fixed Windows TUI rendering corruption by restoring virtual terminal mode before drawing. (#24082)
+
+Displayed workspace-specific usage-limit messages for credit and spend-cap failures. (#24114)
+
+Allowed plugin skills to reuse shared plugin-level icon assets. (#23776)
+
+Preserved active permission profile metadata when syncing auto-review runtime settings. (#23956)
+
+Ensured Node-based tools honor Codex’s managed network proxy environment. (#23905)
+
+Documentation
+
+Documented the curl and PowerShell installer paths in the README. (#24106)
+
+Updated developer docs to prefer just test over direct cargo test for repo-local test runs. (#23910)
+
+Added profile migration documentation links to relevant config errors. (#23879)
+
+Chores
+
+Simplified release packaging around canonical native artifacts, reusable DotSlash fetching, and a new macOS x64 zsh artifact. (#23833, #23836, #24129, #24165)
+
+Added release-build support for Codex-produced V8 artifacts. (#23934)
+
+Added image re-encoding benchmarks and connector-style JSON schema policy fixtures. (#23935, #24152)
+
+Improved tracing and analytics for websocket requests, turn starts, and remote compaction v2. (#23581, #23980, #24146)
+
+Changelog
+
+Full Changelog: rust-v0.133.0...rust-v0.134.0
+
+#23581 Trace logical websocket request after untraced warmup @jif-oai
+
+#23718 [codex] Steer budget-limited goal extension turns @jif-oai
+
+#23861 fix: cargo lock @jif-oai
+
+#23728 feat: retain remote compaction truncation parity in v2 @jif-oai
+
+#23870 Make tool executor specs mandatory @jif-oai
+
+#23882 [codex] Stabilize subagent start hook test @jif-oai
+
+#23876 refactor: centralize tool exposure planning @jif-oai
+
+#23879 chore: link doc in profile error messages @jif-oai
+
+#23883 cli: rename profile v2 flag to --profile @jif-oai
+
+#23835 docs: add description to codex-cli/package.json @bolinfest
+
+#23583 Route MCP servers through explicit environments @starr-openai
+
+#23886 cli: remove legacy profile v1 plumbing @jif-oai
+
+#23708 tui: plumb permission profile selection @viyatb-oai
+
+#23833 packaging: move rg manifest out of npm bin @bolinfest
+
+#23796 Improve /goal error messages for ephemeral sessions @etraut-openai
+
+#23867 Reconnect disconnected exec-server websocket clients with fresh sessions @starr-openai
+
+#23792 TUI: skip goal replace prompt for completed goals @etraut-openai
+
+#23519 [codex] Add rollout-backed thread content search @fc-oai
+
+#22552 Remove plugin hooks feature flag @abhinav-oai
+
+#23836 npm: remove legacy package artifact synthesis @bolinfest
+
+#23921 [codex] Make thread search case-insensitive @fc-oai
+
+#23775 fix(remote-control): retry after auth recovery @apanasenko-oai
+
+#22882 Add subagent identity to hook inputs @abhinav-oai
+
+#22915 [3 of 4] tui: route feature and memory toggles through app server @etraut-openai
+
+#23776 fix: Allow plugin skills to share plugin-level icon assets @xl-openai
+
+#23860 Add Bedrock Mantle GovCloud region @CHARLESPALEN-OAI
+
+#23956 Fix auto-review permission profile override @etraut-openai
+
+#23357 feat: support local refs and defs in tool input schemas @celia-oai
+
+#23963 Expose conversation history to extension tools @sayan-oai
+
+#23904 feat: best-effort compact large tool schemas @celia-oai
+
+#23750 Allow parallel MCP tool calls when annotated readOnly @anp-oai
+
+#23905 [codex] Enable Node env proxy for managed network proxy @rreichel3-oai
+
+#23890 mcp: surface profile migration guidance under --profile @jif-oai
+
+#24051 config: remove legacy profile v1 resolution @jif-oai
+
+#24055 config: remove legacy profile write paths @jif-oai
+
+#24057 Avoid config snapshots in live agent subtree traversal @jif-oai
+
+#24061 otel: drop legacy profile usage telemetry @jif-oai
+
+#24059 fix: reject legacy profile selectors @jif-oai
+
+#23934 ci: Use codex produced v8 artifacts for release builds @cconger
+
+#24099 fix(app-server): fix optional bool annotations @owenlin0
+
+#23910 Prefer just test over cargo test in docs @anp-oai
+
+#23951 retry remote compaction v2 requests @rhan-oai
+
+#24081 tui: make codex-tui.log opt-in @jif-oai
+
+#24102 cli: infer host sandbox backend @bolinfest
+
+#24067 app-server: drop legacy profile config surface @jif-oai
+
+#23736 Add new enterprise requirement gate @adams-oai
+
+#24117 [codex] Use rolling files for Windows sandbox logs @iceweasel-oai
+
+#24106 docs: update README.md to mention curl-based install
+
+[… truncated 3041 chars …]

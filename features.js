@@ -560,6 +560,13 @@ function renderAnnouncements() {
         return '<div class="ann-item"><div class="ann-item-header"><span class="ann-item-type ' + typeClass + '">' + typeLabel + '</span><span class="ann-item-title">' + escHTML(a.title) + '</span></div><div class="ann-item-content">' + escHTML(a.content) + '</div><div class="ann-item-time">' + time + '</div></div>';
     }).join('');
     body.innerHTML = html;
+    // 点击展开/收起公告全文
+    body.querySelectorAll('.ann-item-content').forEach(function(el) {
+        el.onclick = function(e) {
+            e.stopPropagation();
+            this.classList.toggle('expanded');
+        };
+    });
     if (annBadge) {
         annBadge.textContent = announcements.length;
         annBadge.style.display = '';

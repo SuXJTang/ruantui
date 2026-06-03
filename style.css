@@ -665,7 +665,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .ann-item-type.add { background: rgba(34,197,94,0.1); color: #22c55e; }
 .ann-item-type.delete { background: rgba(107,114,128,0.1); color: #6B7280; }
 
-.ann-item-content { font-size: 12px; color: var(--text-light); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ann-item-content { font-size: 12px; color: var(--text-light); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; transition: all .2s; }
+.ann-item-content.expanded { -webkit-line-clamp: unset; }
 .ann-item-time { font-size: 10px; color: var(--text-light); opacity: .6; margin-top: 4px; }
 .ann-empty { text-align: center; padding: 40px 20px; color: var(--text-light); font-size: 13px; }
 .ann-loading { text-align: center; padding: 30px; color: var(--text-light); font-size: 13px; }

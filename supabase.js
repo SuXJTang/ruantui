@@ -68,3 +68,43 @@ function incrementView(id) {
             return newViews;
         });
 }
+
+// ============================================
+// 公告 API
+// ============================================
+
+// 获取所有公告（最新优先）
+function fetchAnnouncements() {
+    return supabaseFetch('GET', 'announcements?order=created_at.desc&active=eq.true')
+        .then(function(res) {
+            if (!res.ok) throw new Error('Failed to fetch announcements: ' + res.status);
+            return res.json();
+        });
+}
+
+// 添加公告
+function insertAnnouncement(data) {
+    return supabaseFetch('POST', 'announcements', data)
+        .then(function(res) {
+            if (!res.ok) throw new Error('Failed to insert announcement: ' + res.status);
+            return true;
+        });
+}
+
+// 更新公告
+function updateAnnouncement(id, data) {
+    return supabaseFetch('PATCH', 'announcements?id=eq.' + id, data)
+        .then(function(res) {
+            if (!res.ok) throw new Error('Failed to update announcement: ' + res.status);
+            return true;
+        });
+}
+
+// 删除公告
+function removeAnnouncement(id) {
+    return supabaseFetch('DELETE', 'announcements?id=eq.' + id)
+        .then(function(res) {
+            if (!res.ok) throw new Error('Failed to delete announcement: ' + res.status);
+            return true;
+        });
+}

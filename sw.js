@@ -1,5 +1,5 @@
-var CACHE = 'mytoolbox-v6';
-var URLS = ['/', '/index.html', '/style.css', '/data.js', '/ui.js', '/modal.js', '/features.js', '/theme.js', '/supabase.js', '/particles.js', '/manifest.json', '/icon.svg'];
+var CACHE = 'mytoolbox-v7';
+var URLS = ['/', '/index.html', '/style.css?v=2', '/data.js?v=2', '/ui.js?v=2', '/modal.js?v=2', '/features.js?v=2', '/theme.js?v=2', '/supabase.js?v=2', '/particles.js?v=2', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', function(e) {
     e.waitUntil(caches.open(CACHE).then(function(c) {

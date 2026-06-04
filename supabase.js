@@ -56,17 +56,25 @@ function removeTool(id) {
         });
 }
 
-// 递增浏览量
+// 递增浏览量（使用 RPC 函数原子递增，避免竞态条件）
 function incrementView(id) {
     var t = tools.find(function(x) { return x.id === id; });
     if (!t) return Promise.resolve();
-    var newViews = (t.views || 0) + 1;
-    return supabaseFetch('PATCH', 'tools?id=eq.' + id, { views: newViews })
-        .then(function(res) {
-            if (!res.ok) throw new Error('Failed to increment view: ' + res.status);
-            t.views = newViews;
-            return newViews;
-        });
+    return fetch(SUPABASE_URL + '/rest/v1/rpc/increment_tool_view', {
+        method: 'POST',
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tool_id: id })
+    }).then(function(res) {
+        if (!res.ok) throw new Error('Failed to increment view: ' + res.status);
+        return res.text().then(function(v) { return parseInt(v); });
+    }).then(function(newViews) {
+        t.views = newViews;
+        return newViews;
+    });
 }
 
 // ============================================
@@ -108,3 +116,4 @@ function removeAnnouncement(id) {
             return true;
         });
 }
+

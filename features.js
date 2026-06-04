@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // features.js — Toast/分享/管理CRUD/AI/QQ/反馈/赞赏
 // ============================================
 (function() {
@@ -479,8 +479,8 @@ function openAnnForm(ann) {
 }
 function closeAnnForm() { if (annFormOverlay) { annFormOverlay.classList.remove('active'); annFormOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } }
 
-document.getElementById('annFormCancel').onclick = closeAnnForm;
-document.querySelector('.ann-form-close').onclick = closeAnnForm;
+var _afc = document.getElementById('annFormCancel'); if (_afc) _afc.onclick = closeAnnForm;
+var _afcx = document.querySelector('.ann-form-close'); if (_afcx) _afcx.onclick = closeAnnForm;
 if (annFormOverlay) annFormOverlay.onclick = function(e) { if (!e.target.closest('.modal')) closeAnnForm(); };
 
 var annForm = document.getElementById('annForm');
@@ -606,3 +606,4 @@ window.installApp = function() {
     });
     btn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
 })();
+

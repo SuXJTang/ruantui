@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- Supabase 迁移：创建 tools 表 + 导入初始数据
 -- 在 Supabase SQL Editor 中执行
 -- ============================================
@@ -56,9 +56,22 @@ INSERT INTO tools (id, name, category, rating, comment, detail, tags, slug, colo
 -- 3. 序列从 26 开始（1-25 已占用）
 SELECT setval('tools_id_seq', 25, true);
 
--- 4. RLS 策略（单用户，允许 anon 读写）
+-- 4. RLS 策略（安全修复：原 anon_crud 全开放策略任何人都能调 REST API 增删改）
+-- SELECT 公开；INSERT/UPDATE/DELETE 需要 x-admin-token 请求头匹配后端 app.admin_token
+-- 部署前在 Supabase SQL Editor 执行：SELECT set_config('app.admin_token', '你的强随机密钥', false);
 ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon_crud" ON tools FOR ALL USING (true) WITH CHECK (true);
+
+CREATE OR REPLACE FUNCTION is_admin() RETURNS boolean AS $$
+BEGIN
+  RETURN coalesce(current_setting('request.headers', true)::json->>'x-admin-token', '')
+         = coalesce(current_setting('app.admin_token', true), '');
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+CREATE POLICY "public_read"  ON tools FOR SELECT USING (true);
+CREATE POLICY "admin_write" ON tools FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "admin_update" ON tools FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "admin_delete" ON tools FOR DELETE USING (is_admin());
 
 -- 5. 添加浏览量字段（后续迁移）
 ALTER TABLE tools ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0;
@@ -80,5 +93,21 @@ CREATE TABLE IF NOT EXISTS announcements (
 );
 
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon_read" ON announcements FOR SELECT USING (true);
-CREATE POLICY "admin_all" ON announcements FOR ALL USING (true) WITH CHECK (true);
+-- 公众可读；写入受 is_admin() 保护
+CREATE POLICY "public_read"  ON announcements FOR SELECT USING (true);
+CREATE POLICY "admin_write"  ON announcements FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "admin_update" ON announcements FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "admin_delete" ON announcements FOR DELETE USING (is_admin());
+
+
+-- ============================================
+-- 原子递增浏览量的 RPC 函数（避免竞态条件）
+-- ============================================
+CREATE OR REPLACE FUNCTION increment_tool_view(tool_id bigint) RETURNS integer AS $$
+DECLARE
+  new_views integer;
+BEGIN
+  UPDATE tools SET views = coalesce(views, 0) + 1 WHERE id = tool_id RETURNING views INTO new_views;
+  RETURN new_views;
+END;
+$$ LANGUAGE plpgsql;

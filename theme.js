@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // theme.js — 5色主题 + 暗色模式
 // ============================================
 var savedTheme = localStorage.getItem('colorTheme') || 'sunrise';
@@ -9,7 +9,7 @@ if (savedMode === 'dark') document.body.setAttribute('data-mode', 'dark');
 var toggleBtn = document.querySelector('.theme-toggle');
 if (toggleBtn) {
     var icon = toggleBtn.querySelector('i');
-    if (!icon) return;
+    if (icon) {
     function updateIcon(dark) { icon.className = dark ? 'fas fa-sun' : 'fas fa-moon'; toggleBtn.title = dark ? '亮色' : '暗色'; }
     updateIcon(savedMode === 'dark');
     toggleBtn.onclick = function() {
@@ -17,6 +17,7 @@ if (toggleBtn) {
         if (isDark) { document.body.removeAttribute('data-mode'); localStorage.setItem('colorMode', 'light'); updateIcon(false); }
         else { document.body.setAttribute('data-mode', 'dark'); localStorage.setItem('colorMode', 'dark'); updateIcon(true); }
     };
+    }
 }
 
 var swatches = document.querySelectorAll('.theme-swatch');
@@ -31,3 +32,4 @@ swatches.forEach(function(s) {
 });
 
 // 始终默认为白天模式，不再跟随系统暗色偏好
+

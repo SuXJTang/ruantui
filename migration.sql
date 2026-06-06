@@ -56,9 +56,10 @@ INSERT INTO tools (id, name, category, rating, comment, detail, tags, slug, colo
 -- 3. 序列从 26 开始（1-25 已占用）
 SELECT setval('tools_id_seq', 25, true);
 
--- 4. RLS 策略（安全修复：原 anon_crud 全开放策略任何人都能调 REST API 增删改）
--- SELECT 公开；INSERT/UPDATE/DELETE 需要 x-admin-token 请求头匹配后端 app.admin_token
+-- 4. RLS 策略
+-- SELECT 公开；INSERT/UPDATE/DELETE 需要 x-admin-token 请求头匹配 app.admin_token
 -- 部署前在 Supabase SQL Editor 执行：SELECT set_config('app.admin_token', '你的强随机密钥', false);
+-- Worker 的环境变量 SUPABASE_ADMIN_TOKEN 需与上述 set_config 的值一致
 ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION is_admin() RETURNS boolean AS $$

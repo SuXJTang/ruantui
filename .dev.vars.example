@@ -1,0 +1,14 @@
+# Cloudflare Worker 环境变量配置
+# 复制此文件为 .dev.vars（本地开发）或通过 wrangler secret 设置（生产环境）
+
+# 管理员密码的 SHA-256 哈希
+# 生成命令（Node.js）:
+#   require('crypto').createHash('sha256').update('你的密码').digest('hex')
+ADMIN_PASSWORD_HASH = "dbe0050849070f4d12883d7b943ad59b65983a9e9946c26a0c20153064dc6285"
+
+# Supabase RLS admin token — 需与 Supabase SQL 中 SELECT set_config('app.admin_token', '...', false) 的值一致
+# 用于 Worker 调用 Supabase 写入 API 时通过 RLS is_admin() 校验
+SUPABASE_ADMIN_TOKEN = ""
+
+# Token 签名密钥（生成一个随机字符串即可）
+TOKEN_SECRET = "your-random-token-secret-here"

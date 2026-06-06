@@ -10,7 +10,7 @@
     --border: rgba(0,0,0,0.06); --radius: 14px; --radius-sm: 8px;
     --shadow: 0 2px 8px rgba(0,0,0,0.06);
     --shadow-lg: 0 12px 32px rgba(0,0,0,0.1);
-    --transition: all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+    --transition: opacity 0.3s cubic-bezier(0.25,0.46,0.45,0.94), transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94), border-color 0.3s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.3s cubic-bezier(0.25,0.46,0.45,0.94), color 0.3s cubic-bezier(0.25,0.46,0.45,0.94), background 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 [data-theme="ocean"]   { --primary: #2196F3; --primary-rgb: 33,150,243; --accent: #00bcd4; --bg: #f0f6fc; }
 [data-theme="aurora"]  { --primary: #9C27B0; --primary-rgb: 156,39,176; --accent: #E91E63; --bg: #f6f0f8; }

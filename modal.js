@@ -6,14 +6,13 @@ var modalBody = document.getElementById('modalBody');
 
 function openModal(tool) {
     if (!tool) return;
-    var imgSrc = escHTML(tool.iconUrl || (tool.slug ? 'https://cdn.simpleicons.org/' + tool.slug + '/ffffff' : ''));
-    var iconHTML = tool.iconUrl ? '<img src="' + imgSrc + '" alt="">' : tool.slug ? '<img src="' + imgSrc + '" alt="">' : '<i class="' + escHTML(tool.icon || 'fa-cube') + '"></i>';
+    var iconHTML = renderIconHTML(tool);
     var tagsArr = Array.isArray(tool.tags) ? tool.tags : [];
     var tagsHTML = tagsArr.map(function(t) { return '<span class="modal-tag">' + escHTML(t) + '</span>'; }).join('');
     var links = [];
     if (tool.url) links.push('<a href="' + escHTML(tool.url) + '" class="modal-link primary" target="_blank" rel="noopener"><i class="fas fa-globe"></i> 官网</a>');
     if (tool.download) links.push('<a href="' + escHTML(tool.download) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-download"></i> 下载</a>');
-    
+
     var shareUrl = window.location.origin + window.location.pathname + '?tool=' + tool.id;
     var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(shareUrl);
 
@@ -24,14 +23,20 @@ function openModal(tool) {
         + '<div class="modal-section"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></div>'
 
         + '<div class="modal-section modal-share"><h4>分享此工具</h4><div class="share-body">'
-        + '<div class="share-qr-col"><img src="' + qrSrc + '" alt="" class="share-qr-img"><span class="share-qr-label">扫码查看</span></div>'
+        + '<div class="share-qr-col"><img src="' + qrSrc + '" alt="二维码" class="share-qr-img" loading="lazy" onerror="this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"><span class="share-qr-label">扫码查看</span></div>'
         + '<div class="share-actions"><button class="share-act-btn" onclick="window.copyToolLink(' + tool.id + ')"><i class="fas fa-link"></i> 复制链接</button>'
         + '<button class="share-act-btn" onclick="window.copyToolText(' + tool.id + ')"><i class="fas fa-comment-dots"></i> 复制推荐语</button>'
         + '<button class="share-act-btn" onclick="window.downloadQR(' + tool.id + ')"><i class="fas fa-download"></i> 保存二维码</button></div></div></div>';
 
-    // QR 图片加载失败处理
+    // QR 图片加载失败降级：显示纯文本链接
     var qrImg = modalBody.querySelector('.share-qr-img');
-    if (qrImg) qrImg.onerror = function() { this.style.display = 'none'; var s = this.nextElementSibling; if (s) s.textContent = '二维码加载失败'; };
+    if (qrImg) {
+        qrImg.onerror = function() {
+            this.style.display = 'none';
+            var label = this.nextElementSibling;
+            if (label) label.textContent = shareUrl;
+        };
+    }
 
     overlay.setAttribute('aria-hidden', 'false'); overlay.classList.add('active'); document.body.style.overflow = 'hidden';
 }
@@ -41,7 +46,7 @@ function closeModal() { overlay.classList.remove('active'); overlay.setAttribute
 // 点击卡片打开
 document.getElementById('toolGrid').addEventListener('click', function(e) {
     var card = e.target.closest('.tool-card'); if (!card) return;
-    var tool = tools.find(function(t) { return t.id === parseInt(card.dataset.id); });
+    var tool = App.state.tools.find(function(t) { return t.id === parseInt(card.dataset.id); });
     if (tool) {
         openModal(tool);
         // 递增浏览量 + 更新卡片计数

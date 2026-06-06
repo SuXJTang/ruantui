@@ -1,11 +1,6 @@
 // ============================================
-// data.js — 工具数据（从 Supabase 加载，localStorage 缓存兜底）
+// data.js — 工具/公告数据加载（从 Supabase 读取，localStorage 缓存兜底）
 // ============================================
-var tools = [];
-var currentFilter = 'all';
-var currentSearch = '';
-var loading = false;
-var CACHE_KEY = 'mytoolbox_cache';
 
 // 从 Supabase 加载工具列表
 function loadTools() {
@@ -13,22 +8,22 @@ function loadTools() {
         console.warn('supabase.js not loaded');
         return Promise.resolve([]);
     }
-    loading = true;
+    App.state.loading = true;
     return fetchTools().then(function(data) {
-        tools = data;
+        App.state.tools = data;
         // 缓存到 localStorage 供离线使用
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) {}
-        loading = false;
+        try { localStorage.setItem(App.constants.CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+        App.state.loading = false;
         return data;
     }).catch(function(e) {
         console.warn('Supabase 不可用，尝试本地缓存:', e);
-        loading = false;
+        App.state.loading = false;
         // 离线兜底：读 localStorage 缓存
         try {
-            var cached = localStorage.getItem(CACHE_KEY);
-            if (cached) { tools = JSON.parse(cached); return tools; }
+            var cached = localStorage.getItem(App.constants.CACHE_KEY);
+            if (cached) { App.state.tools = JSON.parse(cached); return App.state.tools; }
         } catch(e2) {}
-        tools = [];
+        App.state.tools = [];
         return [];
     });
 }
@@ -36,6 +31,27 @@ function loadTools() {
 function refreshTools() {
     return loadTools().then(function() {
         rebuildCategories();
-        renderTools(currentFilter);
+        renderTools(App.state.currentFilter);
+    });
+}
+
+// ============================================
+// 公告数据
+// ============================================
+
+function loadAnnouncements() {
+    if (typeof fetchAnnouncements !== 'function') return Promise.resolve([]);
+    return fetchAnnouncements().then(function(data) {
+        App.state.announcements = data;
+        try { localStorage.setItem(App.constants.ANNOUNCEMENT_CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+        return data;
+    }).catch(function(e) {
+        console.warn('公告加载失败，使用缓存:', e);
+        try {
+            var cached = localStorage.getItem(App.constants.ANNOUNCEMENT_CACHE_KEY);
+            if (cached) { App.state.announcements = JSON.parse(cached); return App.state.announcements; }
+        } catch(e2) {}
+        App.state.announcements = [];
+        return [];
     });
 }

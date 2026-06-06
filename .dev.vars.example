@@ -4,7 +4,7 @@
 # 管理员密码的 SHA-256 哈希
 # 生成命令（Node.js）:
 #   require('crypto').createHash('sha256').update('你的密码').digest('hex')
-ADMIN_PASSWORD_HASH = "dbe0050849070f4d12883d7b943ad59b65983a9e9946c26a0c20153064dc6285"
+ADMIN_PASSWORD_HASH = "e773bee2e1a6a599dacb010f98247f2f039ab319548ece409f0ce4dafbd0def4"
 
 # Supabase RLS admin token — 需与 Supabase SQL 中 SELECT set_config('app.admin_token', '...', false) 的值一致
 # 用于 Worker 调用 Supabase 写入 API 时通过 RLS is_admin() 校验

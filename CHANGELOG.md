@@ -4,6 +4,65 @@
 
 ---
 
+## [1.5.1] — 2026-08-01
+
+### 🐛 修复
+- `migration.sql`：`increment_tool_view` 加 `SECURITY DEFINER`，修复浏览量被 RLS 拦截
+- `migration.sql`：`tools` / `announcements` 表添加 `updated_at` 自动更新触发器
+- `shared.js` / `features.js`：`showToast`、`showConfirm` 改用 `textContent`，修复 XSS
+- `features.js`：实现导出按钮功能（之前点击无反应）
+- `features.js`：排序前保存原始数组引用，切回默认排序不再丢序
+- `sw.js`：预缓存路径改为相对路径，修复子路径部署缓存错误；补全遗漏的 `apikey-config.js` 和 `adsense.js`
+- `ui.js`：`rebuildCategories` 选择器改用遍历比对，修复特殊字符失效；DOM 操作加空引用安全检查
+- `particles.js`：修正 `startEffect` 调用顺序
+- `index.html`：修复 QQ 加群链接格式
+
+### 🔒 安全修复
+- `worker/index.js`：CORS 从 `*` 改为域名白名单
+- `worker/index.js`：Token/密码比较改用常量时间比较，防时序攻击
+- `worker/index.js`：添加工具数据输入校验
+
+### 🔄 代码质量
+- 去除 `migration.sql` / `theme.js` 文件头 BOM
+- `features.js`：`ADMIN_TOKEN_KEY` 去重，改用 `App.constants`
+- `features.js`：`installApp` showToast 消息改为纯文本
+- `index.html` / `sw.js`：缓存版本递增至 v9
+
+---
+
+## [1.5.0] — 2026-06-06
+
+### ☁️ Cloudflare Worker 后端
+- 新增 `worker/index.js` — Cloudflare Worker API 后端（认证、CORS、工具 CRUD、公告、置顶切换）
+- 新增 `.dev.vars.example` 环境变量模板
+- 更新 `wrangler.jsonc` 部署配置
+- `shared.js` 新增通用工具函数，状态管理重构
+- README 补充 Worker 部署说明
+
+### 🔧 修复
+- 修复 `generateToken` / `verifyToken` 不匹配导致登录失败（统一 `admin:` 前缀）
+- Token 生成改用 `'admin'` 以匹配 `verifyToken`
+- 重写 `worker/index.js`：修复编码损坏（BOM）和 token bug
+- 简化 `worker/index.js` 语法
+- 合并 `functions/_middleware.js` 功能（公告 CRUD、置顶切换、CORS preflight、`supabaseRequest`）至 `worker/index.js`，删除 `_middleware.js`
+- `.dev.vars.example` 示例密码哈希更新
+
+---
+
+## [1.4.3] — 2026-06-04
+
+### 🔒 安全修复
+- **RLS 策略收紧**：从全开放改为 `is_admin()` 函数控制，SELECT 公开、写操作需 `x-admin-token`
+- `safeColor()` 从正则校验改为 CSS 颜色名白名单校验
+
+### 🐛 修复
+- `features.js`：`annFormCancel` / `ann-form-close` 绑定加 null 检查，阻止 TypeError
+- `theme.js`：`if (!icon) return` 改为 `if (icon) { ... }`，不再阻断主题色块绑定
+- `sw.js`：预缓存 `style.css` 去掉 `?v=2`，与 HTML 引用对齐
+- `supabase.js`：`incrementView` 改用 `increment_tool_view` RPC 原子递增，消除竞态条件
+
+---
+
 ## [1.4.2] — 2026-06-02
 
 ### 🔒 安全修复

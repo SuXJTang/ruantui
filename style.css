@@ -199,7 +199,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 20px 16px 16px;
     display: flex; flex-direction: column; gap: 10px;
-    transition: all .35s cubic-bezier(.25,.46,.45,.94);
+    transition: transform .35s cubic-bezier(.25,.46,.45,.94), box-shadow .35s cubic-bezier(.25,.46,.45,.94), border-color .35s cubic-bezier(.25,.46,.45,.94);
     animation: cardIn .45s ease backwards;
     position: relative; cursor: pointer;
 }
@@ -720,11 +720,12 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
 /* ---------- 鼠标跟随光斑 ---------- */
 #cursorGlow {
-    position: fixed; left: 0; top: 0; width: 220px; height: 220px;
-    margin: -110px 0 0 -110px; border-radius: 50%;
+    position: fixed; left: 0; top: 0; width: 180px; height: 180px;
+    margin: -90px 0 0 -90px; border-radius: 50%;
     pointer-events: none; z-index: 9999; opacity: 0;
-    background: radial-gradient(circle, rgba(var(--primary-rgb),0.14), transparent 65%);
-    mix-blend-mode: soft-light; transition: opacity .4s ease;
+    /* 不使用 mix-blend-mode：混合模式会强制全页合成，导致卡顿 */
+    background: radial-gradient(circle, rgba(var(--primary-rgb),0.10), transparent 65%);
+    transition: opacity .4s ease;
     will-change: transform;
 }
 #cursorGlow.on { opacity: 1; }

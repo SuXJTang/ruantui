@@ -29,15 +29,20 @@
         if (!glow.classList.contains('on')) glow.classList.add('on');
         if (!raf) raf = requestAnimationFrame(tick);
 
-        // 卡片 spotlight：为鼠标所在卡片设置光晕坐标
+        // 卡片 spotlight + 3D 倾斜：为鼠标所在卡片设置坐标与角度
         var el = e.target;
         var card = el && el.closest ? el.closest('.tool-card') : null;
         if (card) {
             if (!hover || hover.card !== card) {
                 hover = { card: card, rect: card.getBoundingClientRect() };
             }
-            card.style.setProperty('--mx', (e.clientX - hover.rect.left) + 'px');
-            card.style.setProperty('--my', (e.clientY - hover.rect.top) + 'px');
+            var rect = hover.rect;
+            card.style.setProperty('--mx', (e.clientX - rect.left) + 'px');
+            card.style.setProperty('--my', (e.clientY - rect.top) + 'px');
+            var rx = ((e.clientY - rect.top) / rect.height - 0.5) * -6; // -3° ~ 3°
+            var ry = ((e.clientX - rect.left) / rect.width - 0.5) * 6;
+            card.style.setProperty('--rx', rx.toFixed(2) + 'deg');
+            card.style.setProperty('--ry', ry.toFixed(2) + 'deg');
         } else if (hover) {
             hover = null;
         }

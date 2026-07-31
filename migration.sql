@@ -1,4 +1,4 @@
-﻿-- ============================================
+-- ============================================
 -- Supabase 迁移：创建 tools 表 + 导入初始数据
 -- 在 Supabase SQL Editor 中执行
 -- ============================================
@@ -104,6 +104,8 @@ CREATE POLICY "admin_delete" ON announcements FOR DELETE USING (is_admin());
 -- ============================================
 -- 原子递增浏览量的 RPC 函数（避免竞态条件）
 -- ============================================
+-- SECURITY DEFINER 使函数以定义者（表所有者）权限执行，
+-- 绕过 RLS 限制，使 anon key 调用时也能成功 UPDATE
 CREATE OR REPLACE FUNCTION increment_tool_view(tool_id bigint) RETURNS integer AS $$
 DECLARE
   new_views integer;
@@ -111,4 +113,23 @@ BEGIN
   UPDATE tools SET views = coalesce(views, 0) + 1 WHERE id = tool_id RETURNING views INTO new_views;
   RETURN new_views;
 END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
+-- updated_at 自动更新触发器
+-- ============================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS tools_updated_at ON tools;
+CREATE TRIGGER tools_updated_at BEFORE UPDATE ON tools
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS announcements_updated_at ON announcements;
+CREATE TRIGGER announcements_updated_at BEFORE UPDATE ON announcements
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

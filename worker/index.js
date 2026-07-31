@@ -15,6 +15,52 @@ async function sha256(msg) {
     return hashArray.map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
 }
 
+// 允许的前端来源（CORS 白名单）
+var ALLOWED_ORIGINS = [
+    'https://suxjtang.github.io',
+    'http://localhost:8080',
+    'http://127.0.0.1:8787',
+];
+
+function getCORSHeaders(request) {
+    var origin = request.headers.get('Origin');
+    var headers = {
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+    if (origin && ALLOWED_ORIGINS.indexOf(origin) >= 0) {
+        headers['Access-Control-Allow-Origin'] = origin;
+        headers['Vary'] = 'Origin';
+    }
+    return headers;
+}
+
+// 常量时间字符串比较 — 防时序攻击
+function timingSafeEqual(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string') return false;
+    if (a.length !== b.length) return false;
+    var result = 0;
+    for (var i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return result === 0;
+}
+
+// 工具数据输入校验
+function validateToolData(data, isUpdate) {
+    if (!data || typeof data !== 'object') return '无效数据';
+    if (!isUpdate) {
+        if (!data.name || typeof data.name !== 'string' || !data.name.trim()) return '名称不能为空';
+        if (!data.category || typeof data.category !== 'string' || !data.category.trim()) return '分类不能为空';
+    }
+    var MAX = { name: 100, category: 50, comment: 500, detail: 5000, url: 2000, download: 2000, usage: 500, slug: 100, icon: 50, color: 30, iconUrl: 2000 };
+    for (var k in MAX) {
+        if (data[k] && typeof data[k] === 'string' && data[k].length > MAX[k]) return k + ' 过长';
+    }
+    if (data.rating !== undefined && (typeof data.rating !== 'number' || data.rating < 1 || data.rating > 5)) return '评分无效';
+    return null;
+}
+
 // 生成会话 token（1 小时内有效）
 async function generateToken(secret) {
     var ts = Date.now().toString();
@@ -29,7 +75,7 @@ async function verifyToken(token, secret) {
         var parts = decoded.split('.');
         if (parts.length !== 2) return false;
         if (Date.now() - parseInt(parts[0]) > 3600000) return false;
-        return parts[1] === await sha256('admin:' + secret + ':' + parts[0]);
+        return timingSafeEqual(parts[1], await sha256('admin:' + secret + ':' + parts[0]));
     } catch (e) { return false; }
 }
 
@@ -64,11 +110,17 @@ async function supabaseRequest(method, path, body, adminToken) {
     }
 }
 
-// JSON 响应辅助
+// JSON 响应辅助（自动附加 CORS 头）
+var _currentRequest = null;
 function jsonResponse(data, status) {
+    var headers = { 'Content-Type': 'application/json' };
+    if (_currentRequest) {
+        var cors = getCORSHeaders(_currentRequest);
+        for (var k in cors) headers[k] = cors[k];
+    }
     return new Response(JSON.stringify(data), {
         status: status || 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: headers
     });
 }
 
@@ -78,19 +130,14 @@ function errorResponse(msg, status) {
 
 // API 路由处理
 async function handleRequest(request, env) {
+    _currentRequest = request;
     var url = new URL(request.url);
     var path = url.pathname;
     var method = request.method;
 
     // CORS 预检
     if (method === 'OPTIONS') {
-        return new Response(null, {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            }
-        });
+        return new Response(null, { headers: getCORSHeaders(request) });
     }
 
     try {
@@ -98,7 +145,7 @@ async function handleRequest(request, env) {
         if (method === 'POST' && path === '/api/admin/login') {
             var body = await request.json();
             var hash = await sha256(body.password || '');
-            if (hash !== env.ADMIN_PASSWORD_HASH) {
+            if (!timingSafeEqual(hash, env.ADMIN_PASSWORD_HASH || '')) {
                 return errorResponse('密码错误', 401);
             }
             var token = await generateToken(env.TOKEN_SECRET || 'ruantui-secret');
@@ -114,6 +161,8 @@ async function handleRequest(request, env) {
         // POST /api/admin/tools — 添加工具
         if (method === 'POST' && path === '/api/admin/tools') {
             var toolData = await request.json();
+            var verr = validateToolData(toolData, false);
+            if (verr) return errorResponse(verr, 400);
             var result = await supabaseRequest('POST', 'tools', toolData, env.SUPABASE_ADMIN_TOKEN);
             if (!result.ok) return errorResponse('添加失败: ' + result.status, 500);
             return jsonResponse({ ok: true });
@@ -125,6 +174,8 @@ async function handleRequest(request, env) {
             var toolId = match[1];
             if (method === 'PUT') {
                 var updateData = await request.json();
+                var verr = validateToolData(updateData, true);
+                if (verr) return errorResponse(verr, 400);
                 var result = await supabaseRequest('PATCH', 'tools?id=eq.' + toolId, updateData, env.SUPABASE_ADMIN_TOKEN);
                 if (!result.ok) return errorResponse('更新失败: ' + result.status, 500);
                 return jsonResponse({ ok: true });

@@ -6,13 +6,18 @@ var grid = document.getElementById('toolGrid');
 var filterBar = document.querySelector('.filter-bar');
 
 function rebuildCategories() {
+    if (!filterBar) return;
     var cats = [...new Set(App.state.tools.map(function(t) { return t.category; }))];
     filterBar.innerHTML = '<button class="filter-tag active" data-filter="all">全部</button>';
     cats.forEach(function(c) {
         var b = document.createElement('button'); b.className = 'filter-tag'; b.dataset.filter = c; b.textContent = c;
         filterBar.appendChild(b);
     });
-    var active = filterBar.querySelector('[data-filter="' + escHTML(App.state.currentFilter) + '"]');
+    // 遍历比对 dataset.filter，避免 CSS 属性选择器在特殊字符下失效
+    var active = null;
+    filterBar.querySelectorAll('.filter-tag').forEach(function(el) {
+        if (el.dataset.filter === App.state.currentFilter) active = el;
+    });
     if (active) active.classList.add('active');
     else { var all = filterBar.querySelector('[data-filter="all"]'); if (all) all.classList.add('active'); App.state.currentFilter = 'all'; }
 }
@@ -40,12 +45,12 @@ function renderTools(filter) {
         card.innerHTML = '<div class="tool-icon" style="background:' + safeColor(t.color) + '">' + iconHTML + '</div><div class="tool-body"><h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + escHTML(t.name) + '</h3><div class="tool-meta"><span class="tool-cat">' + escHTML(t.category) + '</span><span class="tool-views">👁 <span class="tool-views-num">' + (t.views || 0) + '</span></span></div><p>' + escHTML(t.comment) + '</p><div class="tool-tags">' + tagsHTML + '</div>' + (t.usage ? '<div class="tool-extra">' + escHTML(t.usage) + '</div>' : '') + '</div>';
         grid.appendChild(card);
     });
-    document.getElementById('totalCount').textContent = App.state.tools.length;
-    document.getElementById('categoryCount').textContent = new Set(App.state.tools.map(function(t) { return t.category; })).size;
+    var tc = document.getElementById('totalCount'); if (tc) tc.textContent = App.state.tools.length;
+    var cc = document.getElementById('categoryCount'); if (cc) cc.textContent = new Set(App.state.tools.map(function(t) { return t.category; })).size;
 }
 
 // 分类点击
-filterBar.addEventListener('click', function(e) {
+if (filterBar) filterBar.addEventListener('click', function(e) {
     var btn = e.target.closest('.filter-tag'); if (!btn) return;
     filterBar.querySelectorAll('.filter-tag').forEach(function(el) { el.classList.remove('active'); });
     btn.classList.add('active');
@@ -58,7 +63,7 @@ var searchInput = document.getElementById('searchInput');
 if (searchInput) {
     searchInput.addEventListener('input', function() {
         App.state.currentSearch = this.value;
-        if (App.state.currentSearch.trim()) {
+        if (App.state.currentSearch.trim() && filterBar) {
             filterBar.querySelectorAll('.filter-tag').forEach(function(el) { el.classList.remove('active'); });
             var all = filterBar.querySelector('[data-filter="all"]'); if (all) all.classList.add('active');
             App.state.currentFilter = 'all';

@@ -62,8 +62,8 @@
     }
 
     function startEffect() {
-        createContainer();
         stopEffect();
+        createContainer();
         mode = document.body.getAttribute('data-mode') === 'dark' ? 'dark' : 'light';
         if (mode === 'dark') {
             timer = setInterval(function() {

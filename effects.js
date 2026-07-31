@@ -1,6 +1,9 @@
 // ============================================
 // effects.js — 鼠标跟随光斑 + 卡片 spotlight
 // 仅在桌面端 (pointer:fine) 且未开启「减弱动态效果」时启用
+// 性能注意：
+//   - 不使用 mix-blend-mode（强制全页合成）
+//   - spotlight 缓存卡片 rect，避免 mousemove 高频触发 reflow
 // ============================================
 (function() {
     'use strict';
@@ -15,6 +18,12 @@
     var tx = window.innerWidth / 2, ty = window.innerHeight / 2;
     var cx = tx, cy = ty, raf = null;
 
+    // ---------- 卡片 spotlight（rect 缓存，滚动/缩放时失效） ----------
+    var hover = null; // { card, rect }
+    function invalidateRects() { hover = null; }
+    document.addEventListener('scroll', invalidateRects, { passive: true });
+    window.addEventListener('resize', invalidateRects, { passive: true });
+
     document.addEventListener('mousemove', function(e) {
         tx = e.clientX; ty = e.clientY;
         if (!glow.classList.contains('on')) glow.classList.add('on');
@@ -24,9 +33,13 @@
         var el = e.target;
         var card = el && el.closest ? el.closest('.tool-card') : null;
         if (card) {
-            var r = card.getBoundingClientRect();
-            card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-            card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+            if (!hover || hover.card !== card) {
+                hover = { card: card, rect: card.getBoundingClientRect() };
+            }
+            card.style.setProperty('--mx', (e.clientX - hover.rect.left) + 'px');
+            card.style.setProperty('--my', (e.clientY - hover.rect.top) + 'px');
+        } else if (hover) {
+            hover = null;
         }
     }, { passive: true });
 

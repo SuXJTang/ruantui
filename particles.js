@@ -4,6 +4,8 @@
 (function() {
     var container, mode = document.body.getAttribute('data-mode') === 'dark' ? 'dark' : 'light';
     var timer;
+    // 触屏设备性能较弱，降低生成频率
+    var isCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
     function createContainer() {
         if (container) return;
@@ -14,6 +16,7 @@
     }
 
     function shootingStar() {
+        if (container.childElementCount > 8) return; // 元素上限，防止堆积
         var star = document.createElement('div');
         var x = Math.random() * 80 + 10; // 10-90% from left
         var y = Math.random() * 50; // 0-50% from top
@@ -38,6 +41,7 @@
     }
 
     function fallingPetal() {
+        if (container.childElementCount > 30) return; // 元素上限，防止堆积
         var petal = document.createElement('div');
         var x = Math.random() * 95;
         var size = Math.random() * 6 + 4; // 4-10px
@@ -68,12 +72,12 @@
         if (mode === 'dark') {
             timer = setInterval(function() {
                 if (Math.random() < 0.3) shootingStar();
-            }, 800);
+            }, isCoarse ? 1400 : 800);
         } else {
             timer = setInterval(function() {
                 if (document.body.getAttribute('data-mode') === 'dark') return;
                 fallingPetal();
-            }, 400);
+            }, isCoarse ? 700 : 400);
         }
     }
 
@@ -105,6 +109,12 @@
 
     // 初始启动
     startEffect();
+
+    // 页面不可见时暂停特效，节省 CPU/电量
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) stopEffect();
+        else startEffect();
+    });
 
     // 监听主题切换
     var observer = new MutationObserver(function() { startEffect(); });

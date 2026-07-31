@@ -5,6 +5,7 @@
 
 // ---------- 初始化：加载数据 ----------
 loadTools().then(function() {
+    App.state._originalTools = App.state.tools.slice();
     rebuildCategories();
     renderTools('all');
     // 显示最后更新日期
@@ -21,10 +22,12 @@ var sortSelect = document.getElementById('sortSelect');
 if (sortSelect) {
     sortSelect.onchange = function() {
         var val = this.value;
+        // 始终从原始顺序开始，避免多次排序累积偏差
+        if (App.state._originalTools) App.state.tools = App.state._originalTools.slice();
         if (val === 'name') App.state.tools.sort(function(a, b) { return a.name.localeCompare(b.name, 'zh'); });
         else if (val === 'popular') App.state.tools.sort(function(a, b) { return (b.views || 0) - (a.views || 0); });
         else if (val === 'newest') App.state.tools.sort(function(a, b) { return b.id - a.id; });
-        else App.state.tools.sort(function(a, b) { return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id; });
+        // default: 已恢复原始顺序（数据库 pinned.desc, created_at.asc），无需排序
         renderTools(App.state.currentFilter);
     };
 }
@@ -57,7 +60,7 @@ window.downloadQR = function(id) {
 };
 
 // ---------- 管理面板 ----------
-var ADMIN_TOKEN_KEY = 'ruantui_admin_token';
+var ADMIN_TOKEN_KEY = App.constants.ADMIN_TOKEN_KEY;
 
 function getStoredToken() {
     return sessionStorage.getItem(ADMIN_TOKEN_KEY);
@@ -128,6 +131,20 @@ function openMgmt() {
 
 var mgmtBtn = document.getElementById('mgmtBtn');
 if (mgmtBtn) mgmtBtn.onclick = function() { checkAdmin(); };
+
+// 导出数据为 data.js 文件
+var mgmtExportBtn = document.getElementById('mgmtExportBtn');
+if (mgmtExportBtn) mgmtExportBtn.onclick = function() {
+    var data = 'var FALLBACK_TOOLS = ' + JSON.stringify(App.state.tools, null, 2) + ';\n';
+    var blob = new Blob([data], { type: 'text/javascript' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'data.js';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast('已导出 data.js', 'success');
+};
+
 var mgmtOverlay = document.getElementById('mgmtOverlay');
 (function() {
     var c = document.querySelector('.mgmt-close');
@@ -156,7 +173,7 @@ function deleteTool(id) {
     var tName = t ? t.name : '';
     var tCat = t ? t.category : '';
     removeTool(id).then(function() {
-        refreshTools().then(function() { renderMgmtList(); });
+        refreshTools().then(function() { App.state._originalTools = App.state.tools.slice(); renderMgmtList(); });
         showToast('已删除', 'info');
         if (tName) createAnnouncement('已移除工具', '移除了「' + tName + '」(' + tCat + ')', 'delete');
     }).catch(function() { showToast('删除失败', 'error'); });
@@ -166,12 +183,13 @@ function showConfirm(msg, onOk) {
     var box = document.createElement('div');
     box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;';
     box.innerHTML = '<div style="background:var(--card);border-radius:16px;padding:24px 28px 20px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:toastIn .25s ease;">'
-        + '<p style="font-size:15px;font-weight:600;margin-bottom:4px;">' + msg + '</p>'
+        + '<p class="confirm-msg" style="font-size:15px;font-weight:600;margin-bottom:4px;"></p>'
         + '<p style="font-size:12px;color:var(--text-light);margin-bottom:18px;">此操作不可撤销</p>'
         + '<div style="display:flex;gap:8px;">'
         + '<button class="confirm-cancel" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:14px;font-weight:600;">取消</button>'
         + '<button class="confirm-ok" style="flex:1;padding:9px;border-radius:10px;border:none;background:#ef4444;color:#fff;font-size:14px;font-weight:600;">删除</button>'
         + '</div></div>';
+    box.querySelector('.confirm-msg').textContent = msg;
     document.body.appendChild(box);
     box.querySelector('.confirm-cancel').onclick = function() { box.remove(); };
     box.querySelector('.confirm-ok').onclick = function() { box.remove(); onOk(); };
@@ -186,7 +204,7 @@ function togglePin(id) {
     if (typeof toggleToolPin === 'function') {
         toggleToolPin(id, newPinned).then(function() {
             t.pinned = newPinned;
-            refreshTools().then(function() { renderMgmtList(); });
+            refreshTools().then(function() { App.state._originalTools = App.state.tools.slice(); renderMgmtList(); });
             showToast(newPinned ? '已置顶' : '已取消置顶', 'success');
         }).catch(function() { showToast('操作失败', 'error'); });
     } else {
@@ -271,7 +289,7 @@ if (toolForm) {
             formOverlay.classList.remove('active');
             formOverlay.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
-            refreshTools().then(function() { renderMgmtList(); });
+            refreshTools().then(function() { App.state._originalTools = App.state.tools.slice(); renderMgmtList(); });
             showToast(id ? '已更新 ✓' : '已添加 ✓', 'success');
         }).catch(function() { showToast('保存失败，请重试', 'error'); });
     };
@@ -590,7 +608,7 @@ window.installApp = function() {
     }
     var ua = navigator.userAgent;
     if (/iphone|ipad|ipod/i.test(ua)) {
-        showToast('Safari 点底部 <img src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect x=%222%22 y=%226%22 width=%2220%22 height=%2212%22 rx=%222%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%222%22/%3E%3Cpath d=%22M8 12l-5 8h18l-4-8%22 fill=%22%23fff%22 opacity=%220.3%22/%3E%3C/svg%3E" style="width:14px;vertical-align:middle;"> 分享 → 添加到主屏幕', 'info');
+        showToast('Safari 点底部「分享」按钮 → 添加到主屏幕', 'info');
     } else if (/chrome|edg/i.test(ua)) {
         showToast('地址栏右侧 ⋮ → 安装「软推」', 'info');
     } else {

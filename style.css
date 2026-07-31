@@ -774,3 +774,50 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
         transition-duration: .01ms !important;
     }
 }
+
+/* ================================================================
+   互动特效增强（2026-08 新增）
+   ================================================================ */
+
+/* ---------- 卡片 3D 倾斜 ---------- */
+.tool-card { transform-style: preserve-3d; }
+.tool-card:hover {
+    transform: translateY(-6px) perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+    transition: transform .12s ease-out, box-shadow .35s cubic-bezier(.25,.46,.45,.94), border-color .35s cubic-bezier(.25,.46,.45,.94);
+}
+.tool-card:active {
+    transform: translateY(-2px) scale(.98);
+    transition: transform .1s ease-out, box-shadow .15s, border-color .15s;
+}
+
+/* ---------- 滚动进度条 ---------- */
+#scrollProgress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transform-origin: left; transform: scaleX(0);
+    z-index: 10001; pointer-events: none;
+}
+
+/* ---------- 点击迸溅小色点 ---------- */
+.burst-dot {
+    position: fixed; border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 10000;
+    animation: burstFly .55s ease-out forwards;
+}
+@keyframes burstFly {
+    from { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+    to   { transform: translate(calc(-50% + var(--bx)), calc(-50% + var(--by))) scale(.3); opacity: 0; }
+}
+
+/* ---------- emoji 彩蛋 ---------- */
+.emoji-pop {
+    position: fixed; font-size: 18px; line-height: 1;
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 10000;
+    animation: emojiFly .7s ease-out forwards;
+}
+@keyframes emojiFly {
+    from { transform: translate(-50%,-50%) rotate(0deg) scale(1); opacity: 1; }
+    to   { transform: translate(calc(-50% + var(--ex)), calc(-50% + var(--ey))) rotate(var(--rot)) scale(.6); opacity: 0; }
+}

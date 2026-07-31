@@ -686,3 +686,90 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .mgmt-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 .mgmt-tab-content { display: none; }
 .mgmt-tab-content.active { display: block; }
+
+/* ================================================================
+   UI 美化增强（2026-08 新增）
+   ================================================================ */
+
+/* ---------- 品牌文字渐变流光 ---------- */
+.brand-text {
+    background: linear-gradient(100deg, var(--primary), var(--accent), var(--primary));
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: brandFlow 6s linear infinite;
+}
+.profile-info h1 {
+    background: linear-gradient(100deg, var(--primary), var(--accent), var(--primary));
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: brandFlow 6s linear infinite;
+    width: fit-content;
+    filter: drop-shadow(0 2px 8px rgba(var(--primary-rgb),0.18));
+}
+@keyframes brandFlow { to { background-position: 200% center; } }
+
+/* ---------- 卡片 spotlight 光晕（跟随鼠标） ---------- */
+.tool-card::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(280px circle at var(--mx,50%) var(--my,50%), rgba(var(--primary-rgb),0.16), transparent 70%);
+    opacity: 0; transition: opacity .35s ease; pointer-events: none;
+}
+.tool-card:hover::after { opacity: 1; }
+
+/* ---------- 鼠标跟随光斑 ---------- */
+#cursorGlow {
+    position: fixed; left: 0; top: 0; width: 220px; height: 220px;
+    margin: -110px 0 0 -110px; border-radius: 50%;
+    pointer-events: none; z-index: 9999; opacity: 0;
+    background: radial-gradient(circle, rgba(var(--primary-rgb),0.14), transparent 65%);
+    mix-blend-mode: soft-light; transition: opacity .4s ease;
+    will-change: transform;
+}
+#cursorGlow.on { opacity: 1; }
+
+/* ---------- 筛选标签选中渐变 ---------- */
+.filter-tag.active {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-color: transparent;
+}
+
+/* ---------- 弹窗入场弹性 ---------- */
+.modal { transition: transform .38s cubic-bezier(.34,1.56,.64,1); }
+
+/* ---------- 页脚副标题渐变 ---------- */
+.footer-sub {
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* ---------- 回到顶部按钮脉冲 ---------- */
+#backTop.visible::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    animation: backTopPulse 2.4s ease-out infinite;
+}
+@keyframes backTopPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(var(--primary-rgb),0.45); }
+    70%  { box-shadow: 0 0 0 14px rgba(var(--primary-rgb),0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb),0); }
+}
+
+/* ---------- 全局滚动条美化 ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(128,128,128,0.25); border-radius: 8px;
+    border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(var(--primary-rgb),0.5); }
+
+/* ---------- 尊重「减弱动态效果」偏好 ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}

@@ -1,15 +1,24 @@
 {
-  "name": "软推",
+  "name": "软推 — 精选软件工具推荐",
   "short_name": "软推",
-  "description": "精选软件推荐 — 开发工具、效率软件、设计工具",
+  "description": "40+ 款精选软件工具推荐 — AI、开发、设计、效率、安全、影音",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#f8f9fb",
   "theme_color": "#FF7D20",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "lang": "zh-CN",
+  "dir": "ltr",
   "icons": [
     { "src": "icon.svg", "sizes": "144x144", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icon.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "搜索工具", "url": "./?action=search" },
+    { "name": "AI 工具", "url": "./?cat=AI工具" }
   ]
 }

@@ -51,6 +51,31 @@ var ADSENSE_CLIENT = 'ca-pub-1785974352610267';
             if (container) container.classList.add('ad-active');
         }
 
+        // 使用 IntersectionObserver 懒加载广告 — 进入视口才初始化
+        if ('IntersectionObserver' in window) {
+            var adObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var ins = entry.target.querySelector('.adsbygoogle');
+                        if (ins && !ins.dataset.adInitialized) {
+                            ins.dataset.adInitialized = '1';
+                            try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+                        }
+                        adObserver.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '200px' });
+            document.querySelectorAll('.ad-container').forEach(function(c) { adObserver.observe(c); });
+        } else {
+            // 降级：直接初始化所有广告
+            document.querySelectorAll('.adsbygoogle').forEach(function(ins) {
+                if (!ins.dataset.adInitialized) {
+                    ins.dataset.adInitialized = '1';
+                    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+                }
+            });
+        }
+
         // 延迟检测广告是否真正渲染
         function checkAndHideEmpty() {
             var adContainers = document.querySelectorAll('.ad-container:not(.ad-inline)');

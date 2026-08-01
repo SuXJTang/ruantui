@@ -3,16 +3,18 @@
 // ============================================
 // 版本号可通过修改此字符串触发现有新缓存失效
 var CACHE_PREFIX = 'ruantui';
-var CACHE_VERSION = 'v15';  // 更新静态资源时手动递增此版本号
+var CACHE_VERSION = 'v17';  // v3.0 最终发布版
 var CACHE = CACHE_PREFIX + '-' + CACHE_VERSION;
 
 // 使用相对路径，兼容子路径部署（如 GitHub Pages 的 /ruantui/）
 var URLS = [
     './', './index.html', './style.css', './shared.js',
     './data.js', './ui.js', './modal.js', './features.js',
-    './theme.js', './supabase.js', './particles.js', './effects.js', './interactions.js',
+    './theme.js', './supabase.js', './particles.js', './effects.js',
+    './interactions.js', './engagement.js', './mobile.js', './analytics.js',
     './apikey-config.js', './adsense.js',
-    './manifest.json', './icon.svg'
+    './manifest.json', './icon.svg',
+    './sitemap.xml', './robots.txt'
 ];
 
 self.addEventListener('install', function(e) {

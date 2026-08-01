@@ -1,15 +1,58 @@
 // ============================================
-// interactions.js — 页面互动特效
-//   1. 滚动进度条（顶部渐变进度）
-//   2. 点击迸溅小色点（按钮/卡片/链接）
-//   3. 品牌/头像 emoji 彩蛋
-// 动画型互动尊重「减弱动态效果」偏好（进度条除外）
+// interactions.js — 页面互动特效 v2
+//   1. 页面加载动画
+//   2. 品牌标题打字机效果
+//   3. 滚动进度条
+//   4. 点击迸溅小色点
+//   5. 品牌/头像 emoji 彩蛋
+//   6. 视差滚动
 // ============================================
 (function() {
     'use strict';
     var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // ---------- 1. 滚动进度条 ----------
+    // ---------- 0. 页面加载动画 ----------
+    var loader = document.getElementById('pageLoader');
+    if (loader) {
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                loader.classList.add('hidden');
+                setTimeout(function() { loader.remove(); }, 600);
+            }, 300);
+        });
+        // 超时兜底
+        setTimeout(function() {
+            if (loader && !loader.classList.contains('hidden')) {
+                loader.classList.add('hidden');
+                setTimeout(function() { if (loader) loader.remove(); }, 600);
+            }
+        }, 3000);
+    }
+
+    // ---------- 1. 品牌标题打字机效果 ----------
+    if (!reduced) {
+        var brandText = document.querySelector('.brand-text');
+        if (brandText) {
+            var original = brandText.textContent;
+            brandText.textContent = '';
+            brandText.classList.add('typing-cursor');
+            var idx = 0;
+            function typeNext() {
+                if (idx < original.length) {
+                    brandText.textContent = original.substring(0, idx + 1);
+                    idx++;
+                    setTimeout(typeNext, 150 + Math.random() * 80);
+                } else {
+                    setTimeout(function() {
+                        brandText.classList.remove('typing-cursor');
+                    }, 1500);
+                }
+            }
+            setTimeout(typeNext, 500);
+        }
+    }
+
+    // ---------- 2. 滚动进度条 ----------
     var bar = document.createElement('div');
     bar.id = 'scrollProgress';
     bar.setAttribute('aria-hidden', 'true');
@@ -26,9 +69,9 @@
     }, { passive: true });
     updateProgress();
 
-    if (reduced) return; // 以下为动画型互动
+    if (reduced) return;
 
-    // ---------- 2. 点击迸溅小色点 ----------
+    // ---------- 3. 点击迸溅小色点 ----------
     var DOT_COLORS = ['var(--primary)', 'var(--accent)', '#ffd166', '#06d6a0', '#ef476f'];
     function burst(x, y) {
         var n = 6;
@@ -51,7 +94,7 @@
         }
     }
 
-    // ---------- 3. 品牌 / 头像 emoji 彩蛋 ----------
+    // ---------- 4. 品牌 / 头像 emoji 彩蛋 ----------
     var EGGS = ['🎉', '✨', '⭐', '🌈', '🔥', '💖', '🚀', '🧰'];
     function emojiBurst(x, y) {
         for (var i = 0; i < 8; i++) {
@@ -72,7 +115,24 @@
         }
     }
 
-    // 统一点击处理：彩蛋优先，其余可点元素迸溅
+    // ---------- 5. 视差滚动 ----------
+    var parallaxElements = document.querySelectorAll('[data-parallax]');
+    var pTicking = false;
+    function updateParallax() {
+        pTicking = false;
+        var scrollY = window.scrollY;
+        parallaxElements.forEach(function(el) {
+            var speed = parseFloat(el.dataset.parallax) || 0.3;
+            el.style.transform = 'translateY(' + (scrollY * speed) + 'px)';
+        });
+    }
+    if (parallaxElements.length > 0) {
+        window.addEventListener('scroll', function() {
+            if (!pTicking) { pTicking = true; requestAnimationFrame(updateParallax); }
+        }, { passive: true });
+    }
+
+    // 统一点击处理
     document.addEventListener('click', function(e) {
         var t = e.target;
         if (!t || !t.closest) return;

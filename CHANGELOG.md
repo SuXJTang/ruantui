@@ -1,298 +1,92 @@
-# CHANGELOG
+# 更新日志 (CHANGELOG)
 
-本文件记录「软推」(原「我的工具箱」) 项目的所有重要变更。
+## v3.0.0 — 2026-08-02
 
----
+十次大迭代完整升级，从工具推荐页进化为高交互、高性能、可分析的 PWA 应用。
 
-## [1.5.1] — 2026-08-01
+### 迭代 1/10 — 内容大扩张
+- 工具数量从 9 款扩展至 40+ 款
+- 新增 7 大分类：AI 工具、开发工具、设计工具、效率工具、安全工具、影音工具、浏览器插件
+- 每款工具配有详细评语、标签、使用场景说明
+- FALLBACK_TOOLS 本地数据集，Supabase 不可用时自动降级
 
-### 🐛 修复
-- `migration.sql`：`increment_tool_view` 加 `SECURITY DEFINER`，修复浏览量被 RLS 拦截
-- `migration.sql`：`tools` / `announcements` 表添加 `updated_at` 自动更新触发器
-- `shared.js` / `features.js`：`showToast`、`showConfirm` 改用 `textContent`，修复 XSS
-- `features.js`：实现导出按钮功能（之前点击无反应）
-- `features.js`：排序前保存原始数组引用，切回默认排序不再丢序
-- `sw.js`：预缓存路径改为相对路径，修复子路径部署缓存错误；补全遗漏的 `apikey-config.js` 和 `adsense.js`
-- `ui.js`：`rebuildCategories` 选择器改用遍历比对，修复特殊字符失效；DOM 操作加空引用安全检查
-- `particles.js`：修正 `startEffect` 调用顺序
-- `index.html`：修复 QQ 加群链接格式
+### 迭代 2/10 — SEO 深度优化
+- 新增 sitemap.xml 和 robots.txt
+- 双 JSON-LD 结构化数据（WebSite + ItemList）
+- 完善 meta 标签：description、keywords、og、twitter card
+- 预连接（preconnect/dns-prefetch/preload）优化资源加载
 
-### 🔒 安全修复
-- `worker/index.js`：CORS 从 `*` 改为域名白名单
-- `worker/index.js`：Token/密码比较改用常量时间比较，防时序攻击
-- `worker/index.js`：添加工具数据输入校验
+### 迭代 3/10 — 视觉动效全面升级
+- 页面加载动画（loader-orb 旋转光球）
+- 品牌文字打字机效果
+- 滚动进度条
+- 点击粒子爆炸特效
+- 视差滚动背景
+- 暗夜模式极光（Aurora）流光动效
+- 粒子数量提升（桌面 100 / 移动 50）
 
-### 🔄 代码质量
-- 去除 `migration.sql` / `theme.js` 文件头 BOM
-- `features.js`：`ADMIN_TOKEN_KEY` 去重，改用 `App.constants`
-- `features.js`：`installApp` showToast 消息改为纯文本
-- `index.html` / `sw.js`：缓存版本递增至 v9
+### 迭代 4/10 — 搜索筛选系统增强
+- 模糊搜索（子序列匹配）
+- 搜索关键词高亮
+- 分类筛选标签数量徽章
+- 评分排序选项
+- Ctrl+K 快捷键聚焦搜索
+- 搜索防抖降至 250ms
+- 空结果引导提示
 
----
+### 迭代 5/10 — 用户互动功能
+- 收藏功能（localStorage 持久化）
+- 浏览历史记录（最近 12 条）
+- 工具评分系统（1-5 星）
+- MutationObserver 自动注入收藏按钮
+- 收藏心跳动画 + 飞心特效
 
-## [1.5.0] — 2026-06-06
+### 迭代 6/10 — 性能优化
+- 广告位 IntersectionObserver 懒加载（视口外不渲染）
+- 资源预连接与预加载
+- 搜索防抖优化
+- Service Worker 缓存策略完善
 
-### ☁️ Cloudflare Worker 后端
-- 新增 `worker/index.js` — Cloudflare Worker API 后端（认证、CORS、工具 CRUD、公告、置顶切换）
-- 新增 `.dev.vars.example` 环境变量模板
-- 更新 `wrangler.jsonc` 部署配置
-- `shared.js` 新增通用工具函数，状态管理重构
-- README 补充 Worker 部署说明
+### 迭代 7/10 — 主题系统增强
+- 三态主题切换：自动 / 亮色 / 暗色
+- 跟随系统 prefers-color-scheme
+- 系统暗色模式变化实时监听
+- 主题切换涟漪动画 + Toast 反馈
 
-### 🔧 修复
-- 修复 `generateToken` / `verifyToken` 不匹配导致登录失败（统一 `admin:` 前缀）
-- Token 生成改用 `'admin'` 以匹配 `verifyToken`
-- 重写 `worker/index.js`：修复编码损坏（BOM）和 token bug
-- 简化 `worker/index.js` 语法
-- 合并 `functions/_middleware.js` 功能（公告 CRUD、置顶切换、CORS preflight、`supabaseRequest`）至 `worker/index.js`，删除 `_middleware.js`
-- `.dev.vars.example` 示例密码哈希更新
+### 迭代 8/10 — PWA 与移动端优化
+- 模态框滑动关闭手势（阈值 100px）
+- 卡片长按预览 + 震动反馈
+- 智能 PWA 安装引导横幅
+- 离线状态检测提示
+- manifest.json 增强：分类、语言、方向、maskable 图标、应用快捷方式
 
----
+### 迭代 9/10 — 数据分析仪表盘
+- 每日访问记录（localStorage）
+- 仪表盘 5 大模块：数据概览、热门工具 Top 5、7 日访问趋势、最近浏览、收藏列表
+- 浮动操作按钮入口
+- 历史与收藏项目可点击直达详情
 
-## [1.4.3] — 2026-06-04
-
-### 🔒 安全修复
-- **RLS 策略收紧**：从全开放改为 `is_admin()` 函数控制，SELECT 公开、写操作需 `x-admin-token`
-- `safeColor()` 从正则校验改为 CSS 颜色名白名单校验
-
-### 🐛 修复
-- `features.js`：`annFormCancel` / `ann-form-close` 绑定加 null 检查，阻止 TypeError
-- `theme.js`：`if (!icon) return` 改为 `if (icon) { ... }`，不再阻断主题色块绑定
-- `sw.js`：预缓存 `style.css` 去掉 `?v=2`，与 HTML 引用对齐
-- `supabase.js`：`incrementView` 改用 `increment_tool_view` RPC 原子递增，消除竞态条件
-
----
-
-## [1.4.2] — 2026-06-02
-
-### 🔒 安全修复
-- **XSS 防护**：`ui.js`、`modal.js`、`features.js` 中所有 `innerHTML` 拼接用户数据处改用 `escHTML()` 转义输出，防止跨站脚本注入
-- 新增 `safeColor()` 校验函数，防止 CSS 注入
-- **密码加固**：管理密码改为 SHA-256 哈希比较，不再以 base64 明文存储
-
-### 🐛 修复
-- `t.tags` 为空时 `.map()` 崩溃 → `Array.isArray` 守卫（`ui.js`、`modal.js`）
-- `theme.js` `querySelector('i')` 返回 null 时崩溃 → 添加 null 检查
-- `renderTools` / `renderMgmtList` 入口添加 `if (!tools || !grid)` 守卫
-- 分享推荐语 `t.rating` 为 undefined 时显示 `"⭐ undefined/5"` → `|| '?'` 兜底
-- `symbol` 参数名 `prompt` 遮蔽 `window.prompt` → 重命名为 `userPrompt`
-- `callDeepSeek` 非 JSON 响应体调用 `.json()` 崩溃 → 检查 Content-Type
-- QR 图片内联 `onerror` + `nextElementSibling` 可能为 null → 改用 JS 事件绑定
-- 分享面板 `document.onclick` 直接覆盖 → 改用 `addEventListener`
-- `beforeinstallprompt` 重复监听 → 添加 `{ once: true }`
-
-### 🔄 Service Worker
-- CACHE 名从 `Date.now()` 改为固定 `mytoolbox-v5`，避免孤立缓存堆积
-- `c.addAll` 改为逐个 `c.add` + `.catch` 容错，单文件 404 不再阻止 SW 安装
+### 迭代 10/10 — 最终打磨与发布
+- 全部 JS 文件语法验证通过
+- .gitignore 完善（排除 .reasonix 等非项目文件）
+- Service Worker 缓存版本递增至 v17
+- CHANGELOG 文档
+- Git 提交并推送至 GitHub
 
 ---
 
-## [1.4.1] — 2026-06-02
+## v2.0.0 — 2026-08-01
 
-### 💰 广告接入
-- 接入 Google AdSense 广告
-- 新建 `adsense.js` 广告初始化模块
-- `<head>` 加入 AdSense 脚本，启用 Auto Ads
-- 顶部/底部广告占位替换为手动广告单元
-- 广告激活后自动隐藏占位虚线框
+- 赛博玻璃态未来科技风设计系统重构
+- 智能广告位系统 + 反拦截策略
+- 联盟营销工具推荐 + 点击变现
+- 5 套主题色方案
+- 粒子背景 + 暗夜模式星星拟真化
 
-### 🐛 修复
-- 修复 AdSense 广告不显示：补充 `data-ad-client` 和 inline push
-- 修复分享按钮无效：`shareCopyText` 补充点击事件绑定
-- 修复 `tags` 为空时页面崩溃：`renderTools` 增加 `Array.isArray` 防御性检查
-- 修复浏览量无回滚：`incrementView` 改为服务器响应成功后再更新本地计数
-- 清理 `showToast` 中无效的 `color:#fff` 死代码
+## v1.0.0
 
-### ✨ 新增
-- 添加「回到顶部」按钮
-
----
-
-## [1.4.0] — 2026-05-31
-
-### 🔒 API Key 加密存储
-- DeepSeek API Key 使用管理密码加密存储，外人不可见
-- 加密采用 AES-GCM，密文写入 `apikey-config.js`
-- 解密仅在管理面板输入密码后生效，前后端分离模式下保护密钥安全
-
-### 🐛 修复
-- 修复 401 未授权响应导致的无限循环刷新和竞态条件
-
----
-
-## [1.3.1] — 2026-05-29
-
-### ☁️ Cloudflare Pages 部署
-- 新增 `wrangler.jsonc` — Cloudflare Pages 部署配置
-- 新增 `.gitignore` — 排除 `.wrangler`、`node_modules`、`.env` 等无关文件
-- 配置 SPA fallback（`not_found_404` → `/index.html`）
-
-### 👁 工具浏览计数
-- 卡片和弹窗新增浏览量显示
-- 支持按浏览量热门排序
-- 新增 `migration.sql` — 包含 `views` 字段迁移 SQL
-- 新增 `incrementView` API（`supabase.js`）
-
-### ☀️ 默认主题优化
-- 默认主题改为白天模式，不再跟随系统暗色偏好
-- 用户手动切换的暗色/亮色模式不受影响
-
-### 🖼 其他
-- 头像更换为 `img/touxiang.jpg`
-
----
-
-## [1.3.0] — 2026-05-25
-
-### 🏷️ 品牌升级
-- 网站正式更名：**我的工具箱 → 软推**
-- 新增 `README.md` 项目文档
-
-### 🔍 SEO 全面优化
-- 新增 `meta` / Open Graph / Twitter Card 标签
-- 新增 JSON-LD 结构化数据
-- 新增 `robots.txt` 和 `sitemap.xml`
-- 添加 Google Site Auth 验证文件
-
----
-
-## [1.2.0] — 2026-05-24
-
-### 🐛 修复
-- 修复选框退出交互问题
-- 自定义删除确认弹窗（替代原生 `confirm`）
-- 修复小屏设备图标尺寸
-- 修复三项：favicon 显示、SW 即时激活、密码 base64 编码
-- 修复支付宝二维码文件扩展名
-- 修复二维码分享 URL 查询参数叠加问题
-
-### 🔄 Service Worker
-- SW 缓存名自动生成（不再需要手动升级版本号）
-- SW v4 强制刷新缓存
-- SW v5
-
-### 🔍 UI 细节
-- 卡片图标放大（img 22→28→32px，i 18→24→28px）
-- 置顶图标改为精美「推荐」渐变徽章
-
-### 📱 PWA
-- manifest 使用相对路径，兼容 localhost 和 GitHub Pages
-- 修复 GitHub Pages PWA `start_url` 路径
-- 重写 PWA 安装逻辑：按钮按需显示、去除自动弹窗、iOS/Chrome 安装指引
-
-### 💰 赞赏
-- 更新赞赏二维码图片
-- 赞赏码点击放大 — 丝滑缩放动画
-
-### 🔧 功能完善
-- 分享面板 URL 修复
-- 深链接支持
-- 图标字段完善
-- 卡片 Grid 布局 + 排序 + 页脚日期
-
-### ✨ 背景特效
-- 暗色模式：流星特效
-- 亮色模式：落花特效
-
----
-
-## [1.1.0] — 2026-05-24
-
-### 🗑️ 移除评分
-- 卡片和弹窗均不再显示星级/评分
-- 移除卡片星级星星渲染
-
-### ✨ UI 全面优化
-- 卡片图标渐变遮罩
-- 骨架屏脉冲动画替代 loading spinner
-- 搜索栏聚焦撑开 + 品牌 hover 动画
-- 暗色模式卡片提亮 + 对比度增强
-- Toast 顶部滑入 + 彩色左边框 + 图标
-- 移动端触控区域 ≥36px + 管理弹窗全宽适配
-
-### 🔧 修复与改进
-- GitHub 导出改为 JSON 下载
-- 下载链接改为可选
-- 添加加载 spinner 动画
-- 离线时 localStorage 缓存兜底
-
----
-
-## [1.0.0] — 2026-05-24
-
-### 🗄️ 数据架构重构（重大变更）
-- **迁移到纯 Supabase 数据源**，移除 `BASE_TOOLS` 硬编码和 localStorage 合并逻辑
-- 新增 `tools` 表替代 `toolbox_data`
-- `supabase.js` 重构为 `fetchTools` / `updateTool` / `insertTool` / `removeTool` API
-- `features.js` CRUD 操作改为直接调 Supabase
-- `ui.js` 渲染改用 `t.pinned` 替代 localStorage 读取
-- Service Worker 缓存版本升级到 v2
-- 修复 `icon_url` → `iconUrl` 列名匹配
-
-### ☁️ Supabase 接入
-- 接入 Supabase 云端数据同步
-
-### 🔗 推广链接
-- 移除推广链接，官网和下载默认不显示
-
-### 📱 PWA 安装引导
-- 完善安装引导流程
-- 优化安装提示文案
-- 安装按钮适配 iOS 提示
-- 添加安装 APP 按钮
-- PWA 修复：SVG 图标 + 安装提示
-- 添加 PWA 支持 + 手机适配优化
-
-### 🐛 修复
-- 修复移除评分导致的编辑功能失效
-
-### 📌 置顶功能
-- 添加置顶功能
-- Notion 默认置顶
-
-### 🏗 架构
-- v2 重建完成
-
----
-
-## [0.2.0] — 2026-05-20
-
-### 📖 文档
-- 完善 README 项目说明
-- 添加 MIT 开源许可证
-
-### 🔧 部署
-- 改回相对路径，适配 GitHub Pages
-- 使用 Gitee raw 绝对路径
-
-### 🔒 安全
-- 管理员认证持久化 + 退出登录功能
-- 管理功能增加管理员密码保护
-
-### 🧰 项目启动
-- 「我的工具箱」— 个人软件推荐工具上线
-
----
-
-## [0.1.1] — 2026-05-17
-
-### 🎯 仓库标准化
-- 仓库标准化整理
-- 新增 `CHANGELOG.md`
-- 清空仓库，准备从头开始
-
----
-
-## [0.1.0] — 2025-05-27
-
-### ✨ 初始版本
-- 银杏叶 PNG-SVG 动态背景演示页面
-- 银杏叶精美拖尾特效
-- 鼠标交互效果
-- 响应式设计
-- 性能优化、内存占用降低
-
----
-
-> 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，  
-> 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+- 基础工具推荐页面
+- Supabase 数据后端
+- Cloudflare Worker 写操作
+- DeepSeek AI 生成评语
+- PWA 基础支持

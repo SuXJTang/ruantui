@@ -10,8 +10,11 @@ function openModal(tool) {
     var tagsArr = Array.isArray(tool.tags) ? tool.tags : [];
     var tagsHTML = tagsArr.map(function(t) { return '<span class="modal-tag">' + escHTML(t) + '</span>'; }).join('');
     var links = [];
+    // 联盟链接优先
+    if (tool.affiliateUrl) links.push('<a href="' + escHTML(tool.affiliateUrl) + '" class="modal-link affiliate" target="_blank" rel="noopener" onclick="trackToolClick(' + tool.id + ',\'' + escHTML(tool.name) + '\')"><i class="fas fa-fire"></i> 优惠购买</a>');
     if (tool.url) links.push('<a href="' + escHTML(tool.url) + '" class="modal-link primary" target="_blank" rel="noopener"><i class="fas fa-globe"></i> 官网</a>');
     if (tool.download) links.push('<a href="' + escHTML(tool.download) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-download"></i> 下载</a>');
+    if (tool.link && tool.link !== tool.url && tool.link !== tool.affiliateUrl) links.push('<a href="' + escHTML(tool.link) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> 直达</a>');
 
     var shareUrl = window.location.origin + window.location.pathname + '?tool=' + tool.id;
     var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(shareUrl);

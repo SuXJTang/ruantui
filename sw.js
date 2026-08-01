@@ -3,7 +3,7 @@
 // ============================================
 // 版本号可通过修改此字符串触发现有新缓存失效
 var CACHE_PREFIX = 'ruantui';
-var CACHE_VERSION = 'v12';  // 更新静态资源时手动递增此版本号
+var CACHE_VERSION = 'v13';  // 更新静态资源时手动递增此版本号
 var CACHE = CACHE_PREFIX + '-' + CACHE_VERSION;
 
 // 使用相对路径，兼容子路径部署（如 GitHub Pages 的 /ruantui/）

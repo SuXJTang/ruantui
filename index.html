@@ -3,32 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="精选开发工具、效率软件、设计工具推荐 — VS Code、Figma、Notion 等 25+ 款优质工具，每款都经过长期使用检验。">
-    <meta name="keywords" content="软件推荐,工具推荐,开发工具,效率工具,设计工具,VS Code,Figma,Notion,软推,软件分享">
+    <meta name="description" content="精选 40+ 款优质软件工具推荐 — 涵盖 AI、开发、设计、效率、安全、影音等 7 大分类。ChatGPT、VS Code、Figma、Notion 等，每款都经过长期使用检验。">
+    <meta name="keywords" content="软件推荐,工具推荐,开发工具,AI工具,设计工具,效率工具,安全工具,影音工具,ChatGPT,VS Code,Figma,Notion,Claude,DeepSeek,软推,软件分享,免费软件,在线工具">
     <meta name="author" content="软推">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+    <meta name="googlebot" content="index, follow">
     <link rel="canonical" href="https://suxjtang.github.io/ruantui/">
-    <meta property="og:title" content="🧰 软推 — 精选软件推荐">
-    <meta property="og:description" content="开发工具、效率软件、设计工具推荐，每款都经过长期使用检验。">
+    <meta property="og:title" content="🧰 软推 — 40+ 精选软件工具推荐">
+    <meta property="og:description" content="AI、开发、设计、效率、安全、影音 — 7 大分类 40+ 款优质工具，每款都经过长期使用检验。">
     <meta property="og:image" content="https://suxjtang.github.io/ruantui/icon.svg">
     <meta property="og:url" content="https://suxjtang.github.io/ruantui/">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="zh_CN">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="🧰 软推 — 精选软件推荐">
-    <meta name="twitter:description" content="开发工具、效率软件、设计工具推荐。">
+    <meta property="og:site_name" content="软推">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🧰 软推 — 40+ 精选软件工具推荐">
+    <meta name="twitter:description" content="AI、开发、设计、效率、安全、影音 — 7 大分类 40+ 款优质工具推荐。">
+    <meta name="twitter:image" content="https://suxjtang.github.io/ruantui/icon.svg">
     <meta name="theme-color" content="#FF7D20">
     <link rel="manifest" href="manifest.json">
+    <link rel="sitemap" type="application/xml" href="sitemap.xml">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="软推">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>🧰 软推 — 精选软件推荐</title>
+    <title>🧰 软推 — 40+ 精选软件工具推荐 | AI·开发·设计·效率</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="style.css?v=9">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://cdn.simpleicons.org">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+<link rel="dns-prefetch" href="https://api.qrserver.com">
+<link rel="preload" href="style.css?v=10" as="style">
+<link rel="preload" href="shared.js?v=2" as="script">
+    <link rel="stylesheet" href="style.css?v=10">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1785974352610267" crossorigin="anonymous"></script>
 </head>
 <body>
+
+<!-- 页面加载动画 -->
+<div id="pageLoader"><div class="loader-orb"></div></div>
 
 <header class="topbar">
     <div class="topbar-inner">
@@ -101,8 +115,10 @@
         <option value="name">名称 A-Z</option>
         <option value="popular">🔥 热门</option>
         <option value="newest">最新添加</option>
+        <option value="rating">⭐ 评分</option>
     </select>
 </div>
+<div id="resultCount" class="result-count" style="display:none;"></div>
 
 <section class="grid" id="toolGrid"></section>
 
@@ -226,13 +242,36 @@
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "软推",
+  "alternateName": "RuanTui",
   "url": "https://suxjtang.github.io/ruantui/",
-  "description": "个人软件推荐与使用心得 — 精选开发工具、效率软件、设计工具推荐。",
+  "description": "精选 40+ 款优质软件工具推荐 — 涵盖 AI、开发、设计、效率、安全、影音等 7 大分类。",
+  "inLanguage": "zh-CN",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://suxjtang.github.io/ruantui/?q={search_term_string}",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://suxjtang.github.io/ruantui/?q={search_term_string}"
+    },
     "query-input": "required name=search_term_string"
   }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "软推精选软件工具列表",
+  "description": "40+ 款精选软件工具，涵盖 AI、开发、设计、效率、安全、影音、浏览器等分类",
+  "itemListElement": [
+    {"@type":"ListItem","position":1,"name":"ChatGPT","url":"https://chat.openai.com"},
+    {"@type":"ListItem","position":2,"name":"VS Code","url":"https://code.visualstudio.com"},
+    {"@type":"ListItem","position":3,"name":"Figma","url":"https://figma.com"},
+    {"@type":"ListItem","position":4,"name":"Notion","url":"https://notion.so"},
+    {"@type":"ListItem","position":5,"name":"Claude","url":"https://claude.ai"},
+    {"@type":"ListItem","position":6,"name":"DeepSeek","url":"https://deepseek.com"},
+    {"@type":"ListItem","position":7,"name":"GitHub","url":"https://github.com"},
+    {"@type":"ListItem","position":8,"name":"Cursor","url":"https://cursor.sh"}
+  ]
 }
 </script>
 <!-- 公告编辑弹窗 -->
@@ -264,16 +303,19 @@
 
 <script src="shared.js?v=2"></script>
 <script src="supabase.js?v=3"></script>
-<script src="data.js?v=3"></script>
-<script src="ui.js?v=5"></script>
+<script src="data.js?v=4"></script>
+<script src="ui.js?v=6"></script>
 <script src="modal.js?v=4"></script>
 <script src="apikey-config.js?v=2"></script>
 <script src="features.js?v=4"></script>
-<script src="theme.js?v=4"></script>
-<script src="particles.js?v=6"></script>
+<script src="theme.js?v=5"></script>
+<script src="particles.js?v=7"></script>
 <script src="effects.js?v=3"></script>
-<script src="interactions.js?v=1"></script>
-<script src="adsense.js?v=4"></script>
+<script src="interactions.js?v=2"></script>
+<script src="engagement.js?v=1"></script>
+<script src="mobile.js?v=1"></script>
+<script src="analytics.js?v=1"></script>
+<script src="adsense.js?v=5"></script>
 <button id="backTop" aria-label="回到顶部" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </body>
 </html>

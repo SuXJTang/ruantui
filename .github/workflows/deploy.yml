@@ -80,21 +80,32 @@ jobs:
           CI: 'true'
           WRANGLER_SEND_METRICS: 'false'
         run: |
-          set -euo pipefail
+          set -uo pipefail   # 故意不 -e：先拿到完整输出再判断，便于诊断
           echo "=== 环境自检 ==="
+          echo "node: $(node --version)"
           echo "account_id 前 8 位: ${CLOUDFLARE_ACCOUNT_ID:0:8}***"
           echo "token 长度: ${#CLOUDFLARE_API_TOKEN} 字符"
           if [ "${#CLOUDFLARE_API_TOKEN}" -lt 20 ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN 看起来过短，请确认已完整复制。"
+            echo "::error::CLOUDFLARE_API_TOKEN 看起来过短（${#CLOUDFLARE_API_TOKEN} 字符），请确认已完整复制。"
             exit 1
           fi
 
           echo "=== 开始部署 ==="
           # --autoconfig=false：本项目不是框架项目，关闭框架自动检测
           # --non-interactive：CI 环境禁止交互提示
-          wrangler deploy --non-interactive --autoconfig=false
+          set +e
+          OUT=$(wrangler deploy --non-interactive --autoconfig=false 2>&1)
+          CODE=$?
+          set -e
+          echo "$OUT"
 
-          echo "✅ 部署命令执行完成"
+          if [ $CODE -ne 0 ]; then
+            # 把 wrangler 的报错提炼成 GitHub 注解，在 Summary 页也能直接看到，
+            # 不必展开日志逐行找。
+            ERR=$(echo "$OUT" | grep -iE 'error|invalid|not found|unauthor|forbidden|code:' | head -8 | tr '\n' ' | ')
+            echo "::error::wrangler 退出码 $CODE —— 关键错误: $ERR"
+            exit $CODE
+          fi
 
           echo "✅ 部署命令执行完成"
 

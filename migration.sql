@@ -57,9 +57,18 @@ INSERT INTO tools (id, name, category, rating, comment, detail, tags, slug, colo
 SELECT setval('tools_id_seq', 25, true);
 
 -- 4. RLS 策略
+--
+-- ⚠️⚠️ 已弃用（v3.2.0 起）⚠️⚠️
+--   下面这套「x-admin-token」写策略是旧方案，已被 migration-auth.sql 取代。
+--   旧方案的问题：
+--     · 靠比对请求头与 app.admin_token；若未设置，'' = '' 恒成立，写策略形同虚设
+--     · 密钥泄露即永久有效，且无法区分是谁在操作
+--     · 需要 Cloudflare Worker 中转，而本站的 GitHub Pages / Vercel 部署都没有后端
+--   新方案改为 Supabase Auth 账号登录 + admins 白名单判定 auth.uid()。
+--   **新建数据库时请务必执行 migration-auth.sql 覆盖下面的写策略。**
+--
+-- 以下为历史内容，仅供了解旧结构：
 -- SELECT 公开；INSERT/UPDATE/DELETE 需要 x-admin-token 请求头匹配 app.admin_token
--- 部署前在 Supabase SQL Editor 执行：SELECT set_config('app.admin_token', '你的强随机密钥', false);
--- Worker 的环境变量 SUPABASE_ADMIN_TOKEN 需与上述 set_config 的值一致
 ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION is_admin() RETURNS boolean AS $$

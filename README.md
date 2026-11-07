@@ -146,40 +146,60 @@ cp .dev.vars.example .dev.vars
 wrangler dev
 ```
 
-## 🔑 管理密码
+## 🔑 管理员登录
 
-点击页面「管理」按钮，输入密码进入管理面板。  
-密码验证由 Cloudflare Worker 服务端完成（SHA-256 哈希比对，避免前端明文泄露）。
+点击页面「管理」按钮 → 用**管理员账号（邮箱 + 密码）**登录 → 进入管理面板。
 
-> ⚠️ **历史遗留问题：旧密码已公开，必须更换。** 仓库历史中曾提交过真实的
-> `ADMIN_PASSWORD_HASH`，其明文可被直接反推（弱口令）。虽然相关提交已被历史重写
-> 抹除，但凭据一旦公开就必须视为已泄露 —— 请换一个只有你知道的强密码并重设 secret。
+权限完全由数据库控制，前端没有任何硬编码密码：
+
+- 账号来自 Supabase Auth
+- 是否可写由 RLS 的 `is_admin()` 判定：**当前登录用户的 UID 是否在 `admins` 表里**
+- 前端就算被篡改，也只能被 RLS 拒绝
+
+### 首次配置（一次性）
+
+1. **建管理员账号**：Supabase Dashboard → Authentication → Users → **Add user**
+   - 填邮箱和强密码，勾选 **Auto Confirm User**
+2. **复制该用户的 UID**（形如 `8cb3a0dc-1ee1-4f19-a4b0-474e3957ac8f`）
+3. **执行 `migration-auth.sql`**：把里面 `<管理员UID>` 换成你的 UID，
+   然后粘贴到 SQL Editor 运行
+4. 打开网站 → 点「管理」→ 用该账号登录
+
+执行后可用这条 SQL 自检：
+
+```sql
+SELECT * FROM admins;   -- 应该有你那一行
+```
+
+> ⚠️ 本项目允许自由注册（Supabase 默认），所以**必须**用 `admins` 白名单判定，
+> 不能只判断「已登录」——否则任何人注册个账号就能改你的数据。
+> 如需彻底关闭注册：Dashboard → Authentication → Providers → Email
+> → 关掉 "Allow new users to sign up"。
+
+### 与旧「管理密码」的区别
+
+| | 旧方案（已废弃） | 新方案 |
+|---|---|---|
+| 凭据 | 硬编码密码哈希 | Supabase 账号 |
+| 校验位置 | Cloudflare Worker | 数据库 RLS |
+| 需要后端 | 是（两个部署都没有，实际不可用） | 否 |
+| 能否区分身份 | 否 | 是（能知道是谁改的） |
+| 泄露后果 | 永久可登录 | 可单独停用某个账号 |
 
 ### 关于 `migration.sql`
 
 `migration.sql` 是**早期的建表脚本**，其中预置的 25 条示例数据（VS Code、Figma 等）
-与当前数据库中实际的内容**不是同一批**。如果是从零重建数据库，可以执行它来创建表结构、
-RLS 策略和触发器，但**请按需修改末尾的示例数据**，不要直接导入。
+与当前数据库中实际的内容**不是同一批**。如果是从零重建数据库，可以执行它来创建表结构，
+但**务必用 `migration-auth.sql` 覆盖其中的写策略**（旧的是 x-admin-token 方案，已弃用），
+并且不要直接导入那 25 条示例数据。
 
 分类没有硬编码在代码里，由数据库每行的 `category` 字段动态生成筛选标签。
 
-### 部署前设置 Worker 环境变量
-```bash
-# 生成密码哈希（Node.js）
-node -e "console.log(require('crypto').createHash('sha256').update('你的密码').digest('hex'))"
+### Cloudflare Worker（可选，已不再是必需）
 
-# 设置 Worker 密钥（推荐用 wrangler secret，不写进代码）
-wrangler secret put ADMIN_PASSWORD_HASH   # 密码的 SHA-256 十六进制
-wrangler secret put SUPABASE_ADMIN_TOKEN  # 需与 Supabase 的 app.admin_token 一致
-wrangler secret put TOKEN_SECRET          # 随机长字符串，用于签发管理 token
-```
-
-> ⚠️ **`TOKEN_SECRET` 是必填的。** Worker 已不再提供 `'ruantui-secret'` 这类兜底默认值
-> （该值明文写在公开仓库里，任何人都能据此伪造管理员 token）。缺失时登录接口直接返回
-> 500、管理接口返回 401 —— 这是刻意的失败关闭（fail-closed）行为。
-
-> ⚠️ **`SUPABASE_ADMIN_TOKEN` 也必须设置。** `migration.sql` 的 RLS 策略 `is_admin()`
-> 会比较请求头 `x-admin-token` 与 `app.admin_token`；两边都为空时会「相等」，写策略形同虚设。
+写操作已改为浏览器带用户 JWT 直连 Supabase，**Worker 不再参与权限控制**。
+它目前只剩两个可选用途：`/api/click` 点击埋点、保活探测。若不需要可直接删除
+`worker/` 与 `wrangler.jsonc`，项目即为纯静态站点。
 
 ### 静态资源公开范围（`.assetsignore`）
 `wrangler.jsonc` 的 `assets.directory` 是仓库根目录，**默认会把整个仓库上传成公开资源**。

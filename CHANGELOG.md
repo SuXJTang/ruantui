@@ -1,5 +1,63 @@
 # 更新日志 (CHANGELOG)
 
+## v3.2.0 — 2026-11-08
+
+**管理权限改为 Supabase 账号登录**。彻底移除硬编码密码，写操作不再依赖 Worker。
+
+### 为什么要改
+
+三个问题叠加，导致管理功能实际上一直不可用、且不安全：
+
+1. **密码是公开的**。`ADMIN_PASSWORD_HASH` 曾硬编码在 `.dev.vars.example` 里，
+   明文可被反推（弱口令），任何人都能登录管理面板。
+2. **管理面板根本打不开**。写操作走 `/api/admin/*`，但 GitHub Pages 返回 405、
+   Vercel 返回 404 —— 两个部署都没有后端。
+3. **RLS 写策略形同虚设**。旧 `is_admin()` 比对请求头 `x-admin-token` 与
+   数据库的 `app.admin_token`；若后者未设置，`'' = ''` 恒成立。
+
+### 改动
+
+- **新增 `auth.js`**：Supabase Auth 邮箱密码登录。会话存 `localStorage`，
+  过期前自动用 `refresh_token` 续期，401 时自动刷新重试一次。
+- **新增 `migration-auth.sql`**：创建 `admins` 表（UUID 关联 `auth.users`），
+  重写 `is_admin()` 为「当前 JWT 的 `auth.uid()` 是否在 `admins` 里」，
+  把 `tools` / `announcements` 的写策略改为 `TO authenticated` + `is_admin()`。
+- **`supabase.js`**：写操作改为带用户 JWT 直连 Supabase REST，不再经过 Worker。
+  403 时明确提示「没有管理权限（该账号不在管理员名单中）」。
+- **`features.js`**：密码弹窗替换为邮箱+密码登录框。登录后先调 `verifyAdmin()`
+  确认在名单内，不在则自动登出并提示。页面加载时静默恢复会话，按钮文案随状态变化。
+- **`shared.js`**：删除废弃的 `verifyAdminPassword`（Worker 密码校验）。
+- **`index.html` / `sw.js`**：加载并预缓存 `auth.js`；缓存版本 `?v=15` / `v23`。
+- **`migration.sql`**：给旧的 x-admin-token 写策略加上弃用警示。
+- **README**：重写「管理员登录」章节，补充旧/新方案对比与首次配置步骤。
+
+### 安全要点
+
+本站允许自由注册（Supabase 默认 `disable_signup = false`），因此**不能只判断
+「已登录」**，必须判断「UID 在 `admins` 白名单里」。前端即使被篡改，最坏结果
+也只是被 RLS 拒绝，无法越权写数据。
+
+### 验证（真实环境，共 28 项断言全部通过）
+
+数据库层（5 项）：
+- `admins` 表已创建；匿名用户读不到管理员名单（RLS 生效）
+- 匿名 PATCH 返回空数组（0 行受影响），数据未被篡改
+- 匿名 INSERT 返回 `42501 new row violates row-level security policy`
+- 公开读工具列表仍正常
+
+登录层（11 项）：
+- 会话正确写入 localStorage，含 `access_token` / `user_id` / 过期时间
+- `verifyAdmin()` 返回 `{loggedIn:true, isAdmin:true}`
+- 能读到自己的管理员记录；管理员 PATCH 成功（200）并可还原
+- 越权测试：匿名 key 写入被拒，数据未变
+
+管理界面（12 项）：
+- 已登录时点「管理」直接进面板，不再弹登录框；9 条工具全部渲染
+- 点「编辑」正确带出名称/分类/ID，标题显示「编辑工具」
+- 保存链路通，数据库记录完好，无运行时异常
+
+---
+
 ## v3.1.3 — 2026-11-08
 
 ### 新增 — Supabase 保活工作流

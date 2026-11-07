@@ -1,0 +1,81 @@
+# 保活：防止 Supabase 免费版项目因「一周内活动过少」被自动暂停
+#
+# 背景：Supabase 免费版规定，项目在 7 天内活动过少会被自动暂停。项目一旦暂停，
+#   - 域名解析会失效（DNS 返回 NXDOMAIN）
+#   - 网站会显示「数据加载失败」
+#   - 需要登录控制台手动点 Resume project 才能恢复
+# 本站流量低，很容易触发。这个工作流每天访问一次数据库，制造「有活动」的记录。
+#
+# 前提：在仓库 Settings → Secrets and variables → Actions 中添加两个 Secret：
+#   SUPABASE_URL      例如 https://xxxxxxxx.supabase.co
+#   SUPABASE_ANON_KEY anon key（这是公开的客户端 key，不是 service_role）
+#
+# 可选变量（非必需）：若想同时保活 Worker，可加 WORKER_URL
+#
+# 注意：GitHub 的 schedule 在仓库连续 60 天无提交时会被自动禁用，属正常现象。
+
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # 每天 UTC 02:17（北京时间 10:17）。避开整点，减少 GitHub 定时任务排队延迟。
+    - cron: '17 2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 检查所需 Secret 是否已配置
+        id: cfg
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::warning::未配置 SUPABASE_URL / SUPABASE_ANON_KEY，跳过保活。请在仓库 Settings → Secrets 中添加。"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 请求 Supabase（tools 表）
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -m 30 \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/tools?select=id&limit=1")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Supabase 返回 $code，可能项目处于暂停状态或 URL/Key 配置有误。"
+            exit 1
+          fi
+          echo "保活成功"
+
+      - name: 请求 Worker（可选）
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+        run: |
+          if [ -z "${WORKER_URL:-}" ]; then
+            echo "未配置 WORKER_URL，跳过"
+            exit 0
+          fi
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"toolId":1}' \
+            "$WORKER_URL/api/click" || echo "000")
+          echo "Worker /api/click -> HTTP $code"
+          # 该接口设计为任何情况都返回 204，非 204 只警告不失败
+          if [ "$code" != "204" ]; then
+            echo "::warning::Worker 返回 $code（预期 204）"
+          fi

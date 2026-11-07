@@ -1,5 +1,158 @@
 # 更新日志 (CHANGELOG)
 
+## v3.1.0 — 2026-11-07
+
+维护性修复：只修 bug，不新增功能、不改视觉与交互。共修复 30+ 处真实缺陷，
+其中 5 处会直接导致线上功能不可用（详见「严重」小节）。
+
+### 修复 — AdSense 初始化
+- 删除广告位 ① / ② 两处内联 `(adsbygoogle = window.adsbygoogle || []).push({})`。
+  库到位前 `window.adsbygoogle` 只是普通数组，`push` 仅入队、不会报错，但**每多一次 push
+  就会去填下一个 ins**，于是同一个广告位被填两次，触发
+  "All ins elements in the adsbygoogle array are already filled"。
+  现在 `index.html` 里零内联 push，推送只发生在 `adsense.js`。
+- `adsense.js` 改为**每个 `<ins class="adsbygoogle">` 各 push 一次**（v3 只 push 一次，
+  顶/底/内嵌 3+ 个广告位里其余 ins 永远空白）。
+- 广告拦截检测不再往 `<body>` 塞一个 `class="adsbygoogle"` 的探测元素——它会被当成一个
+  「未填充的 ins」，把 push 吞掉并造成错位填充。改用 Google 自身的能力探测，零 DOM 污染。
+- 内嵌广告位由 `MutationObserver` 自动接管：`ui.js` 动态插入后无需自己 push（见下「需要其他文件配合」）。
+
+### 修复 — Service Worker 缓存策略（sw.js）
+- 导航请求（HTML）由 cache-first 改为 **network-first**：旧逻辑永远先返回缓存里的旧 `index.html`，
+  部署后要「访问第二次」才能看到新版本。
+- 静态资源由 `return cached || fetchPromise` 改为 **stale-while-revalidate**：先秒开缓存，
+  同时后台拉取新版本并写回，下次访问即最新。旧写法让后台那次写缓存完全失去意义。
+- 缓存 key 统一经过 `cacheKey()` 归一化（剥掉 `?` 与 `#`）：页面请求 `style.css?v=11`、
+  预缓存的是 `./style.css`，query 不同导致每次访问都 MISS 并重复缓存同一文件。
+  归一化同时作用于读取与写入，所以不会出现 `style.css` 的两份缓存。
+  （`caches.match` 的 `ignoreSearch` 只解决读、不解决写，因此没有采用它。）
+- 预缓存清单去掉 `sitemap.xml` / `robots.txt`（搜索引擎抓取用，非页面依赖）。
+- 跨域资源（FontAwesome / AdSense / 二维码 API）不再进 SW 缓存路径，交给浏览器处理。
+- `CACHE_VERSION` 由 `v17` 递增至 `v19`（v18 为中间态）。
+
+### 修复 — 缓存版本号约定（index.html / README）
+- 原来各资源版本号手工维护且互不相同（`shared.js?v=2`、`ui.js?v=6`、`adsense.js?v=5` …），
+  必然与 SW 版本漂移。现在统一为**单一版本号 `?v=11`**，与 `sw.js` 的 `CACHE_VERSION`
+  （`'v19'`）成对递增；约定写入 README「缓存版本号」一节的表格与发版流程。
+- `shared.js` 的 `rel=preload as=script` 删除：`shared.js` 是同步阻塞脚本，preload 之后
+  还要再解析一次，纯属浪费一次预加载（还会和紧随其后的真实 `<script>` 重复下载风险）。
+- `style.css` 保留 preload，但补上配套的 `onload="this.rel='stylesheet'"` + `<noscript>` 回退
+  （原来只有 `preload` 没有消费逻辑，属「preloaded but not used」告警源）。
+
+### 修复 — PWA 图标（manifest.json）
+- 删掉 `192x192` / `512x512` / `144x144` 等**仓库中并不存在**的尺寸声明——都指向同一个
+  `icon.svg`，浏览器会按声明的尺寸找 PNG 而 404。统一改为 `sizes: "any"`（`any` + `maskable` 两条）。
+- 新增 `id` 字段，避免以后改 `start_url` 时被识别为另一个应用、产生重复安装。
+- `shortcuts` 第一条 `?action=search` 改成可用地址：代码里从未读取 `action` 参数。
+
+### 修复 — SEO
+- `sitemap.xml` 删掉 `#development` / `#ai` / `#design` / `#efficiency` 四条带 fragment 的地址：
+  搜索引擎会忽略 `#` 之后的部分，这几条实际都指向同一个首页，属重复内容；`lastmod` 同步更新。
+- `robots.txt` 本身已经正确（绝对 URL 指向 sitemap），未改动。
+- 文案统一：页面/结构化数据中的「40+ 款」改为「40 款」，与 `data.js` 中
+  `FALLBACK_TOOLS` 的实际条数（40）一致；README 中「25+ 款工具」同步修正为「40 款，7 大分类」。
+  （已发布的 v3.0.0 条目里的历史表述保留不动。）
+
+### 修复 — 其他
+- 广告位占位骨架的 CSS 由 `.ad-container .adsbygoogle` 改为 `index.html` 内的
+  `.ad-container:not(.ad-active)::after`：不再给 Google 的 `<ins>` 打样式。
+- 广告位 `checkAndHideEmpty` 重写：原逻辑用 `textContent.length > 3` 判断「有没有广告」，
+  而 `<ins>` 内正留着「赞助内容」占位文字，该判断恒为真 —— 没有广告时容器永远不会被隐藏
+  （与提交 `def641a fix: 广告未加载时自动隐藏容器不留空白` 的意图相反）。现改为看
+  Google 打的 `data-ad-status` / 是否有 iframe。
+
+### 复核后确认「不是 bug」的点
+- **AdSense 加载器的 `async` 标记本身没问题。** Google 官方文档 [An async script for AdSense
+  tagging](https://developers.googleblog.com/en/an-async-script-for-adsense-tagging/) 明确给出
+  的写法就是 `<script async src=".../adsbygoogle.js">` 加 `push({})`：库到位前
+  `window.adsbygoogle` 是普通数组，push 只是入队，库加载后自动消费。真正的问题在于
+  **push 次数与 ins 数量不匹配**（见上），不是「push 早于 async 加载器」。
+- **`<link rel="preload" href="style.css" as="style">` 与随后同 URL 的 `<link rel="stylesheet">`
+  配对是正确的**，不会触发 "preloaded but not used"；本次只额外补了 `onload` 消费与
+  `<noscript>` 回退，让它在 JS 关闭时也成立。
+- **`robots.txt` 原本就是对的**（绝对 URL 指向 sitemap），未改动。
+- **页脚日期的 `id="footerDate"` 原本就是对的**（`features.js` 查的正是这个 id），未改动。
+- **`icon.svg` 中引用的 `.png` 图标从来不存在** —— 但 manifest 里写的是 `icon.svg`，
+  没有引用任何缺失的 PNG 文件；问题在于把 SVG 谎报成 `192x192` / `512x512`。
+
+### 严重 — 导致功能直接不可用
+- **每次渲染都重复注册卡片点击监听（ui.js）**。`renderTools()` 里的两个
+  `grid.addEventListener('click', <新函数>)` 每渲染一次就多挂两个。DOM 规范只会在
+  type + 监听器**同一函数对象** + capture 全相同时才去重，而每次都是新的函数表达式，
+  所以无限累积。实测同一会话内点击卡片：1 次渲染后 3 个监听、4 次渲染后 9 个、
+  再加两次搜索 13 个。现改为模块作用域注册一次，实测恒定 2 个（`modal.js` 开卡片 +
+  `ui.js` 埋点）。
+- **`openDetail()` 从未定义**。ui.js 的卡片点击处理器调用它，导致每次点卡片都抛
+  `ReferenceError: openDetail is not defined`（实测于 HEAD）。现已删除该处理器，
+  卡片点击由 `modal.js` 唯一负责。
+- **Supabase 数据行的「去使用」按钮全部失效**。`getToolLink()` 只看
+  `affiliateUrl || link`，而 `migration.sql` 的 `tools` 表只有 `url` / `download`，
+  所以线上每一行都渲染成不可点的「📋 查看详情」。现优先级为
+  `affiliateUrl > link > url > download`。
+- **管理面板「编辑」按钮完全无反应**。`App.state.tools.find(function(x){…}.bind(this))`
+  里 `bind` 绑的是**回调**而不是外层函数，`this` 成了 `window`，`this.dataset` 取不到，
+  `parseInt(undefined)` 得 `NaN`，查不到工具就静默 `return`。改用 `byId()` 辅助函数。
+- **公告管理「编辑」必然崩溃**。`openAnnForm` 对同一个元素先设 `.textContent` 再读 `.value`，
+  对 `<h2>` 取 `.value` 得 `undefined`，后续 `ann.title` 拼接抛 TypeError，弹窗永远打不开。
+  已拆成标题用 `textContent`、输入框用 `.value`。
+
+### 安全 — Worker 静态资源暴露（wrangler.jsonc / .assetsignore）
+`assets.directory` 指向仓库根目录，而 Wrangler **没有** `assets.ignore` 配置字段
+（只有 `directory` / `binding` / `html_handling` / `not_found_handling` / `base_path` /
+`run_worker_first`；写别的键只会得到 "Unexpected fields found" 警告然后**照常部署**，
+即静默失效）。真正的排除机制是 assets 目录根部的 `.assetsignore`（gitignore 语法，
+见[官方文档](https://developers.cloudflare.com/workers/static-assets/binding/#ignoring-assets)）。
+
+- 新增仓库根 `.assetsignore`：排除 `worker/index.js`（Worker 源码）、`migration.sql`
+  （完整库结构 + RLS 策略）、`wrangler.jsonc`、`README.md` / `CHANGELOG.md`、
+  所有根目录隐藏文件与目录（`.*`，gitignore 的 `*` 不匹配 dotfile，必须单独写）。
+  实测 27 个运行时资源照常下发，敏感文件全部排除。
+- **保留 `img/`**：`touxiang.jpg`（头像）、`vx.jpeg` / `zhifub.jpeg`（收款码）都是线上资源。
+
+### 安全 — Worker 鉴权
+- **删除硬编码兜底密钥**。原 `env.TOKEN_SECRET || 'ruantui-secret'` 的兜底值明文写在
+  公开仓库里，任何人都能伪造管理员 token。现在缺失 `TOKEN_SECRET` 时直接失败关闭
+  （login 返回 500、管理路由 401）。**部署前必须执行 `wrangler secret put TOKEN_SECRET`**。
+- **登录接口加限流**：同一 IP 10 次失败 / 10 分钟，返回 `429` + `Retry-After`；
+  成功登录清零计数。仅内存态、不跨 isolate，属尽力而为的减速带（真正的硬限流应交给
+  Cloudflare Rate Limiting 规则）。
+- **`timingSafeEqual` 提前返回泄露长度**：先做 SHA-256 摘要再比较，消除长度差异。
+- **错误响应不再回显 `e.message`**，避免把内部细节吐给客户端。
+- **CORS 头跨请求串源**：`jsonResponse` 原先读模块全局 `_currentRequest`，同一 isolate
+  并发请求会拿到别人的 `Origin`。改为每请求计算一次并显式传入。
+- **404 回退丢请求体**：`new Request(url)` 会把方法重置成 GET 并丢掉头/体，
+  改为 `new Request(fallbackUrl, request)`。
+
+### 修复 — `/api/click` 埋点接口
+- `ui.js` 一直在 POST `/api/click`，但 Worker 里**没有这个路由**，每次点击都 401/404。
+  现补上公开路由（无需鉴权、不触碰 Supabase、返回 204）。
+- 刻意**不限制 HTTP 方法**：任何方法都回 204 而不是 401，避免客户端把它误当鉴权失败去重试。
+- 客户端侧同步加固：`keepalive: true` 让 beacon 在跳转后仍能发出；`!res.ok` 与网络异常
+  一律静默吞掉（GitHub Pages 部署下 `/api/*` 必然 404，绝不能影响「去使用」跳转）。
+
+### 修复 — 图标
+- 4 个工具补上正确的 simple-icons slug：`photopea`、`virustotal`、`ffmpeg`、
+  `ublockorigin`（注意不是 `ublock-origin`）。原先这些工具只靠 FontAwesome 字形。
+- `Everything` / `Rectangle` / `PotPlayer` / `Vimium` 在 simple-icons 目录中确实不存在，
+  保留 FontAwesome 字形作为兜底（`icon` 字段仍是 `<img>` 失败时的备选）。
+
+### 修复 — 其他前端缺陷
+- **排序被重复监听**：ui.js 与 features.js 都挂了 `sortSelect` 的监听，features.js 的
+  `onchange` 会先从 `_originalTools` 还原再排序，而 ui.js 的监听又基于已排序数组重渲染，
+  把「恢复默认顺序」抵消掉。现由 features.js 单独负责。
+- **名称含引号时内联 `onclick` 语法错误**：`trackToolClick(id,'NAME')` 由 `escHTML`
+  拼接（`'` 变 `&#39;`），工具名带引号就把属性截断。改为 `data-aff-id` + 委托监听。
+- **`fuzzyMatch(x, '')` 恒为 true**：空查询会走完零长度的子序列循环并返回 true，
+  搜索框清空后仍按「匹配」处理。现空/纯空白查询直接返回 false。
+- **`highlightText` 查询比正文长时切片错位**：补长度前置判断。
+- **模态框缺元素时整个文件挂掉**：`openModal` / `closeModal` / 事件绑定全部加空值保护
+  （原先缺 `#modalClose` 会在加载期抛错，导致 modal.js 后面所有绑定失效）。
+- **广告位重复 push**：`ui.js` 动态插入内嵌广告后又手动 `window.adsbygoogle.push({})`，
+  与 `adsense.js` 的 `MutationObserver`（按 ins 去重、视口内懒加载）重复，同一个 ins
+  被填两次。现已删除手动 push，广告填充统一由 `adsense.js` 负责。
+
+---
+
 ## v3.0.0 — 2026-08-02
 
 十次大迭代完整升级，从工具推荐页进化为高交互、高性能、可分析的 PWA 应用。

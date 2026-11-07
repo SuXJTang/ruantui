@@ -1,29 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  软推 sitemap
+  注意：本站是单页应用，站内没有独立的分类页。sitemap 只列真实可抓取的 URL，
+  不要写 /#ai 这类带 fragment 的地址 —— 搜索引擎会忽略 # 之后的片段，
+  这些条目实际都指向同一个首页，属于重复内容，对抓取没有帮助。
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://suxjtang.github.io/ruantui/</loc>
-    <lastmod>2026-08-02</lastmod>
+    <lastmod>2026-11-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://suxjtang.github.io/ruantui/#development</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://suxjtang.github.io/ruantui/#ai</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://suxjtang.github.io/ruantui/#design</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://suxjtang.github.io/ruantui/#efficiency</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
   </url>
 </urlset>

@@ -26,7 +26,7 @@ var FALLBACK_TOOLS = [
 
     // ===== 设计工具 =====
     {id:17, name:'Figma', category:'设计工具', slug:'figma', color:'#F24E1E', comment:'协作设计标杆，浏览器即可用', detail:'浏览器端的专业 UI/UX 设计工具，支持实时多人协作、组件库、自动布局、原型交互。免费版支持 3 个项目，Professional 版每月 $15/人。插件生态丰富，社区有海量免费设计资源。设计到开发的交接流程非常顺畅。', tags:['日常必备','免费','协作'], url:'https://figma.com', views:1120},
-    {id:18, name:'Photopea', category:'设计工具', icon:'fa-image', color:'#18A497', comment:'免费在线 PS，浏览器里跑 Photoshop', detail:'浏览器端的专业图片编辑器，界面和操作习惯与 Photoshop 高度一致。支持 PSD、AI、XD、Sketch 等格式导入导出。图层、蒙版、滤镜、矢量工具全都有。完全免费，无需注册，是 PS 的最佳免费替代品。', tags:['免费','在线','图片编辑'], url:'https://photopea.com', views:540},
+    {id:18, name:'Photopea', category:'设计工具', slug:'photopea', icon:'fa-image', color:'#18A497', comment:'免费在线 PS，浏览器里跑 Photoshop', detail:'浏览器端的专业图片编辑器，界面和操作习惯与 Photoshop 高度一致。支持 PSD、AI、XD、Sketch 等格式导入导出。图层、蒙版、滤镜、矢量工具全都有。完全免费，无需注册，是 PS 的最佳免费替代品。', tags:['免费','在线','图片编辑'], url:'https://photopea.com', views:540},
     {id:19, name:'Canva', category:'设计工具', slug:'canva', color:'#00C4CC', comment:'非设计师也能做出好看的设计', detail:'在线设计平台，提供海量模板：海报、名片、PPT、社交媒体配图、Logo 等。拖拽式编辑，内置百万+ 图片素材和字体。免费版功能够用，Pro 版每月 $12.99 解锁更多模板和高级功能。团队协作和品牌管理功能完善。', tags:['设计','免费','模板'], url:'https://canva.com', views:890},
     {id:20, name:'Excalidraw', category:'设计工具', slug:'excalidraw', color:'#6965DB', comment:'手绘风格图表，简单到极致', detail:'手绘风格的在线白板工具，适合画流程图、架构图、思维导图。线条自带抖动效果，营造手绘感。支持实时协作、导出 PNG/SVG、快捷键操作。完全免费开源，可本地部署。是技术方案讲解和头脑风暴的利器。', tags:['免费','在线','手绘'], url:'https://excalidraw.com', views:430},
     {id:21, name:'Coolors', category:'设计工具', slug:'coolors', color:'#F38B00', comment:'配色方案生成器，一键按出灵感', detail:'配色方案生成工具，按空格键随机生成配色方案。支持锁定颜色、调整色相、导出各种格式（CSS、SVG、PNG）。提供色彩理论检查（对比度、色盲友好性）。免费版功能完整，Pro 版增加渐变和收藏功能。', tags:['配色','免费','设计'], url:'https://coolors.co', views:380},
@@ -45,17 +45,17 @@ var FALLBACK_TOOLS = [
     // ===== 安全工具 =====
     {id:31, name:'Bitwarden', category:'安全工具', slug:'bitwarden', color:'#175DDC', comment:'开源密码管理器，免费版够用', detail:'开源的密码管理器，端到端加密，支持跨平台同步。免费版支持无限密码存储和双设备同步，Premium 版每年 $10 增加TOTP、文件附件等功能。浏览器扩展自动填充密码，支持生物识别解锁。安全性通过第三方审计。', tags:['密码','免费','开源'], url:'https://bitwarden.com', views:450},
     {id:32, name:'ProtonVPN', category:'安全工具', slug:'protonvpn', color:'#56B366', comment:'瑞士隐私 VPN，免费版不限流量', detail:'瑞士 ProtonAG 旗下的 VPN 服务，免费版不限流量不限时长（限 3 个国家/地区）。无日志政策，通过瑞士严格的隐私法律保护。Plus 版每月 $4.99+ 解锁全部 70+ 国家和 P2P 下载。支持 Kill Switch 和 Secure Core。', tags:['VPN','免费','隐私'], url:'https://protonvpn.com', views:520},
-    {id:33, name:'VirusTotal', category:'安全工具', icon:'fa-shield-virus', color:'#3944BC', comment:'在线病毒扫描，70+ 引擎同时检测', detail:'Google 旗下的在线文件安全扫描服务，上传文件后由 70+ 杀毒引擎同时扫描。支持 URL、IP、域名、文件哈希扫描。完全免费，API 可集成。是检测可疑文件和链接的最佳工具。 owned by Google。', tags:['安全','免费','扫描'], url:'https://virustotal.com', views:380},
+    {id:33, name:'VirusTotal', category:'安全工具', slug:'virustotal', icon:'fa-shield-virus', color:'#3944BC', comment:'在线病毒扫描，70+ 引擎同时检测', detail:'Google 旗下的在线文件安全扫描服务，上传文件后由 70+ 杀毒引擎同时扫描。支持 URL、IP、域名、文件哈希扫描。完全免费，API 可集成。是检测可疑文件和链接的最佳工具。 owned by Google。', tags:['安全','免费','扫描'], url:'https://virustotal.com', views:380},
 
     // ===== 影音工具 =====
     {id:34, name:'OBS Studio', category:'影音工具', slug:'obsproject', color:'#302E31', comment:'免费开源录屏直播神器', detail:'开源的录屏和直播软件，支持多场景切换、画中画、绿幕抠像、音频混合。支持推流到 Twitch、YouTube、B站等平台。插件生态丰富，可实现虚拟摄像头、降噪、自动字幕等。完全免费无广告，是直播和录屏的首选。', tags:['录屏','直播','免费'], url:'https://obsproject.com', views:720},
-    {id:35, name:'FFmpeg', category:'影音工具', icon:'fa-film', color:'#007806', comment:'音视频处理瑞士军刀，命令行全能', detail:'开源的音视频处理工具，支持格式转换、剪辑、合并、提取音频、添加字幕、调整分辨率等几乎所有音视频操作。命令行操作，可通过脚本批量处理。完全免费，是视频处理领域的行业标准。', tags:['视频','免费','命令行'], url:'https://ffmpeg.org', views:560},
+    {id:35, name:'FFmpeg', category:'影音工具', slug:'ffmpeg', icon:'fa-film', color:'#007806', comment:'音视频处理瑞士军刀，命令行全能', detail:'开源的音视频处理工具，支持格式转换、剪辑、合并、提取音频、添加字幕、调整分辨率等几乎所有音视频操作。命令行操作，可通过脚本批量处理。完全免费，是视频处理领域的行业标准。', tags:['视频','免费','命令行'], url:'https://ffmpeg.org', views:560},
     {id:36, name:'Spotify', category:'影音工具', slug:'spotify', color:'#1DB954', comment:'全球最大音乐流媒体平台', detail:'全球最大的音乐流媒体平台，拥有 1 亿+ 歌曲。免费版有广告且只能随机播放，Premium 版每月 $10.99 无广告、高品质、离线下载。支持歌词显示、播客、有声书。算法推荐精准，Weekly Mix 和 Daily Mix 体验出色。', tags:['音乐','免费','流媒体'], url:'https://spotify.com', views:890},
     {id:37, name:'PotPlayer', category:'影音工具', icon:'fa-play-circle', color:'#00B0FF', comment:'全能视频播放器，格式支持最全', detail:'Windows 平台最强大的视频播放器，支持几乎所有视频/音频格式。硬件加速解码，4K/8K 流畅播放。内置字幕搜索、3D 播放、360度视频、直播流播放。完全免费无广告，可高度自定义皮肤和快捷键。', tags:['播放器','免费','Windows'], url:'https://potplayer.daum.net', views:480},
 
     // ===== 浏览器 =====
     {id:38, name:'Arc Browser', category:'浏览器', slug:'arc', color:'#FF5C38', comment:'重新定义浏览器，告别标签页地狱', detail:'The Browser Company 开发的新一代浏览器，基于 Chromium 内核。创新的 Sidebar 标签管理、Space 多工作区、Boost 网页自定义、Split View 分屏浏览。完全免费，Mac 和 Windows 均可用。设计精美，交互创新，正在改变人们的浏览习惯。', tags:['浏览器','免费','创新'], url:'https://arc.net', views:680, pinned:true},
-    {id:39, name:'uBlock Origin', category:'浏览器', icon:'fa-shield-alt', color:'#800000', comment:'最强广告拦截，内存占用最低', detail:'开源的高效广告拦截浏览器扩展，内存和 CPU 占用极低。支持自定义过滤规则、元素拾取、恶意域名拦截。比 AdBlock Plus 更高效更透明，不接受「可接受广告」计划。完全免费，是浏览器必装扩展。', tags:['浏览器','免费','广告拦截'], url:'https://github.com/gorhill/uBlock', views:920},
+    {id:39, name:'uBlock Origin', category:'浏览器', slug:'ublockorigin', icon:'fa-shield-alt', color:'#800000', comment:'最强广告拦截，内存占用最低', detail:'开源的高效广告拦截浏览器扩展，内存和 CPU 占用极低。支持自定义过滤规则、元素拾取、恶意域名拦截。比 AdBlock Plus 更高效更透明，不接受「可接受广告」计划。完全免费，是浏览器必装扩展。', tags:['浏览器','免费','广告拦截'], url:'https://github.com/gorhill/uBlock', views:920},
     {id:40, name:'Vimium', category:'浏览器', icon:'fa-keyboard', color:'#2E3436', comment:'键盘操控浏览器，Vim 党的福音', detail:'浏览器扩展，用 Vim 风格的快捷键操控浏览器。F 键显示页面所有可点击元素的字母提示，J/K 上下滚动，X 关闭标签页，T 打开新标签。完全键盘操作，效率极高。适合 Vim 用户和追求效率的开发者。', tags:['浏览器','免费','效率'], url:'https://vimium.github.io', views:340}
 ];
 

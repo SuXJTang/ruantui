@@ -5,13 +5,13 @@ var overlay = document.getElementById('modalOverlay');
 var modalBody = document.getElementById('modalBody');
 
 function openModal(tool) {
-    if (!tool) return;
+    if (!tool || !modalBody) return;
     var iconHTML = renderIconHTML(tool);
     var tagsArr = Array.isArray(tool.tags) ? tool.tags : [];
     var tagsHTML = tagsArr.map(function(t) { return '<span class="modal-tag">' + escHTML(t) + '</span>'; }).join('');
     var links = [];
     // 联盟链接优先
-    if (tool.affiliateUrl) links.push('<a href="' + escHTML(tool.affiliateUrl) + '" class="modal-link affiliate" target="_blank" rel="noopener" onclick="trackToolClick(' + tool.id + ',\'' + escHTML(tool.name) + '\')"><i class="fas fa-fire"></i> 优惠购买</a>');
+    if (tool.affiliateUrl) links.push('<a href="' + escHTML(tool.affiliateUrl) + '" class="modal-link affiliate" target="_blank" rel="noopener" data-aff-id="' + escHTML(tool.id) + '"><i class="fas fa-fire"></i> 优惠购买</a>');
     if (tool.url) links.push('<a href="' + escHTML(tool.url) + '" class="modal-link primary" target="_blank" rel="noopener"><i class="fas fa-globe"></i> 官网</a>');
     if (tool.download) links.push('<a href="' + escHTML(tool.download) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-download"></i> 下载</a>');
     if (tool.link && tool.link !== tool.url && tool.link !== tool.affiliateUrl) links.push('<a href="' + escHTML(tool.link) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> 直达</a>');
@@ -44,12 +44,18 @@ function openModal(tool) {
     overlay.setAttribute('aria-hidden', 'false'); overlay.classList.add('active'); document.body.style.overflow = 'hidden';
 }
 
-function closeModal() { overlay.classList.remove('active'); overlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; }
+function closeModal() {
+    if (!overlay) return;
+    overlay.classList.remove('active'); overlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = '';
+}
 
-// 点击卡片打开
-document.getElementById('toolGrid').addEventListener('click', function(e) {
+// 点击卡片打开详情 — 全站唯一的卡片点击入口（ui.js 不再注册卡片点击监听）
+if (overlay) document.getElementById('toolGrid').addEventListener('click', function(e) {
     var card = e.target.closest('.tool-card'); if (!card) return;
-    var tool = App.state.tools.find(function(t) { return t.id === parseInt(card.dataset.id); });
+    // 「去使用」是站外链接：只记录点击并正常跳转，不要同时弹出详情
+    if (e.target.closest('.tool-visit-btn')) return;
+    var id = parseInt(card.dataset.id, 10);
+    var tool = App.state.tools.find(function(t) { return t.id === id; });
     if (tool) {
         openModal(tool);
         // 递增浏览量 + 更新卡片计数
@@ -61,6 +67,13 @@ document.getElementById('toolGrid').addEventListener('click', function(e) {
         }
     }
 });
-document.getElementById('modalClose').addEventListener('click', closeModal);
-overlay.addEventListener('click', function(e) { if (!e.target.closest('.modal')) closeModal(); });
+if (document.getElementById('modalClose')) document.getElementById('modalClose').addEventListener('click', closeModal);
+if (overlay) {
+    overlay.addEventListener('click', function(e) { if (!e.target.closest('.modal')) closeModal(); });
+    // 优惠购买埋点（替代原先内联 onclick 字符串：名字含引号会把属性截断成语法错误）
+    overlay.addEventListener('click', function(e) {
+        var a = e.target.closest('.modal-link[data-aff-id]');
+        if (a) trackToolClick(a.dataset.affId, '');
+    });
+}
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });

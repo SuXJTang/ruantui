@@ -1,0 +1,31 @@
+# .assetsignore — 静态资源排除表（.gitignore 语法）
+#
+# 本项目的 assets.directory 是仓库根目录 "."，默认会把「整个仓库」上传成
+# 公开静态资源。凡是不能公开的内容必须在这里显式排除。
+#
+# 重要：Wrangler 的 assets 配置**没有** ignore 字段，只读取 assets 目录根部的
+# 本文件。往 wrangler.jsonc 写 assets.ignore 只会得到一条
+# "Unexpected fields found" 警告然后照常部署 —— 即静默失效。
+
+# 根目录所有隐藏文件/目录：
+#   .git .wrangler .dev.vars .dev.vars.* .env* .gitignore
+#   .codegraph .reasonix .tmp-test .assetsignore
+# gitignore 语义里 `*` 不匹配 dotfile，所以必须单独写 `.*`
+.*
+
+# 文档
+*.md
+
+# 完整库结构 + RLS 策略，绝不能公开
+migration.sql
+
+# 部署配置
+wrangler.jsonc
+
+# Worker 源码（本文件即 Worker 本体，不该作为静态资源下发）
+worker
+
+# 开发期本地校验脚本，非运行资源
+.verify.js
+.verify2.js
+.check-*.js

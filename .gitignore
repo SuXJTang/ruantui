@@ -1,9 +1,22 @@
 .wrangler/
 node_modules/
 .env
+.env.*
 
 .dev.vars
+.dev.vars.*
+!.dev.vars.example
 .codegraph/
 .reasonix/
 reasonix.toml
 
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 本地临时脚本 / 调试脚本
+.tmp-test/
+.check-*.js
+.verify*.js
+.dbg-*.js

@@ -33,16 +33,28 @@ function rebuildCategories() {
     }
 }
 
+function loadLinks(tool) {
+    var out = [];
+    if (tool.affiliateUrl) out.push(tool.affiliateUrl);
+    if (tool.link && out.indexOf(tool.link) < 0) out.push(tool.link);
+    if (tool.url && out.indexOf(tool.url) < 0) out.push(tool.url);
+    if (tool.download && out.indexOf(tool.download) < 0) out.push(tool.download);
+    return out;
+}
+
+// 链接解析 — 优先级：联盟链接 > 直达 > 官网（Supabase url 字段）> 下载地址
+// 数据库行只有 url（migration.sql 的 tools.url），没有 affiliateUrl/link
 function getToolLink(tool) {
-    if (tool.affiliateUrl) return tool.affiliateUrl;
-    if (tool.link) return tool.link;
-    return null;
+    var all = tool ? loadLinks(tool) : [];
+    return all.length ? all[0] : null;
 }
 
 // 模糊搜索 — 支持拼音首字母匹配
 function fuzzyMatch(text, query) {
     if (!text) return false;
-    text = text.toLowerCase();
+    text = String(text).toLowerCase();
+    query = String(query || '').trim().toLowerCase();
+    if (!query) return false;
     // 直接包含
     if (text.includes(query)) return true;
     // 首字母匹配（简单的连续匹配）
@@ -61,6 +73,7 @@ function fuzzyMatch(text, query) {
 // 搜索高亮
 function highlightText(text, query) {
     if (!query || !text) return escHTML(text);
+    if (query.length > text.length) return escHTML(text); // 查询比正文长，不可能命中
     var lower = text.toLowerCase();
     var idx = lower.indexOf(query.toLowerCase());
     if (idx < 0) return escHTML(text);
@@ -129,10 +142,10 @@ function renderTools(filter) {
             var adSlot = document.createElement('div');
             adSlot.className = 'ad-container ad-inline';
             adSlot.innerHTML = '<ins class="adsbygoogle" style="display:block" data-ad-client="' + (typeof ADSENSE_CLIENT !== 'undefined' ? ADSENSE_CLIENT : '') + '" data-ad-format="fluid" data-ad-layout-key="+2z+q6-2w-1h+2n" data-ad-slot=""><div style="text-align:center;padding:20px;color:var(--text-light);font-size:12px;opacity:0.4">赞助内容</div></ins>';
+            // 广告填充统一由 adsense.js 负责：它的 MutationObserver 会自动接管新插入的
+            // .ad-container（视口内才 push，每个 ins 只 push 一次）。这里绝不能再调用
+            // adsbygoogle.push —— 会和观察者重复 push，导致同一位广告被填充两次。
             grid.appendChild(adSlot);
-            if (typeof window.adsbygoogle !== 'undefined' && window.adsbygoogle.push) {
-                try { window.adsbygoogle.push({}); } catch(e) {}
-            }
         }
 
         var card = document.createElement('article');
@@ -147,7 +160,16 @@ function renderTools(filter) {
         }).join('');
         var isPinned = t.pinned;
         var toolLink = getToolLink(t);
+        var allLinks = loadLinks(t);
         var nameHTML = highlightText(t.name, App.state.currentSearch.trim());
+        // 主按钮：有下载地址时优先给「下载」，否则「去使用 / 优惠直达」
+        var primaryHref = toolLink, primaryLabel = t.affiliateUrl ? '🔥 优惠直达' : '🚀 去使用';
+        if (t.download && toolLink !== t.download && !t.affiliateUrl) { primaryHref = t.download; primaryLabel = '⬇️ 下载'; }
+        var altLink = null;
+        for (var li = 0; li < allLinks.length; li++) {
+            if (allLinks[li] !== primaryHref) { altLink = allLinks[li]; break; }
+        }
+        var altLabel = t.url && altLink === t.url ? '🌐 官网' : '↗ 直达';
 
         card.innerHTML =
             '<div class="tool-icon" style="background:' + safeColor(t.color) + '">' + iconHTML + '</div>' +
@@ -161,52 +183,54 @@ function renderTools(filter) {
             '<div class="tool-tags">' + tagsHTML + '</div>' +
             (t.usage ? '<div class="tool-extra">' + escHTML(t.usage) + '</div>' : '') +
             '</div>' +
-            (toolLink
-                ? '<a class="tool-visit-btn" href="' + escHTML(toolLink) + '" target="_blank" rel="noopener" data-tool-id="' + t.id + '" data-tool-name="' + escHTML(t.name) + '">' +
-                  (t.affiliateUrl ? '🔥 优惠直达' : '🚀 去使用') + '</a>'
+            (primaryHref
+                ? '<a class="tool-visit-btn" href="' + escHTML(primaryHref) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + primaryLabel + '</a>'
                 : '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;">📋 查看详情</div>') +
+            (altLink
+                ? '<a class="tool-visit-btn tool-visit-alt" href="' + escHTML(altLink) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + altLabel + '</a>'
+                : '') +
             '</div>';
 
         grid.appendChild(card);
-    });
-
-    // 点击卡片打开详情
-    grid.addEventListener('click', function(e) {
-        var card = e.target.closest('.tool-card');
-        if (!card) return;
-        if (e.target.closest('.tool-visit-btn')) return;
-        var id = parseInt(card.dataset.id);
-        openDetail(id);
-    });
-
-    // 访问链接埋点
-    grid.addEventListener('click', function(e) {
-        var btn = e.target.closest('.tool-visit-btn[data-tool-id]');
-        if (!btn) return;
-        trackToolClick(btn.dataset.toolId, btn.dataset.toolName);
     });
 
     var tc = document.getElementById('totalCount'); if (tc) tc.textContent = App.state.tools.length;
     var cc = document.getElementById('categoryCount'); if (cc) cc.textContent = new Set(App.state.tools.map(function(t) { return t.category; })).size;
 }
 
-// 点击追踪
+// 点击追踪 — 仅本地统计 + 尽力而为的服务端埋点
+// /api/click 在 GitHub Pages 部署下不存在（会 404）：任何失败都必须静默吞掉，
+// 既不能让 Promise 悬空 reject，也不能阻塞「去使用」链接的跳转。
 function trackToolClick(toolId, toolName) {
     try {
         var clicks = JSON.parse(localStorage.getItem('ruantui_clicks') || '{}');
         clicks[toolId] = (clicks[toolId] || 0) + 1;
         localStorage.setItem('ruantui_clicks', JSON.stringify(clicks));
     } catch(e) {}
-    if (typeof fetch === 'function') {
-        try {
-            fetch('/api/click', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ toolId: parseInt(toolId), toolName: toolName })
-            }).catch(function(){});
-        } catch(e) {}
-    }
+    if (typeof fetch !== 'function') return;
+    try {
+        fetch('/api/click', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ toolId: parseInt(toolId, 10), toolName: toolName }),
+            keepalive: true
+        }).then(function(res) {
+            if (!res || !res.ok) {
+                // 404/401/5xx 等一律忽略：埋点失败不影响业务
+            }
+        }).catch(function() {});
+    } catch(e) {}
 }
+
+// 卡片点击 → 打开详情：由 modal.js 统一处理（唯一入口），这里不再注册开卡监听，
+// 否则与 modal.js 重复，并且历史上留下的 openDetail() 未定义会抛 ReferenceError。
+
+// 访问链接埋点 — 模块作用域只注册一次（renderTools 会反复重建卡片，但监听器不需重建）
+if (grid) grid.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tool-visit-btn[data-tool-id]');
+    if (!btn) return;
+    trackToolClick(btn.dataset.toolId, btn.dataset.toolName);
+});
 
 // 分类点击
 if (filterBar) filterBar.addEventListener('click', function(e) {
@@ -217,13 +241,9 @@ if (filterBar) filterBar.addEventListener('click', function(e) {
     renderTools(App.state.currentFilter);
 });
 
-// 排序切换
-var sortSelectEl = document.getElementById('sortSelect');
-if (sortSelectEl) {
-    sortSelectEl.addEventListener('change', function() {
-        renderTools(App.state.currentFilter);
-    });
-}
+// 排序切换 — onchange 由 features.js 负责（它会先恢复原始顺序再排序）。
+// 这里不再重复挂 change 监听：两个监听并存时，第二个（旧的这里）会用排序后的数组
+// 再渲染一次，把「default」顺序的恢复效果抵消掉。
 
 // 搜索（防抖 250ms）
 var searchInput = document.getElementById('searchInput');

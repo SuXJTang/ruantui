@@ -1,4 +1,24 @@
 {
+  // ============================================================
+  // 静态资源 = 仓库根目录，所以「不公开的东西」必须显式排除。
+  // 排除走 `<assets 目录>/.assetsignore`（gitignore 语法），不是 assets 里的
+  // 配置字段：Wrangler 的 assets 只接受 directory / binding / html_handling /
+  // not_found_handling / base_path / run_worker_first，任何其它键只会被
+  // 记为 "Unexpected fields found" 警告然后照常部署 —— 也就是静默失效。
+  // 仓库根的 .assetsignore 承载这份排除清单（当前 8 条）：
+  //   .*               根目录隐藏文件/目录（.git .wrangler .dev.vars* .env* .codegraph
+  //                    .reasonix .tmp-test .check-*.js .verify*.js .dbg-*.js
+  //                    .gitignore .dev.vars.example）
+  //   *.md             README.md CHANGELOG.md
+  //   migration.sql    完整库结构 + RLS 策略
+  //   wrangler.jsonc   部署配置
+  //   worker           本 Worker 源码
+  //   .verify.js / .verify2.js / .check-*.js   脚手架脚本的显式兜底
+  // 注意：gitignore 语法里 `*` 不匹配 dotfile，若缺了 `.*`，.dev.vars 这类
+  // 文件会被原样上传成公开资源；而 img/ 是站点真实资源（头像、收款码，
+  // index.html:116/263/264 引用），千万别忽略 img/。
+  // 改动任何一个 *.js / *.html 资源时都要回来确认它仍被部署。
+  // ============================================================
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ruantui",
   "main": "worker/index.js",
@@ -9,7 +29,14 @@
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+    // 让 /api/* 先经过 Worker，而不是先去找同名静态资源；
+    // 仅靠 fetch 里的 pathname 判断时，若仓库根出现 api/ 目录，
+    // 资源会静默遮蔽 API。数组形式只对 /api/* 生效，静态资源其余路径
+    // 仍走 asset-first 的快速路径，不影响性能。
+    "run_worker_first": [
+      "/api/*"
+    ]
   },
   "compatibility_flags": [
     "nodejs_compat"

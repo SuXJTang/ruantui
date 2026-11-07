@@ -18,6 +18,9 @@ loadTools().then(function() {
 });
 
 // ---------- 排序 ----------
+// 排序由这里唯一负责（ui.js 不再挂重复的 change 监听）。
+// 注意：过滤（名称/分类/标签/新建行等）只设置 currentFilter/currentSearch 后调用
+// renderTools()，从不重新渲染本列表，所以不存在“过滤被重置”的问题。
 var sortSelect = document.getElementById('sortSelect');
 if (sortSelect) {
     sortSelect.onchange = function() {
@@ -156,16 +159,24 @@ var mgmtList = document.getElementById('mgmtList');
 function renderMgmtList() {
     if (!mgmtList) return;
     var q = ((document.getElementById('mgmtSearchInput') || {}).value || '').toLowerCase().trim();
-    var filtered = q ? App.state.tools.filter(function(t) { return t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q); }) : App.state.tools;
+    var list = Array.isArray(App.state.tools) ? App.state.tools : [];
+    // 按 id 查工具：原先写成 App.state.tools.find(function(x){...}.bind(this)) —— bind 绑的是
+    // 匿名回调的 this（严格模式下 undefined，本文件非严格所以是 window），this.dataset 取不到，
+    // parseInt(undefined) = NaN，查不到就直接 return，点「编辑」完全没反应。
+    var byId = function(id) {
+        for (var i = 0; i < list.length; i++) { if (String(list[i].id) === String(id)) return list[i]; }
+        return null;
+    };
+    var filtered = q ? list.filter(function(t) { return String(t.name || '').toLowerCase().includes(q) || String(t.category || '').toLowerCase().includes(q); }) : list;
     mgmtList.innerHTML = filtered.map(function(t) {
         var icon = renderIconHTML(t);
         var badge = t.is_custom ? '<span>[自定义]</span>' : '';
         var isPinned = t.pinned;
-        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + safeColor(t.color) + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + escHTML(t.name) + badge + '</h4><p>' + escHTML(t.category) + '</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + t.id + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + t.id + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + t.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
+        return '<div class="mgmt-row"><div class="mgmt-row-icon" style="background:' + safeColor(t.color) + '">' + icon + '</div><div class="mgmt-row-info"><h4>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + escHTML(t.name) + badge + '</h4><p>' + escHTML(t.category) + '</p></div><div class="mgmt-row-actions"><button class="pin-btn" data-id="' + escHTML(t.id) + '" title="' + (isPinned ? '取消置顶' : '置顶') + '" style="color:' + (isPinned ? 'var(--primary)' : '') + '"><i class="fas fa-thumbtack"></i></button><button class="edit-btn" data-id="' + escHTML(t.id) + '" title="编辑"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="' + escHTML(t.id) + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
     }).join('');
-    mgmtList.querySelectorAll('.edit-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var t = App.state.tools.find(function(x) { return x.id === parseInt(this.dataset.id); }.bind(this)); if (t) openForm(t); }; });
-    mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); showConfirm('确定删除「' + (App.state.tools.find(function(x){return x.id===id})||{}).name + '」？', function() { deleteTool(id); }); }; });
-    mgmtList.querySelectorAll('.pin-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); togglePin(parseInt(this.dataset.id)); }; });
+    mgmtList.querySelectorAll('.edit-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var t = byId(this.dataset.id); if (t) openForm(t); }; });
+    mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id, 10); var t = byId(this.dataset.id); showConfirm('确定删除「' + (t ? t.name : '') + '」？', function() { deleteTool(id); }); }; });
+    mgmtList.querySelectorAll('.pin-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); togglePin(parseInt(this.dataset.id, 10)); }; });
 }
 
 function deleteTool(id) {
@@ -214,22 +225,28 @@ function togglePin(id) {
 
 // ---------- 编辑表单 ----------
 var formOverlay = document.getElementById('formOverlay');
+// 表单控件的安全访问：缺元素时返回 null / 空串，而不是抛 TypeError 让整个弹窗炸掉
+function _fInput(id) { return document.getElementById(id); }
+function _fVal(id) { var el = _fInput(id); return el ? el.value : ''; }
+function _fSet(id, v) { var el = _fInput(id); if (el) el.value = v; }
+// 标题是 <h2>，没有 .value：误用 _fSet 会让「添加工具 / 编辑工具」永远不更新
+function _fText(id, v) { var el = _fInput(id); if (el) el.textContent = v; }
 function openForm(tool) {
     if (!formOverlay) return;
-    document.getElementById('formTitle').textContent = tool ? '编辑工具' : '添加工具';
-    document.getElementById('formId').value = tool ? tool.id : '';
-    document.getElementById('formName').value = tool ? tool.name : '';
-    document.getElementById('formCategory').value = tool ? tool.category : '';
-    document.getElementById('formColor').value = tool ? tool.color : '#3B82F6';
-    document.getElementById('formComment').value = tool ? tool.comment : '';
-    document.getElementById('formDetail').value = tool ? (tool.detail || '') : '';
-    document.getElementById('formTags').value = tool ? (tool.tags || []).join(', ') : '';
-    document.getElementById('formUrl').value = tool ? (tool.url || '') : '';
-    document.getElementById('formDownload').value = tool ? (tool.download || '') : '';
-    document.getElementById('formUsage').value = tool ? (tool.usage || '') : '';
-    document.getElementById('formSlug').value = tool ? (tool.slug || '') : '';
-    document.getElementById('formIconUrl').value = tool ? (tool.iconUrl || '') : '';
-    document.getElementById('formIcon').value = tool ? (tool.icon || '') : '';
+    _fText('formTitle', tool ? '编辑工具' : '添加工具');
+    _fSet('formId', tool ? tool.id : '');
+    _fSet('formName', tool ? tool.name : '');
+    _fSet('formCategory', tool ? tool.category : '');
+    _fSet('formColor', tool ? tool.color : '#3B82F6');
+    _fSet('formComment', tool ? tool.comment : '');
+    _fSet('formDetail', tool ? (tool.detail || '') : '');
+    _fSet('formTags', tool ? (tool.tags || []).join(', ') : '');
+    _fSet('formUrl', tool ? (tool.url || '') : '');
+    _fSet('formDownload', tool ? (tool.download || '') : '');
+    _fSet('formUsage', tool ? (tool.usage || '') : '');
+    _fSet('formSlug', tool ? (tool.slug || '') : '');
+    _fSet('formIconUrl', tool ? (tool.iconUrl || '') : '');
+    _fSet('formIcon', tool ? (tool.icon || '') : '');
     updateIconPreview();
 
     formOverlay.setAttribute('aria-hidden', 'false');
@@ -238,13 +255,15 @@ function openForm(tool) {
 }
 
 function updateIconPreview() {
-    var color = document.getElementById('formColor').value || '#3B82F6';
-    document.getElementById('iconPreview').style.background = color;
-    var slug = document.getElementById('formSlug').value.trim();
-    var iconUrl = document.getElementById('formIconUrl').value.trim();
-    var icon = document.getElementById('formIcon').value.trim();
-    var previewImg = document.getElementById('previewImg');
-    var previewIcon = document.getElementById('previewIcon');
+    var color = _fVal('formColor') || '#3B82F6';
+    var iconPreview = _fInput('iconPreview');
+    if (iconPreview) iconPreview.style.background = color;
+    var slug = _fVal('formSlug').trim();
+    var iconUrl = _fVal('formIconUrl').trim();
+    var icon = _fVal('formIcon').trim();
+    var previewImg = _fInput('previewImg');
+    var previewIcon = _fInput('previewIcon');
+    if (!previewImg || !previewIcon) return;
     previewImg.style.display = 'none';
     previewIcon.style.display = 'none';
     if (iconUrl) { previewImg.src = iconUrl; previewImg.style.display = 'inline-block'; }
@@ -253,10 +272,8 @@ function updateIconPreview() {
     else { previewIcon.className = 'fas fa-cube'; previewIcon.style.display = 'inline-block'; }
 }
 
-document.getElementById('formSlug').oninput = updateIconPreview;
-document.getElementById('formIconUrl').oninput = updateIconPreview;
-document.getElementById('formIcon').oninput = updateIconPreview;
-document.getElementById('formColor').oninput = updateIconPreview;
+[['formSlug', updateIconPreview], ['formIconUrl', updateIconPreview], ['formIcon', updateIconPreview], ['formColor', updateIconPreview]]
+    .forEach(function(p) { var el = _fInput(p[0]); if (el) el.oninput = p[1]; });
 
 var _fc = document.getElementById('formCancel');
 if (_fc) _fc.onclick = function() { formOverlay.classList.remove('active'); formOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
@@ -268,20 +285,20 @@ var toolForm = document.getElementById('toolForm');
 if (toolForm) {
     toolForm.onsubmit = function(e) {
         e.preventDefault();
-        var id = document.getElementById('formId').value;
+        var id = _fVal('formId');
         var data = {
-            name: document.getElementById('formName').value.trim(),
-            category: document.getElementById('formCategory').value.trim(),
-            color: document.getElementById('formColor').value,
-            comment: document.getElementById('formComment').value.trim(),
-            detail: document.getElementById('formDetail').value.trim(),
-            tags: document.getElementById('formTags').value.split(/\s*,\s*/).filter(Boolean),
-            url: document.getElementById('formUrl').value.trim(),
-            download: document.getElementById('formDownload').value.trim(),
-            usage: document.getElementById('formUsage').value.trim(),
-            slug: document.getElementById('formSlug').value.trim(),
-            iconUrl: document.getElementById('formIconUrl').value.trim(),
-            icon: document.getElementById('formIcon').value.trim() || 'fa-cube'
+            name: _fVal('formName').trim(),
+            category: _fVal('formCategory').trim(),
+            color: _fVal('formColor'),
+            comment: _fVal('formComment').trim(),
+            detail: _fVal('formDetail').trim(),
+            tags: _fVal('formTags').split(/\s*,\s*/).filter(Boolean),
+            url: _fVal('formUrl').trim(),
+            download: _fVal('formDownload').trim(),
+            usage: _fVal('formUsage').trim(),
+            slug: _fVal('formSlug').trim(),
+            iconUrl: _fVal('formIconUrl').trim(),
+            icon: _fVal('formIcon').trim() || 'fa-cube'
         };
         if (!data.name || !data.category) { showToast('请填写名称和分类', 'error'); return; }
         var savePromise = id ? updateTool(parseInt(id), data) : insertTool(data);
@@ -490,11 +507,11 @@ if (annAddBtn) annAddBtn.onclick = function() { openAnnForm(null); };
 
 function openAnnForm(ann) {
     if (!annFormOverlay) return;
-    document.getElementById('annFormTitle').textContent = ann ? '编辑公告' : '发布公告';
-    document.getElementById('annFormId').value = ann ? ann.id : '';
-    document.getElementById('annFormTitleInput').value = ann ? ann.title : '';
-    document.getElementById('annFormContent').value = ann ? ann.content : '';
-    document.getElementById('annFormType').value = ann ? ann.type : 'manual';
+    var t = _fInput('annFormTitle'); if (t) t.textContent = ann ? '编辑公告' : '发布公告';
+    _fSet('annFormId', ann ? ann.id : '');
+    _fSet('annFormTitleInput', ann ? ann.title : '');
+    _fSet('annFormContent', ann ? ann.content : '');
+    _fSet('annFormType', ann ? ann.type : 'manual');
     annFormOverlay.setAttribute('aria-hidden', 'false'); annFormOverlay.classList.add('active'); document.body.style.overflow = 'hidden';
 }
 function closeAnnForm() { if (annFormOverlay) { annFormOverlay.classList.remove('active'); annFormOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } }
@@ -506,15 +523,16 @@ if (annFormOverlay) annFormOverlay.onclick = function(e) { if (!e.target.closest
 var annForm = document.getElementById('annForm');
 if (annForm) annForm.onsubmit = function(e) {
     e.preventDefault();
-    var title = document.getElementById('annFormTitleInput').value.trim();
-    var content = document.getElementById('annFormContent').value.trim();
-    var type = document.getElementById('annFormType').value;
+    var title = _fVal('annFormTitleInput').trim();
+    var content = _fVal('annFormContent').trim();
+    var type = _fVal('annFormType');
     if (!title || !content) { showToast('请填写标题和内容', 'error'); return; }
-    var isEdit = !!document.getElementById('annFormId').value;
+    var annIdVal = _fVal('annFormId');
+    var isEdit = !!annIdVal;
     var data = { title: title, content: content, type: type };
     var savePromise;
     if (isEdit) {
-        savePromise = updateAnnouncement(parseInt(document.getElementById('annFormId').value), data);
+        savePromise = updateAnnouncement(parseInt(annIdVal, 10), data);
     } else {
         savePromise = insertAnnouncement(data);
     }

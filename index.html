@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="精选 40+ 款优质软件工具推荐 — 涵盖 AI、开发、设计、效率、安全、影音等 7 大分类。ChatGPT、VS Code、Figma、Notion 等，每款都经过长期使用检验。">
+    <meta name="description" content="精选 40 款优质软件工具推荐 — 涵盖 AI、开发、设计、效率、安全、影音等 7 大分类。ChatGPT、VS Code、Figma、Notion 等，每款都经过长期使用检验。">
     <meta name="keywords" content="软件推荐,工具推荐,开发工具,AI工具,设计工具,效率工具,安全工具,影音工具,ChatGPT,VS Code,Figma,Notion,Claude,DeepSeek,软推,软件分享,免费软件,在线工具">
     <meta name="author" content="软推">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
     <meta name="googlebot" content="index, follow">
     <link rel="canonical" href="https://suxjtang.github.io/ruantui/">
-    <meta property="og:title" content="🧰 软推 — 40+ 精选软件工具推荐">
-    <meta property="og:description" content="AI、开发、设计、效率、安全、影音 — 7 大分类 40+ 款优质工具，每款都经过长期使用检验。">
+    <meta property="og:title" content="🧰 软推 — 40 款精选软件工具推荐">
+    <meta property="og:description" content="AI、开发、设计、效率、安全、影音 — 7 大分类 40 款优质工具，每款都经过长期使用检验。">
     <meta property="og:image" content="https://suxjtang.github.io/ruantui/icon.svg">
     <meta property="og:url" content="https://suxjtang.github.io/ruantui/">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="zh_CN">
     <meta property="og:site_name" content="软推">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="🧰 软推 — 40+ 精选软件工具推荐">
-    <meta name="twitter:description" content="AI、开发、设计、效率、安全、影音 — 7 大分类 40+ 款优质工具推荐。">
+    <meta name="twitter:title" content="🧰 软推 — 40 款精选软件工具推荐">
+    <meta name="twitter:description" content="AI、开发、设计、效率、安全、影音 — 7 大分类 40 款优质软件工具推荐。">
     <meta name="twitter:image" content="https://suxjtang.github.io/ruantui/icon.svg">
     <meta name="theme-color" content="#FF7D20">
     <link rel="manifest" href="manifest.json">
@@ -26,17 +26,47 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="软推">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>🧰 软推 — 40+ 精选软件工具推荐 | AI·开发·设计·效率</title>
+    <title>🧰 软推 — 40 款精选软件工具推荐 | AI·开发·设计·效率</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 <link rel="preconnect" href="https://cdn.simpleicons.org">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
 <link rel="dns-prefetch" href="https://api.qrserver.com">
-<link rel="preload" href="style.css?v=10" as="style">
-<link rel="preload" href="shared.js?v=2" as="script">
-    <link rel="stylesheet" href="style.css?v=10">
+<!-- ============================================================
+     缓存版本号约定 —— 同一版本号，只改两处
+     ------------------------------------------------------------
+     下方所有同源静态资源的 ?v=11 必须一致，且与 sw.js 里的
+     CACHE_VERSION（'v18'）代表同一个发布版本。发版时：
+       1) 把本文件下面所有 ?v=11 全改成新号（如 ?v=11）
+       2) 把 sw.js 的 CACHE_VERSION 同时改成对应的 'v19'
+     两步必须同时做，否则 SW 缓存与页面 URL 会对不上。
+     详见 README「缓存版本号」一节。
+     ============================================================ -->
+<link rel="preload" href="style.css?v=11" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css?v=11"></noscript>
+    <link rel="stylesheet" href="style.css?v=11">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 广告位占位骨架：只在 .ad-container 还未被 adsense.js 标记为 .ad-active 时显示，
+         替代原先挂到 .adsbygoogle <ins> 上的样式（那会污染 Google 的广告单元与广告拦截检测）。 -->
+    <style>
+    .ad-container:not(.ad-active)::after {
+        content: '';
+        position: absolute; inset: 0;
+        background:
+            linear-gradient(90deg, transparent 0%, rgba(128,128,128,0.06) 50%, transparent 100%),
+            repeating-linear-gradient(135deg, rgba(128,128,128,0.05) 0 8px, transparent 8px 16px);
+        animation: adSkeleton 2.4s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .ad-container.ad-active::after { content: none; }
+    @keyframes adSkeleton { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .ad-container:not(.ad-active)::after { animation: none; } }
+    </style>
+    <!-- Google AdSense 加载器：全页只出现一次。标准 async 标签 + 下方集中 push 即可：
+         库到位前 window.adsbygoogle 是普通数组，push 只是入队，库加载完成后自动消费。
+         切勿在页面内联 <script> 里再 push 一次 —— 那会重复填充同一个 ins，并打印
+         "All ins elements in the adsbygoogle array are already filled"。 -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1785974352610267" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -97,13 +127,14 @@
 </section>
 
 <!-- 广告位 ① -->
+<!-- 注意：<ins> 只是占位，真正的 adsbygoogle.push() 由 adsense.js 统一在视口内触发（懒加载）。
+     不要在这里内联 push，也不要在 ui.js 里 push —— 每个 ins 只 push 一次。 -->
 <div class="ad-container ad-top">
     <ins class="adsbygoogle"
          style="display:block"
          data-ad-client="ca-pub-1785974352610267"
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 </div>
 
 <div class="filter-row">
@@ -129,7 +160,6 @@
          data-ad-client="ca-pub-1785974352610267"
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 </div>
 
 </div><!-- /container -->
@@ -244,7 +274,7 @@
   "name": "软推",
   "alternateName": "RuanTui",
   "url": "https://suxjtang.github.io/ruantui/",
-  "description": "精选 40+ 款优质软件工具推荐 — 涵盖 AI、开发、设计、效率、安全、影音等 7 大分类。",
+  "description": "精选 40 款优质软件工具推荐 — 涵盖 AI、开发、设计、效率、安全、影音等 7 大分类。",
   "inLanguage": "zh-CN",
   "potentialAction": {
     "@type": "SearchAction",
@@ -261,7 +291,7 @@
   "@context": "https://schema.org",
   "@type": "ItemList",
   "name": "软推精选软件工具列表",
-  "description": "40+ 款精选软件工具，涵盖 AI、开发、设计、效率、安全、影音、浏览器等分类",
+  "description": "40 款精选软件工具，涵盖 AI、开发、设计、效率、安全、影音、浏览器插件等分类",
   "itemListElement": [
     {"@type":"ListItem","position":1,"name":"ChatGPT","url":"https://chat.openai.com"},
     {"@type":"ListItem","position":2,"name":"VS Code","url":"https://code.visualstudio.com"},
@@ -301,21 +331,21 @@
     <div class="ann-panel-body" id="annPanelBody"><div class="ann-loading">加载中...</div></div>
 </div>
 
-<script src="shared.js?v=2"></script>
-<script src="supabase.js?v=3"></script>
-<script src="data.js?v=4"></script>
-<script src="ui.js?v=6"></script>
-<script src="modal.js?v=4"></script>
-<script src="apikey-config.js?v=2"></script>
-<script src="features.js?v=4"></script>
-<script src="theme.js?v=5"></script>
-<script src="particles.js?v=7"></script>
-<script src="effects.js?v=3"></script>
-<script src="interactions.js?v=2"></script>
-<script src="engagement.js?v=1"></script>
-<script src="mobile.js?v=1"></script>
-<script src="analytics.js?v=1"></script>
-<script src="adsense.js?v=5"></script>
+<script src="shared.js?v=11"></script>
+<script src="supabase.js?v=11"></script>
+<script src="data.js?v=11"></script>
+<script src="ui.js?v=11"></script>
+<script src="modal.js?v=11"></script>
+<script src="apikey-config.js?v=11"></script>
+<script src="features.js?v=11"></script>
+<script src="theme.js?v=11"></script>
+<script src="particles.js?v=11"></script>
+<script src="effects.js?v=11"></script>
+<script src="interactions.js?v=11"></script>
+<script src="engagement.js?v=11"></script>
+<script src="mobile.js?v=11"></script>
+<script src="analytics.js?v=11"></script>
+<script src="adsense.js?v=11"></script>
 <button id="backTop" aria-label="回到顶部" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </body>
 </html>

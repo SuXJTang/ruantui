@@ -59,13 +59,22 @@ jobs:
             exit 1
           fi
 
-      - name: 部署到 Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
+      - name: 安装 Node
+        uses: actions/setup-node@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # wrangler.jsonc 里已指定 main 与 assets 目录，这里无需额外参数
-          command: deploy
+          node-version: '22'
+
+      - name: 部署到 Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          echo "wrangler 版本:"
+          npx --yes wrangler@4 --version
+          echo "开始部署…"
+          npx --yes wrangler@4 deploy --non-interactive
+          echo "✅ 部署命令执行完成"
 
       - name: 部署后冒烟检查
         run: |

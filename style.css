@@ -1,8 +1,8 @@
-/* ================================================================
-   软推 v3 — 赛博玻璃态 · 科技风设计系统
+﻿/* ================================================================
+   杞帹 v3 鈥?璧涘崥鐜荤拑鎬?路 绉戞妧椋庤璁＄郴缁?
    ================================================================ */
 
-/* ---------- 页面加载动画 ---------- */
+/* ---------- 椤甸潰鍔犺浇鍔ㄧ敾 ---------- */
 #pageLoader {
     position: fixed; inset: 0; z-index: 99999;
     background: var(--bg);
@@ -18,28 +18,30 @@
 }
 @keyframes loaderSpin { to { transform: rotate(360deg); } }
 
-/* ---------- 打字机光标 ---------- */
+/* ---------- 鎵撳瓧鏈哄厜鏍?---------- */
 .typing-cursor::after {
     content: '|'; animation: blink 1s step-end infinite;
     color: var(--primary); font-weight: 300; margin-left: 2px;
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* ---------- 视差滚动容器 ---------- */
+/* ---------- 瑙嗗樊婊氬姩瀹瑰櫒 ---------- */
 [data-parallax] { will-change: transform; transition: transform .1s linear; }
 
-/* ---------- 卡片入场增强 ---------- */
+/* ---------- 鍗＄墖鍏ュ満澧炲己 ---------- */
 @keyframes cardInEnhanced {
     from { opacity: 0; transform: translateY(30px) scale(0.94); filter: blur(4px); }
     to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
-/* ---------- 主题变量 ---------- */
+/* ---------- 涓婚鍙橀噺 ---------- */
 :root {
     --primary: #FF7D20; --primary-rgb: 255,125,32;
     --accent: #3498db; --accent-rgb: 52,152,219;
     --bg: #f8f9fb; --card: rgba(255,255,255,0.72);
     --card-solid: #fff; --glass-bg: rgba(255,255,255,0.55);
+    /* 椤舵爮鑳屾櫙锛氳繎涓嶉€忔槑瀹炶壊锛屾浛浠?backdrop-filter锛堣 .topbar 娉ㄩ噴锛?*/
+    --topbar-bg: rgba(248,249,251,0.92);
     --text: #1a1a2e; --text-light: #6B7280;
     --border: rgba(0,0,0,0.06); --border-glow: rgba(var(--primary-rgb),0.18);
     --radius: 16px; --radius-sm: 10px; --radius-xs: 6px;
@@ -59,6 +61,7 @@
 [data-mode="dark"] {
     --bg: #0a0a14; --card: rgba(20,20,40,0.7); --card-solid: #141428;
     --glass-bg: rgba(20,20,40,0.5); --text: #e8e8f0;
+    --topbar-bg: rgba(10,10,20,0.92);
     --text-light: #8888a0; --border: rgba(255,255,255,0.06);
     --border-glow: rgba(var(--primary-rgb),0.25);
     --shadow: 0 2px 8px rgba(0,0,0,0.5);
@@ -67,7 +70,7 @@
     --shadow-glow: 0 0 28px rgba(var(--primary-rgb),0.2);
 }
 
-/* ---------- 全局重置 ---------- */
+/* ---------- 鍏ㄥ眬閲嶇疆 ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
@@ -77,7 +80,7 @@ body {
     display: flex; flex-direction: column; min-height: 100vh;
     position: relative;
 }
-/* 全局动态渐变背景 */
+/* 鍏ㄥ眬鍔ㄦ€佹笎鍙樿儗鏅?*/
 body::before {
     content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
     background:
@@ -93,10 +96,14 @@ body::before {
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
-/* ---------- 顶栏 — 玻璃态 ---------- */
+/* ---------- 椤舵爮 ---------- */
+/* 椤舵爮鏄?position: sticky锛屾粴鍔ㄦ椂涓€鐩磋创鍦ㄨ鍙ｉ《閮ㄣ€?
+   濡傛灉鍚屾椂寮€ backdrop-filter锛屾祻瑙堝櫒姣忔粴鍔ㄤ竴甯ч兘瑕侀噸鏂版ā绯婇《鏍忎笅闈㈢殑鏁村潡鍐呭锛?
+   杩欐槸绉诲姩绔粴鍔ㄥ崱椤挎渶涓昏鐨勬潵婧愪箣涓€銆?
+   鏀逛负杩戜笉閫忔槑鐨勫疄鑹茶儗鏅紙瑙嗚涓婂嚑涔庢棤宸埆锛屼絾婊氬姩鏃朵笉鍐嶈Е鍙戞ā绯婇噸绠楋級銆?*/
 .topbar {
     position: sticky; top: 0; z-index: 100;
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    background: var(--topbar-bg);
     border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset;
 }
@@ -128,7 +135,6 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     width: 100%; height: 36px; padding: 0 12px 0 34px; border: 1px solid var(--border);
     border-radius: 999px; background: rgba(128,128,128,0.04);
     color: var(--text); font-size: 13px; transition: all .3s;
-    backdrop-filter: blur(8px);
 }
 .topbar-search input:focus {
     outline: none; border-color: var(--primary);
@@ -141,7 +147,6 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .theme-palette {
     display: flex; gap: 4px; padding: 3px 6px;
     background: rgba(128,128,128,0.06); border-radius: 999px;
-    backdrop-filter: blur(8px);
 }
 .theme-swatch {
     width: 18px; height: 18px; border-radius: 50%;
@@ -174,7 +179,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .theme-toggle i { transition: transform .4s ease; }
 .theme-toggle:hover i { transform: rotate(30deg); }
 
-/* ---------- 分享面板 — 玻璃态 ---------- */
+/* ---------- 鍒嗕韩闈㈡澘 鈥?鐜荤拑鎬?---------- */
 .share-panel {
     position: absolute; top: 56px; right: 12px; z-index: 200;
     background: var(--card); border: 1px solid var(--border);
@@ -213,10 +218,10 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .share-url-row input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: rgba(128,128,128,0.03); color: var(--text); font-size: 12px; }
 .share-copy-btn { width: 32px; height: 32px; border-radius: var(--radius-xs); background: linear-gradient(135deg, rgba(var(--primary-rgb),0.12), rgba(var(--accent-rgb),0.12)); color: var(--primary); display: flex; align-items: center; justify-content: center; }
 
-/* ---------- 容器 ---------- */
+/* ---------- 瀹瑰櫒 ---------- */
 .container { max-width: 1200px; margin: 0 auto; padding: 0 max(16px,3vw); flex: 1; width: 100%; }
 
-/* ---------- 个人简介 — 渐变光效 ---------- */
+/* ---------- 涓汉绠€浠?鈥?娓愬彉鍏夋晥 ---------- */
 .profile { padding: 40px 0 28px; position: relative; }
 .profile-inner { display: flex; align-items: center; gap: 20px; }
 .profile-avatar {
@@ -251,7 +256,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .mgmt-btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 12px rgba(var(--primary-rgb),0.1); }
 
-/* ---------- 广告位 v2 — 智能插片式 ---------- */
+/* ---------- 骞垮憡浣?v2 鈥?鏅鸿兘鎻掔墖寮?---------- */
 .ad-container {
     width: 100%; min-height: 90px; margin: 0 0 16px;
     display: flex; align-items: center; justify-content: center;
@@ -263,7 +268,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     overflow: hidden;
 }
 .ad-container::before {
-    content: '赞助'; opacity: .25; letter-spacing: 3px;
+    content: '璧炲姪'; opacity: .25; letter-spacing: 3px;
     position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
     font-size: 13px; font-weight: 500;
 }
@@ -272,7 +277,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .ad-container .adsbygoogle { width: 100%; min-height: 90px; }
 .ad-top { margin-bottom: 20px; }
 .ad-bottom { margin-top: 8px; }
-/* 内嵌广告位 — 卡片样式 */
+/* 鍐呭祵骞垮憡浣?鈥?鍗＄墖鏍峰紡 */
 .ad-inline {
     grid-column: span 2; margin: 0;
     border: 1px dashed rgba(var(--primary-rgb),0.3);
@@ -280,7 +285,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     min-height: 200px;
 }
 
-/* ---------- 分类 + 排序 — 发光标签 ---------- */
+/* ---------- 鍒嗙被 + 鎺掑簭 鈥?鍙戝厜鏍囩 ---------- */
 .filter-row {
     display: flex; gap: 12px; align-items: flex-start;
     padding: 0 0 16px; flex-wrap: wrap;
@@ -322,9 +327,9 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-size: 12px; color: var(--text-light); padding: 0 0 8px;
     animation: cardIn .3s ease;
 }
-.result-count::before { content: '🔍 '; }
+.result-count::before { content: '馃攳 '; }
 
-/* ---------- 卡片网格 v2 — 玻璃态流光 ---------- */
+/* ---------- 鍗＄墖缃戞牸 v2 鈥?鐜荤拑鎬佹祦鍏?---------- */
 .grid {
     padding: 0 0 40px;
     display: grid;
@@ -340,11 +345,13 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     transition: transform .25s ease-out, box-shadow .4s, border-color .4s;
     animation: cardIn .5s ease backwards;
     position: relative; cursor: pointer;
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    /* 娉ㄦ剰锛氳繖閲?*涓嶈**鍔?backdrop-filter銆?
+       鍗＄墖鏄粴鍔ㄥ尯鍩熼噷鐨勪富瑕佸厓绱狅紝14 寮犲悓鏃跺仛鑳屾櫙妯＄硦浼氳绉诲姩绔粴鍔ㄦ槑鏄炬帀甯с€?
+       鍗＄墖鑳屾櫙 --card 鏈韩宸叉槸涓嶉€忔槑搴﹁冻澶熼珮鐨勫崐閫忔槑鑹诧紝鍘绘帀妯＄硦瑙嗚宸紓寰堝皬銆?*/
     transform-style: preserve-3d; perspective: 800px;
     overflow: hidden;
 }
-/* 玻璃态光泽 */
+/* 鐜荤拑鎬佸厜娉?*/
 .tool-card::before {
     content: ''; position: absolute; inset: 0; border-radius: inherit;
     background: linear-gradient(135deg,
@@ -357,7 +364,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: linear-gradient(135deg,
         rgba(255,255,255,0.06) 0%, transparent 40%);
 }
-/* 流光边框 */
+/* 娴佸厜杈规 */
 .tool-card::after {
     content: ''; position: absolute; inset: -1px; border-radius: inherit;
     background: linear-gradient(135deg, transparent 30%, rgba(var(--primary-rgb),0.25), transparent 70%);
@@ -444,9 +451,9 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     line-height: 1.4; white-space: nowrap; overflow: hidden;
     text-overflow: ellipsis; opacity: .7;
 }
-.tool-extra::before { content: '📖 '; }
+.tool-extra::before { content: '馃摉 '; }
 
-/* 去使用按钮 */
+/* 鍘讳娇鐢ㄦ寜閽?*/
 .tool-visit-btn {
     display: flex; align-items: center; justify-content: center; gap: 5px;
     margin-top: auto; padding: 7px 0;
@@ -460,10 +467,10 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-card:hover .tool-visit-btn { opacity: 1; transform: translateY(0); }
 .tool-visit-btn:hover { filter: brightness(1.1); box-shadow: var(--shadow-glow); }
 
-/* ---------- 双按钮布局 ---------- */
-/* 工具同时有「官网」和「下载」时并排显示两个按钮。
-   注意：.tool-visit-btn 自带 margin-top:auto 和渐变背景，
-   直接并列会上下堆叠，所以用容器接管 margin，并给次要按钮单独描边样式。 */
+/* ---------- 鍙屾寜閽竷灞€ ---------- */
+/* 宸ュ叿鍚屾椂鏈夈€屽畼缃戙€嶅拰銆屼笅杞姐€嶆椂骞舵帓鏄剧ず涓や釜鎸夐挳銆?
+   娉ㄦ剰锛?tool-visit-btn 鑷甫 margin-top:auto 鍜屾笎鍙樿儗鏅紝
+   鐩存帴骞跺垪浼氫笂涓嬪爢鍙狅紝鎵€浠ョ敤瀹瑰櫒鎺ョ margin锛屽苟缁欐瑕佹寜閽崟鐙弿杈规牱寮忋€?*/
 .tool-actions {
     display: flex;
     gap: 8px;
@@ -478,7 +485,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* 次要按钮：描边样式，视觉上弱于主按钮 */
+/* 娆¤鎸夐挳锛氭弿杈规牱寮忥紝瑙嗚涓婂急浜庝富鎸夐挳 */
 .tool-visit-btn.tool-visit-alt {
     background: transparent;
     border: 1px solid var(--border);
@@ -499,8 +506,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .grid-empty i { font-size: 56px; opacity: .2; margin-bottom: 12px; display: block; }
 .grid-empty p { font-size: 15px; }
 
-/* ---------- 数据加载失败 / 离线提示 ---------- */
-/* 设计原则：故障必须可见，不能拿假数据填平 */
+/* ---------- 鏁版嵁鍔犺浇澶辫触 / 绂荤嚎鎻愮ず ---------- */
+/* 璁捐鍘熷垯锛氭晠闅滃繀椤诲彲瑙侊紝涓嶈兘鎷垮亣鏁版嵁濉钩 */
 .data-error {
     grid-column: 1 / -1;
     text-align: center;
@@ -542,7 +549,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .data-retry-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(var(--primary-rgb), .35); }
 
-/* ---------- 骨架屏 ---------- */
+/* ---------- 楠ㄦ灦灞?---------- */
 .skeleton-card {
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 24px 18px 18px;
@@ -559,7 +566,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
 @keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-/* ---------- 页脚 v2 — 渐变 ---------- */
+/* ---------- 椤佃剼 v2 鈥?娓愬彉 ---------- */
 .footer {
     text-align: center; padding: 32px 24px;
     border-top: 1px solid var(--border);
@@ -590,7 +597,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .install-btn:hover { box-shadow: var(--shadow-glow); }
 
-/* ---------- 弹窗 v2 — 玻璃态 ---------- */
+/* ---------- 寮圭獥 v2 鈥?鐜荤拑鎬?---------- */
 .overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
     backdrop-filter: blur(6px); z-index: 1000;
@@ -625,7 +632,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .modal-close:hover { background: rgba(128,128,128,0.18); transform: rotate(90deg); }
 .modal-body { padding: 28px; }
 
-/* ---------- 详情弹窗 ---------- */
+/* ---------- 璇︽儏寮圭獥 ---------- */
 .modal-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; padding-right: 28px; }
 .modal-icon {
     width: 56px; height: 56px; border-radius: 14px;
@@ -682,7 +689,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .share-act-btn i { width: 16px; color: var(--primary); }
 .share-act-btn:hover { background: rgba(var(--primary-rgb),0.08); }
 
-/* ---------- 管理面板 ---------- */
+/* ---------- 绠＄悊闈㈡澘 ---------- */
 .mgmt-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
 .mgmt-header h2 { font-size: 18px; font-weight: 700; white-space: nowrap; }
 .mgmt-header-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
@@ -725,7 +732,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .mgmt-tab-content { display: none; }
 .mgmt-tab-content.active { display: block; }
 
-/* ---------- QQ / 反馈 / 赞赏 ---------- */
+/* ---------- QQ / 鍙嶉 / 璧炶祻 ---------- */
 .qq-box { display: inline-flex; align-items: center; gap: 12px; padding: 14px 28px; border: 2px dashed var(--border); border-radius: var(--radius-xs); }
 .qq-box span { font-size: 12px; color: var(--text-light); }
 .qq-box strong { font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: 2px; }
@@ -743,7 +750,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .donate-qr { width: 150px; height: 150px; display: block; border-radius: var(--radius-xs); box-shadow: var(--shadow); object-fit: contain; }
 .donate-qr-item img { background: #fff; padding: 8px; }
 
-/* ---------- 编辑表单 ---------- */
+/* ---------- 缂栬緫琛ㄥ崟 ---------- */
 .form-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 .form-section { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
 .form-section:first-of-type { margin-top: 0; }
@@ -781,7 +788,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .form-submit { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 2px 8px rgba(var(--primary-rgb),0.2); }
 .form-submit:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
-/* ---------- 回到顶部 ---------- */
+/* ---------- 鍥炲埌椤堕儴 ---------- */
 #backTop {
     position: fixed; bottom: 24px; right: 24px; z-index: 9990;
     width: 44px; height: 44px; border-radius: 50%;
@@ -806,7 +813,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb),0); }
 }
 
-/* ---------- 公告浮窗 ---------- */
+/* ---------- 鍏憡娴獥 ---------- */
 .ann-float {
     position: fixed; bottom: 80px; right: 24px; z-index: 9989;
     width: 44px; height: 44px; border-radius: 50%;
@@ -865,7 +872,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .ann-empty { text-align: center; padding: 40px 20px; color: var(--text-light); font-size: 13px; }
 .ann-loading { text-align: center; padding: 30px; color: var(--text-light); font-size: 13px; }
 
-/* ---------- 鼠标光斑 ---------- */
+/* ---------- 榧犳爣鍏夋枒 ---------- */
 #cursorGlow {
     position: fixed; left: 0; top: 0; width: 200px; height: 200px;
     margin: -100px 0 0 -100px; border-radius: 50%;
@@ -876,7 +883,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 #cursorGlow.on { opacity: 1; }
 
-/* ---------- 滚动进度条 ---------- */
+/* ---------- 婊氬姩杩涘害鏉?---------- */
 #scrollProgress {
     position: fixed; top: 0; left: 0; height: 3px; width: 100%;
     background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
@@ -888,7 +895,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 @keyframes progressShimmer { from { background-position: 0% 0; } to { background-position: 200% 0; } }
 
-/* ---------- 点击迸溅 ---------- */
+/* ---------- 鐐瑰嚮杩告簠 ---------- */
 .burst-dot {
     position: fixed; border-radius: 50%;
     transform: translate(-50%, -50%);
@@ -913,7 +920,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 /* ---------- Toast ---------- */
 @keyframes toastIn { 0% { opacity: 0; transform: translateX(40px); } 100% { opacity: 1; transform: translateX(0); } }
 
-/* ---------- 全局滚动条 ---------- */
+/* ---------- 鍏ㄥ眬婊氬姩鏉?---------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -922,7 +929,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(var(--primary-rgb),0.45); }
 
-/* ---------- 尊重减弱动态效果 ---------- */
+/* ---------- 灏婇噸鍑忓急鍔ㄦ€佹晥鏋?---------- */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: .01ms !important;
@@ -932,7 +939,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 
 /* ================================================================
-   响应式
+   鍝嶅簲寮?
    ================================================================ */
 @media (max-width: 768px) {
     .topbar-inner { gap: 8px; }
@@ -1035,4 +1042,54 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
     #tc { top: 10px; right: 10px; left: 10px; }
     #tc > div { max-width: 100%; }
+}
+
+/* ================================================================
+   绉诲姩绔粴鍔ㄦ€ц兘浼樺寲
+   ----------------------------------------------------------------
+   鎵嬫満涓婃粴鍔ㄥ崱椤跨殑涓昏鏉ユ簮锛屾寜褰卞搷浠庡ぇ鍒板皬锛?     1. backdrop-filter 鈥斺€?姣忓抚閲嶆柊妯＄硦鑳屾櫙鍍忕礌锛屼唬浠锋瀬楂?     2. 鍏ㄥ睆鍏冪礌涓婄殑 background-position 鍔ㄧ敾 鈥斺€?姣忓抚閲嶇粯鏁翠釜瑙嗗彛
+     3. filter: blur 鈥斺€?寮哄埗鍗曠嫭鍚堟垚灞傦紝涓旀棤娉曡 GPU 寤変环澶勭悊
+     4. 澶ц寖鍥?box-shadow 鈥斺€?闃村奖鎵╂暎鍗婂緞澶ф椂缁樺埗鎴愭湰楂?
+   妗岄潰绔繖浜涙晥鏋滃奖鍝嶄笉澶э紙榧犳爣浜や簰涓轰富銆佹粴鍔ㄩ噺灏忥級锛?   浣嗘墜鏈轰笂杈规粦杈归噸缁樹細鏄庢樉鎺夊抚銆備互涓嬪湪瑙﹀睆璁惧涓婂叧闂垨闄嶇骇銆?   ================================================================ */
+@media (max-width: 768px), (pointer: coarse) {
+    /* 1. 鍏抽棴鎵€鏈?backdrop-filter锛屾敼鐢ㄥ疄鑹?鍗婇€忔槑鑳屾櫙 */
+    /* 注意 .overlay 是弹窗背后的全屏遮罩、.ann-panel 与 .dash-fab 是浮层，
+       它们同样带 backdrop-filter，一并关掉以彻底消除移动端的模糊重算。 */
+    .topbar,
+    .share-panel,
+    .theme-palette,
+    .topbar-search input,
+    .modal,
+    .modal-form,
+    .overlay,
+    .ann-panel,
+    .dash-fab,
+    .install-banner {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    .share-panel { background: var(--card-solid); }
+
+    /* 2. 鍋滄鍏ㄥ睆鑳屾櫙鐨勪綅缃姩鐢伙紝鏀逛负闈欐€佹笎鍙橈紙瑙嗚鍑犱箮鏃犲樊鍒級 */
+    body::before {
+        animation: none !important;
+    }
+
+    /* 3. 绉婚櫎澶村儚鐨勬ā绯婂厜鏅曪紝鏀圭敤涓嶆ā绯婄殑鏌斿拰闃村奖 */
+    .profile-avatar::after {
+        filter: none !important;
+        opacity: .18 !important;
+    }
+
+    /* 4. 鍗＄墖鍏ュ満鍔ㄧ敾鍘绘帀 filter:blur锛屽彧淇濈暀浣嶇Щ+閫忔槑搴︼紙鍚堟垚灞傚弸濂斤級 */
+    .tool-card { animation: cardIn .32s ease backwards; }
+
+    /* 5. 鍗＄墖 3D 閫忚鍦ㄨЕ灞忎笂鏃犳剰涔夛紙娌℃湁 hover锛夛紝鍘绘帀浠ョ渷鍚堟垚寮€閿€ */
+    .tool-card {
+        transform-style: flat;
+        perspective: none;
+    }
+
+    /* 6. 闄嶄綆鍗＄墖闃村奖鎵╂暎鍗婂緞 */
+    .tool-card { box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 }

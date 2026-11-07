@@ -176,7 +176,7 @@ function renderTools(filter) {
         var nameHTML = highlightText(t.name, App.state.currentSearch.trim());
         // 主按钮文案按「链接的来源字段」决定，而不是按优先级顺序猜：
         //  - 只有 download（没有官网）→ ⬇️ 下载
-        //  - 有官网 url → 🚀 去使用
+        //  - 有官网 url → 🌐 去官网
         //  - 联盟链接 → 🔥 优惠直达
         var primaryHref = toolLink, primaryLabel = '🚀 去使用';
         if (t.affiliateUrl && primaryHref === t.affiliateUrl) {
@@ -186,11 +186,30 @@ function renderTools(filter) {
         } else if (t.url && primaryHref === t.url) {
             primaryLabel = '🌐 去官网';
         }
+        // 次按钮：再找一个与主按钮不同的链接
         var altLink = null;
         for (var li = 0; li < allLinks.length; li++) {
             if (allLinks[li] !== primaryHref) { altLink = allLinks[li]; break; }
         }
-        var altLabel = t.url && altLink === t.url ? '🌐 官网' : '↗ 直达';
+        var altLabel = '↗ 直达';
+        if (altLink) {
+            if (t.download && altLink === t.download) altLabel = '⬇️ 下载';
+            else if (t.url && altLink === t.url) altLabel = '🌐 官网';
+            else if (t.affiliateUrl && altLink === t.affiliateUrl) altLabel = '🔥 优惠';
+        }
+
+        // 按钮区：只有一个链接时保持原样；有两个时并排显示
+        var actionsHTML;
+        if (primaryHref && altLink) {
+            actionsHTML = '<div class="tool-actions">' +
+                '<a class="tool-visit-btn" href="' + escHTML(primaryHref) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + primaryLabel + '</a>' +
+                '<a class="tool-visit-btn tool-visit-alt" href="' + escHTML(altLink) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + altLabel + '</a>' +
+                '</div>';
+        } else if (primaryHref) {
+            actionsHTML = '<a class="tool-visit-btn" href="' + escHTML(primaryHref) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + primaryLabel + '</a>';
+        } else {
+            actionsHTML = '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;">📋 查看详情</div>';
+        }
 
         card.innerHTML =
             '<div class="tool-icon" style="background:' + safeColor(t.color) + '">' + iconHTML + '</div>' +
@@ -204,12 +223,7 @@ function renderTools(filter) {
             '<div class="tool-tags">' + tagsHTML + '</div>' +
             (t.usage ? '<div class="tool-extra">' + escHTML(t.usage) + '</div>' : '') +
             '</div>' +
-            (primaryHref
-                ? '<a class="tool-visit-btn" href="' + escHTML(primaryHref) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + primaryLabel + '</a>'
-                : '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;">📋 查看详情</div>') +
-            (altLink
-                ? '<a class="tool-visit-btn tool-visit-alt" href="' + escHTML(altLink) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + altLabel + '</a>'
-                : '') +
+            actionsHTML +
             '</div>';
 
         grid.appendChild(card);

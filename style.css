@@ -460,6 +460,38 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-card:hover .tool-visit-btn { opacity: 1; transform: translateY(0); }
 .tool-visit-btn:hover { filter: brightness(1.1); box-shadow: var(--shadow-glow); }
 
+/* ---------- 双按钮布局 ---------- */
+/* 工具同时有「官网」和「下载」时并排显示两个按钮。
+   注意：.tool-visit-btn 自带 margin-top:auto 和渐变背景，
+   直接并列会上下堆叠，所以用容器接管 margin，并给次要按钮单独描边样式。 */
+.tool-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+}
+.tool-actions .tool-visit-btn {
+    margin-top: 0;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 7px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* 次要按钮：描边样式，视觉上弱于主按钮 */
+.tool-visit-btn.tool-visit-alt {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    flex: 0 1 auto;
+}
+.tool-visit-btn.tool-visit-alt:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    filter: none;
+    box-shadow: none;
+}
+
 .grid-empty {
     text-align: center; padding: 80px 20px; color: var(--text-light);
     grid-column: 1 / -1;

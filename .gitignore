@@ -23,3 +23,6 @@ desktop.ini
 
 # 含真实管理员 UID 的一次性配置脚本，不入库
 setup-admin.sql
+
+# wrangler dry-run ����
+tmp/

@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://suxjtang.github.io/ruantui/sitemap.xml
+Sitemap: https://luoluo.fun/sitemap.xml

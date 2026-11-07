@@ -1,14 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!--
-  软推 sitemap
-  注意：本站是单页应用，站内没有独立的分类页。sitemap 只列真实可抓取的 URL，
-  不要写 /#ai 这类带 fragment 的地址 —— 搜索引擎会忽略 # 之后的片段，
-  这些条目实际都指向同一个首页，属于重复内容，对抓取没有帮助。
--->
+  杞帹 sitemap
+  娉ㄦ剰锛氭湰绔欐槸鍗曢〉搴旂敤锛岀珯鍐呮病鏈夌嫭绔嬬殑鍒嗙被椤点€俿itemap 鍙垪鐪熷疄鍙姄鍙栫殑 URL锛?  涓嶈鍐?/#ai 杩欑被甯?fragment 鐨勫湴鍧€ 鈥斺€?鎼滅储寮曟搸浼氬拷鐣?# 涔嬪悗鐨勭墖娈碉紝
+  杩欎簺鏉＄洰瀹為檯閮芥寚鍚戝悓涓€涓椤碉紝灞炰簬閲嶅鍐呭锛屽鎶撳彇娌℃湁甯姪銆?-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://suxjtang.github.io/ruantui/</loc>
-    <lastmod>2026-11-07</lastmod>
+    <loc>https://luoluo.fun/</loc>
+    <lastmod>2026-11-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

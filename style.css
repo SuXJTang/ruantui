@@ -652,6 +652,24 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     border-bottom: 1px solid var(--border); text-transform: uppercase;
 }
 .modal-section p { font-size: 14px; line-height: 1.75; }
+.modal-text { font-size: 14px; line-height: 1.75; }
+/* 折叠：3 行 + 渐变遮罩，避免"断崖式"截断 */
+.modal-text.collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    position: relative;
+    max-height: calc(1.75em * 3);
+}
+.modal-toggle {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 8px; padding: 4px 0;
+    font-size: 13px; font-weight: 600;
+    color: var(--primary); background: none; border: none; cursor: pointer;
+}
+.modal-toggle i { font-size: 10px; transition: transform .2s; }
+.modal-toggle:hover { opacity: .8; }
 .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .modal-tag {
     font-size: 12px; padding: 3px 12px; border-radius: 999px;
@@ -1092,4 +1110,37 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
     /* 6. 闄嶄綆鍗＄墖闃村奖鎵╂暎鍗婂緞 */
     .tool-card { box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+}
+
+/* ================================================================
+   移动端性能优化（第二轮：常驻动画与合成层）
+   ----------------------------------------------------------------
+   上一轮关掉了 backdrop-filter。进一步排查发现还有一类更隐蔽的开销：
+   多个「无限循环」的动画即使视觉上很淡，也会让浏览器每帧都重新合成。
+
+   卡片流光的 ::after 尤其典型：14 张卡片各有一个 paused 的
+   background-position 动画 + 200% 尺寸渐变，即使不播放也占合成层，
+   而触屏设备根本没有 hover，这个伪元素永远不会显示。
+   ================================================================ */
+@media (max-width: 768px), (pointer: coarse) {
+    /* 卡片的流光边框伪元素：触屏无 hover，直接不渲染 */
+    .tool-card::after { display: none !important; }
+
+    /* 停掉所有常驻无限动画（每秒都在请求重绘/合成）：
+       brandFlow 品牌渐变流动 · pinnedPulse 推荐徽章脉冲
+       badgePulse 公告角标 · backTopPulse 回顶光晕
+       progressShimmer 顶部进度流光 */
+    .brand-text,
+    .profile-info h1,
+    .pinned-badge,
+    .ann-float-badge,
+    #backTop.visible::after,
+    #scrollProgress {
+        animation: none !important;
+    }
+    /* 进度条静态化后给纯色，否则看不到进度指示 */
+    #scrollProgress { background: var(--primary) !important; }
+
+    /* 粒子去光晕：每个粒子原本带 box-shadow 扩散，改为纯色圆点 */
+    .star, .shooting-star, .petal { box-shadow: none !important; }
 }

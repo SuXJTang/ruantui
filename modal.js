@@ -19,9 +19,23 @@ function openModal(tool) {
     var shareUrl = window.location.origin + window.location.pathname + '?tool=' + tool.id;
     var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(shareUrl);
 
+    // 长文本折叠：默认只显示 3 行，超出时提供「展开」。
+    // 之前详细介绍和使用说明全文铺开，手机上要滑好几屏才看得到链接和分享。
+    function sectionHTML(title, text, prefix) {
+        if (!text) return '';
+        var body = prefix ? prefix + escHTML(text) : escHTML(text);
+        // 粗略判断是否需要折叠按钮：按全角字符估算，3 行大约能放 60-75 字
+        var needToggle = String(text).length > 66;
+        return '<div class="modal-section">' +
+            '<h4>' + escHTML(title) + '</h4>' +
+            '<div class="modal-text' + (needToggle ? ' collapsed' : '') + '">' + body + '</div>' +
+            (needToggle ? '<button type="button" class="modal-toggle" onclick="toggleModalText(this)">展开全文 <i class="fas fa-chevron-down"></i></button>' : '') +
+            '</div>';
+    }
+
     modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + safeColor(tool.color) + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + escHTML(tool.name) + '</h2><div class="modal-hmeta"><span class="tool-cat">' + escHTML(tool.category) + '</span><span class="modal-views">👁 ' + (tool.views || 0) + ' 次浏览</span></div></div></div>'
-        + '<div class="modal-section"><h4>详细介绍</h4><p>' + escHTML(tool.detail || tool.comment) + '</p></div>'
-        + (tool.usage ? '<div class="modal-section"><h4>使用说明</h4><p>📖 ' + escHTML(tool.usage) + '</p></div>' : '')
+        + sectionHTML('详细介绍', tool.detail || tool.comment, '')
+        + sectionHTML('使用说明', tool.usage, '📖 ')
         + (links.length ? '<div class="modal-section"><h4>链接</h4><div class="modal-links">' + links.join('') + '</div></div>' : '')
         + '<div class="modal-section"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></div>'
 
@@ -48,6 +62,16 @@ function closeModal() {
     if (!overlay) return;
     overlay.classList.remove('active'); overlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = '';
 }
+
+// 展开 / 收起长文本
+window.toggleModalText = function(btn) {
+    var box = btn.previousElementSibling;
+    if (!box) return;
+    var collapsed = box.classList.toggle('collapsed');
+    btn.innerHTML = collapsed
+        ? '展开全文 <i class="fas fa-chevron-down"></i>'
+        : '收起 <i class="fas fa-chevron-up"></i>';
+};
 
 // 点击卡片打开详情 — 全站唯一的卡片点击入口（ui.js 不再注册卡片点击监听）
 if (overlay) document.getElementById('toolGrid').addEventListener('click', function(e) {

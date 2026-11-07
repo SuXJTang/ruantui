@@ -64,30 +64,37 @@ jobs:
         with:
           node-version: '22'
 
+      - name: 安装 wrangler
+        run: |
+          set -euo pipefail
+          echo "node: $(node --version)  npm: $(npm --version)"
+          # 全局安装固定大版本，避免 npx 每次联网解析、也避免交互提示
+          npm install -g wrangler@4 --no-fund --no-audit
+          echo "已安装: $(wrangler --version)"
+
       - name: 部署到 Cloudflare Workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # CI 环境：禁止 wrangler 尝试打开浏览器或读写用户级配置
+          CI: 'true'
+          WRANGLER_SEND_METRICS: 'false'
         run: |
           set -euo pipefail
           echo "=== 环境自检 ==="
-          echo "node: $(node --version)"
           echo "account_id 前 8 位: ${CLOUDFLARE_ACCOUNT_ID:0:8}***"
-          echo "token 长度: ${#CLOUDFLARE_API_TOKEN} 字符（正常约 40）"
+          echo "token 长度: ${#CLOUDFLARE_API_TOKEN} 字符"
           if [ "${#CLOUDFLARE_API_TOKEN}" -lt 20 ]; then
             echo "::error::CLOUDFLARE_API_TOKEN 看起来过短，请确认已完整复制。"
             exit 1
           fi
 
-          echo "=== wrangler 版本 ==="
-          npx --yes wrangler@4 --version
-
           echo "=== 开始部署 ==="
-          # --autoconfig=false：本项目不是框架项目，关闭框架自动检测。
-          #   该选项 wrangler 4 默认开启，会额外探测/改写配置，
-          #   在 CI 中可能因此失败，显式关闭。
-          # --non-interactive：CI 环境禁止交互提示。
-          npx --yes wrangler@4 deploy --non-interactive --autoconfig=false
+          # --autoconfig=false：本项目不是框架项目，关闭框架自动检测
+          # --non-interactive：CI 环境禁止交互提示
+          wrangler deploy --non-interactive --autoconfig=false
+
+          echo "✅ 部署命令执行完成"
 
           echo "✅ 部署命令执行完成"
 

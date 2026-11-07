@@ -174,9 +174,18 @@ function renderTools(filter) {
         var toolLink = getToolLink(t);
         var allLinks = loadLinks(t);
         var nameHTML = highlightText(t.name, App.state.currentSearch.trim());
-        // 主按钮：有下载地址时优先给「下载」，否则「去使用 / 优惠直达」
-        var primaryHref = toolLink, primaryLabel = t.affiliateUrl ? '🔥 优惠直达' : '🚀 去使用';
-        if (t.download && toolLink !== t.download && !t.affiliateUrl) { primaryHref = t.download; primaryLabel = '⬇️ 下载'; }
+        // 主按钮文案按「链接的来源字段」决定，而不是按优先级顺序猜：
+        //  - 只有 download（没有官网）→ ⬇️ 下载
+        //  - 有官网 url → 🚀 去使用
+        //  - 联盟链接 → 🔥 优惠直达
+        var primaryHref = toolLink, primaryLabel = '🚀 去使用';
+        if (t.affiliateUrl && primaryHref === t.affiliateUrl) {
+            primaryLabel = '🔥 优惠直达';
+        } else if (t.download && primaryHref === t.download) {
+            primaryLabel = '⬇️ 下载';
+        } else if (t.url && primaryHref === t.url) {
+            primaryLabel = '🌐 去官网';
+        }
         var altLink = null;
         for (var li = 0; li < allLinks.length; li++) {
             if (allLinks[li] !== primaryHref) { altLink = allLinks[li]; break; }

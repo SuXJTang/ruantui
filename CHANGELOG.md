@@ -7,12 +7,12 @@
 ### 已确认的真实泄露（需你尽快轮换）
 
 - **管理员密码可被反推**。`.dev.vars.example` 里提交了真实的 `ADMIN_PASSWORD_HASH`，
-  实测其明文可被直接命中（`<redacted-password>`），即管理面板等同于对所有人开放。
-  该哈希自 `a1a0bc2` 起就在公开仓库中，历史版本还另有一个 `<redacted-password>` 的哈希。
+  实测其明文可被直接命中（弱口令，此处不再复述具体值），即管理面板等同于对所有人开放。
+  该哈希自项目早期就存在于公开仓库中，历史版本还另有一个旧密码的哈希。
 - **DeepSeek API Key 可被解密取走**。`apikey-config.js` 里的「管理密码加密」是假防护：
-  解密用的密码就是上面那个公开可反推的管理员密码。实测用 `<redacted-password>`
-  成功解出真实 Key（`sk-REDACTED…`，35 位）。该 Key 的明文在历史提交 `a8e7513`
-  中曾直接以明文存在过，因此**无论如何改密码，Key 都必须视为已泄露并作废**。
+  解密用的密码就是上面那个公开可反推的管理员密码，实测可成功解出真实 Key（35 位）。
+  该 Key 的明文在历史提交中曾直接以明文存在过，因此**无论如何改密码，
+  Key 都必须视为已泄露并作废**。
 
 > 这两个凭据都已进入 git 历史，仅改当前文件无法真正收回。
 > 必须去对应平台**重新签发**，见文末「必须手动完成的处置」。
@@ -44,7 +44,7 @@
 
 1. **作废并重新签发 DeepSeek API Key**：https://platform.deepseek.com/api_keys
    （旧 Key 已可从 git 历史还原，必须吊销）。
-2. **改管理密码**（不要再沿用 `<redacted-password>` / `<redacted-password>`），重新生成哈希后设置：
+2. **改管理密码**（不要沿用任何历史用过的密码），重新生成哈希后设置：
    ```bash
    node -e "console.log(require('crypto').createHash('sha256').update('新密码').digest('hex'))"
    wrangler secret put ADMIN_PASSWORD_HASH
@@ -52,9 +52,16 @@
    wrangler secret put SUPABASE_ADMIN_TOKEN  # 与 Supabase app.admin_token 一致
    ```
 3. **轮换 Supabase `app.admin_token`**（若曾写进过任何公开位置）。
-4. 若希望彻底从历史中抹除，需用 `git filter-repo` 重写历史并强推——这会改写所有提交哈希，
-   其他协作者的克隆需要重新拉取，请自行权衡。**注意：即使重写历史，已泄露的凭据也必须轮换**，
-   因为可能已被抓取或 fork。
+4. **已执行：历史重写**。本次已用 `git filter-repo --replace-text` 对全部历史做了一次
+   凭据替换，抹除了 2 个管理员密码哈希、1 个 DeepSeek Key 明文、以及该 Key 的密文 / 盐 / IV，
+   共 6 处。**副作用**：所有提交哈希都已改变，已有克隆必须重新拉取：
+   ```bash
+   git fetch --all
+   git reset --hard origin/master
+   # 旧分支若报错，先 git remote prune origin 再核对
+   ```
+   > ⚠️ 重写历史**不能**替代轮换：泄露期间可能已被抓取、fork 或缓存。
+   > 上面 1–3 项仍必须执行。
 
 ---
 

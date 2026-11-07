@@ -389,10 +389,17 @@ async function getApiKey() {
     // 之前是「先要管理密码 → 解密内置密文 → 失败再要 Key」，仓库侧已不再有密文，
     // 那个分支只会让用户白输一次密码，故移除。
     k = prompt('输入 DeepSeek API Key（仅保存在本机浏览器，不会上传）\n申请地址：https://platform.deepseek.com/api_keys');
-    if (k && k.trim()) { localStorage.setItem('deepseek_api_key', k.trim()); return k.trim(); }
-    return null;
+    if (k === null) return null;   // 用户点了「取消」：本次直接放弃，不再追问
+    k = k.trim();
+    if (!k) return null;
+    // DeepSeek 的 Key 以 sk- 开头。这里只提醒不拦截，避免误粘贴整段别的文本后毫无提示。
+    if (k.indexOf('sk-') !== 0) {
+        showToast('格式看起来不像 DeepSeek Key（应以 sk- 开头）', 'error');
+    }
+    localStorage.setItem('deepseek_api_key', k);
+    return k;
 }
-window.resetApiKey = function() { localStorage.removeItem('deepseek_api_key'); _cachedKey = null; showToast('已清除', 'info'); };
+window.resetApiKey = function() { localStorage.removeItem('deepseek_api_key'); _cachedKey = null; showToast('已清除，下次使用时会重新询问', 'info'); };
 
 async function callDeepSeek(userPrompt) {
     var k = await getApiKey(); if (!k) return null;

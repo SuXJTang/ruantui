@@ -1,0 +1,108 @@
+# 自动部署到 Cloudflare Workers
+#
+# 触发条件：推送到 master 分支时自动部署；也可以在 Actions 页面手动触发。
+#
+# 效果：以后改完代码只需 git push，luoluo.fun 会自动更新，
+#       不需要在本地运行任何命令。
+#
+# ── 一次性配置（只需做一次）────────────────────────────────
+#
+# 需要在仓库 Settings → Secrets and variables → Actions 中添加两个 Secret：
+#
+# 1. CLOUDFLARE_API_TOKEN
+#    生成地址：https://dash.cloudflare.com/profile/api-tokens
+#    → Create Token → 选「Edit Cloudflare Workers」模板 → Continue → Create
+#    该模板自带 Workers Scripts / Workers Routes / Account Settings 权限，
+#    足够部署本项目的 Worker + 静态资源。
+#
+# 2. CLOUDFLARE_ACCOUNT_ID
+#    值：5214a85c8bde6fb1c09e690acb08c26d
+#    （也可以在 Cloudflare Dashboard → Workers & Pages 右侧栏看到）
+#
+# ────────────────────────────────────────────────────────
+
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches:
+      - master
+    # 只有影响到站点文件时才部署，避免改 README 也触发一次
+    paths-ignore:
+      - '**.md'
+      - '.github/workflows/keep-alive.yml'
+  workflow_dispatch: {}
+
+# 同一时间只允许一个部署在跑；新的推送会取消正在进行的旧部署
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 检查 Secret 是否已配置
+        id: cfg
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CF_TOKEN" ]; then
+            echo "::error::缺少 CLOUDFLARE_API_TOKEN。请到仓库 Settings → Secrets and variables → Actions 添加。"
+            exit 1
+          fi
+
+      - name: 部署到 Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler.jsonc 里已指定 main 与 assets 目录，这里无需额外参数
+          command: deploy
+
+      - name: 部署后冒烟检查
+        run: |
+          set -euo pipefail
+          echo "等待边缘生效…"
+          sleep 8
+          # 1) 站点可访问
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://luoluo.fun/ || echo 000)
+          echo "首页 HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::首页返回 $code，部署可能失败。"
+            exit 1
+          fi
+
+          # 2) 旧的密码登录接口必须仍是 410（防止回退到不安全版本）
+          login_code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
+            -X POST -H 'Content-Type: application/json' \
+            -d '{"password":"x"}' \
+            https://luoluo.fun/api/admin/login || echo 000)
+          echo "旧登录接口 HTTP $login_code（应为 410）"
+          if [ "$login_code" != "410" ]; then
+            echo "::error::旧登录接口返回 $login_code，期望 410。检查 worker/index.js 是否被回退。"
+            exit 1
+          fi
+
+          # 3) 带版本号的静态资源应有一年强缓存
+          #    版本号从首页动态读取，避免写死后换版本就失效
+          V=$(curl -sS --max-time 20 https://luoluo.fun/ | grep -o 'ui\.js?v=[0-9]*' | head -1 | sed 's/.*v=//' || true)
+          if [ -z "${V:-}" ]; then
+            echo "::warning::未能从首页解析出 ui.js 版本号，跳过缓存检查"
+          else
+            echo "检测到版本号 v=$V"
+            cc=$(curl -sS -D - -o /dev/null --max-time 20 "https://luoluo.fun/ui.js?v=$V" | grep -i '^cache-control:' | tr -d '\r' || echo '')
+            echo "ui.js 缓存头: $cc"
+            if ! echo "$cc" | grep -q 'max-age=31536000'; then
+              echo "::warning::静态资源未命中长缓存策略，请检查 run_worker_first 与 applyCacheHeaders。"
+            fi
+          fi
+
+          echo "✅ 部署后检查通过"

@@ -59,8 +59,46 @@ ruantui/
 ├── migration.sql          # Supabase 建表脚本
 ├── wrangler.jsonc         # Cloudflare Workers 部署配置
 ├── .dev.vars.example      # Worker 环境变量模板
+├── .assetsignore          # 部署到 Worker 时不上传的文件（gitignore 语法）
+├── .github/workflows/
+│   └── keep-alive.yml     # 每日保活，防止 Supabase 免费版项目被暂停
 └── img/                   # 头像 + 赞赏二维码
 ```
+
+## 💾 数据来源与故障显示
+
+工具数据**只有一个真实来源：Supabase 的 `tools` 表**。仓库里不存任何内置工具数据。
+
+`data.js` 的加载策略：
+
+| 情况 | 表现 |
+|------|------|
+| 正常 | 渲染数据库内容，并写入浏览器缓存 |
+| 数据库不可用 + 有本地缓存 | 渲染缓存内容，标记为「离线数据」 |
+| 数据库不可用 + 无缓存 | **显示「数据加载失败」+ 重试按钮** |
+| 数据库为空 | 显示「暂无工具数据」 |
+
+> **为什么不做「兜底假数据」**：v3.0 曾内置一份 40 条的兜底列表，其中 30 条是从未
+> 真实推荐过的编造内容。Supabase 一旦不可用，页面不报错而是静默显示这 40 条假数据，
+> 导致故障被伪装成「正常」，站长长期没发现。现在任何异常都会明确显示，绝不伪造数据。
+
+### ⚠️ Supabase 免费版会自动暂停
+
+免费版项目**7 天内活动过少就会被自动暂停**。暂停后：
+
+- 域名解析失效（DNS 返回 NXDOMAIN）
+- 网站显示「数据加载失败」
+- 需要登录 Supabase 控制台点 **Resume project** 才能恢复（一年内可恢复，数据不丢）
+
+本站流量低，很容易触发。仓库已带 `.github/workflows/keep-alive.yml` 每天请求一次
+数据库来保活。启用方式：在仓库 **Settings → Secrets and variables → Actions** 添加：
+
+| Secret | 值 |
+|--------|-----|
+| `SUPABASE_URL` | `https://你的项目id.supabase.co` |
+| `SUPABASE_ANON_KEY` | Supabase 的 anon key（公开的客户端 key） |
+
+未配置时工作流只输出警告，不会失败。
 
 ## 🔁 缓存版本号
 
@@ -112,6 +150,18 @@ wrangler dev
 
 点击页面「管理」按钮，输入密码进入管理面板。  
 密码验证由 Cloudflare Worker 服务端完成（SHA-256 哈希比对，避免前端明文泄露）。
+
+> ⚠️ **历史遗留问题：旧密码已公开，必须更换。** 仓库历史中曾提交过真实的
+> `ADMIN_PASSWORD_HASH`，其明文可被直接反推（弱口令）。虽然相关提交已被历史重写
+> 抹除，但凭据一旦公开就必须视为已泄露 —— 请换一个只有你知道的强密码并重设 secret。
+
+### 关于 `migration.sql`
+
+`migration.sql` 是**早期的建表脚本**，其中预置的 25 条示例数据（VS Code、Figma 等）
+与当前数据库中实际的内容**不是同一批**。如果是从零重建数据库，可以执行它来创建表结构、
+RLS 策略和触发器，但**请按需修改末尾的示例数据**，不要直接导入。
+
+分类没有硬编码在代码里，由数据库每行的 `category` 字段动态生成筛选标签。
 
 ### 部署前设置 Worker 环境变量
 ```bash

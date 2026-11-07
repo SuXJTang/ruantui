@@ -1,23 +1,21 @@
 // ============================================
-// Cloudflare Worker — 管理端 API
-// 处理密码验证 + CRUD 代理到 Supabase
+// Cloudflare Worker — 静态资源服务 + 公开埋点
 // ============================================
-
-// Supabase 配置（anon key 是公开客户端密钥，前端 supabase.js 同样内置）
-var SUPABASE_URL = 'https://gxlykcseepskxccdxmxc.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4bHlrY3NlZXBza3hjY2R4bXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDA2MjksImV4cCI6MjA5NTE3NjYyOX0.oc8MKQ56zk585KgKPXXah_fsLzC5VZqHihOsCWH_zhE';
-
-// 简单的 SHA-256 实现 (使用 Web Crypto API)
-async function sha256(msg) {
-    var enc = new TextEncoder();
-    var hashBuffer = await crypto.subtle.digest('SHA-256', enc.encode(msg));
-    var hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
-}
+// v3.2.0 起，管理权限改为 Supabase Auth 账号登录 + 数据库 RLS 白名单，
+// 前端带用户 JWT 直连 Supabase 读写。Worker 不再参与权限控制与数据代理。
+//
+// 目前仅剩两个职责：
+//   1. 静态资源服务（ASSETS binding），带 SPA 回退
+//   2. POST /api/click —— 公开的点击埋点，无鉴权、不落库，只写 Workers Logs
+//
+// 旧的 /api/admin/* 已全部返回 410 Gone。
 
 // 允许的前端来源（CORS 白名单）
 var ALLOWED_ORIGINS = [
     'https://suxjtang.github.io',
+    'https://luoluo.fun',
+    'https://www.luoluo.fun',
+    'https://ruantui.vercel.app',
     'http://localhost:8080',
     'http://127.0.0.1:8787',
 ];
@@ -36,84 +34,13 @@ function getCORSHeaders(request) {
     return headers;
 }
 
-// 常量时间字符串比较 — 防时序攻击（先摘要再比较，长度恒定，且不泄露长度）
-async function timingSafeEqual(a, b) {
-    if (typeof a !== 'string' || typeof b !== 'string') return false;
-    var da = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(a)));
-    var db = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(b)));
-    var diff = 0;
-    for (var i = 0; i < da.length; i++) diff |= da[i] ^ db[i];
-    return diff === 0;
-}
-
-// 工具数据输入校验
-function validateToolData(data, isUpdate) {
-    if (!data || typeof data !== 'object') return '无效数据';
-    if (!isUpdate) {
-        if (!data.name || typeof data.name !== 'string' || !data.name.trim()) return '名称不能为空';
-        if (!data.category || typeof data.category !== 'string' || !data.category.trim()) return '分类不能为空';
-    }
-    var MAX = { name: 100, category: 50, comment: 500, detail: 5000, url: 2000, download: 2000, usage: 500, slug: 100, icon: 50, color: 30, iconUrl: 2000 };
-    for (var k in MAX) {
-        if (data[k] && typeof data[k] === 'string' && data[k].length > MAX[k]) return k + ' 过长';
-    }
-    if (data.rating !== undefined && (typeof data.rating !== 'number' || data.rating < 1 || data.rating > 5)) return '评分无效';
-    return null;
-}
-
-// token 签名用的密钥 —— 未显式配置时不再回落到源码里的公开字面量
-function tokenSecret(env) {
-    if (env && typeof env.TOKEN_SECRET === 'string' && env.TOKEN_SECRET.length > 0) return env.TOKEN_SECRET;
-    throw new Error('TOKEN_SECRET 未配置（请用 `wrangler secret put TOKEN_SECRET` 设置）');
-}
-
-// 生成会话 token（1 小时内有效）
-async function generateToken(secret) {
-    var ts = Date.now().toString();
-    var hmac = await sha256('admin:' + secret + ':' + ts);
-    return btoa(ts + '.' + hmac);
-}
-
-// 验证 token 是否有效（1 小时内）
-async function verifyToken(token, secret) {
-    try {
-        var decoded = atob(token);
-        var parts = decoded.split('.');
-        if (parts.length !== 2) return false;
-        if (!/^\d+$/.test(parts[0])) return false;
-        if (Date.now() - parseInt(parts[0], 10) > 3600000) return false;
-        return timingSafeEqual(parts[1], await sha256('admin:' + secret + ':' + parts[0]));
-    } catch (e) { return false; }
-}
-
-// 从请求头提取 Bearer token
-function extractToken(request) {
-    var auth = request.headers.get('Authorization');
-    if (!auth || !auth.startsWith('Bearer ')) return null;
-    return auth.slice(7);
-}
-
-// Supabase REST 请求（使用 anon key + x-admin-token 头通过 RLS 校验）
-async function supabaseRequest(method, path, body, adminToken) {
-    var opts = {
-        method: method,
-        headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-            'Content-Type': 'application/json',
-            'x-admin-token': adminToken || '',
-        }
-    };
-    if (body) opts.body = JSON.stringify(body);
-    var url = SUPABASE_URL + '/rest/v1/' + path;
-    var res = await fetch(url, opts);
-    var text = await res.text();
-    try {
-        return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : null };
-    } catch(e) {
-        return { ok: res.ok, status: res.status, data: text };
-    }
-}
+// ------------------------------------------------------------------
+// 注：以下旧的管理端实现已于 v3.2.0 整体删除：
+//   timingSafeEqual / validateToolData / tokenSecret / generateToken /
+//   verifyToken / extractToken / supabaseRequest / sha256，以及全部
+//   /api/admin/* 路由。管理权限改为 Supabase Auth + 数据库 RLS，
+//   前端带用户 JWT 直连 Supabase，不再经过 Worker。
+// ------------------------------------------------------------------
 
 // ------------------------------------------------------------------
 // 响应辅助 —— CORS 头由调用方显式传入，不使用任何模块级请求状态。
@@ -142,51 +69,10 @@ function emptyResponse(status, cors) {
 }
 
 // ------------------------------------------------------------------
-// 登录尝试限流（内存态，尽力而为）
-// Worker isolate 是每个实例一份的内存：不跨 isolate/地域共享，
-// 冷启动或扩容即清零，因此这只是抬高暴力破解成本的减速带，
-// 不是可靠的账号锁。真正的硬上限应交给 Cloudflare Rate Limiting 规则。
+// 注：v3.2.0 起管理权限改为 Supabase Auth 账号登录 + 数据库 RLS 白名单，
+// 下面的登录限流 / 密码哈希比对 / token 签发等旧逻辑已被整体移除。
+// Worker 现在只保留 /api/click 一个公开埋点接口。
 // ------------------------------------------------------------------
-var LOGIN_MAX_ATTEMPTS = 10;
-var LOGIN_WINDOW_MS = 10 * 60 * 1000;   // 10 分钟
-var LOGIN_MAX_KEYS = 1000;              // 防内存膨胀：超限即整体重置
-
-var loginFailures = new Map();          // ip -> { count, resetAt }
-
-function clientIP(request) {
-    // Cloudflare 边缘写入的 CF-Connecting-IP，客户端无法伪造
-    return request.headers.get('CF-Connecting-IP') || 'unknown';
-}
-
-function pruneLoginFailures(now) {
-    loginFailures.forEach(function(entry, key) {
-        if (now >= entry.resetAt) loginFailures.delete(key);
-    });
-}
-
-// 返回 0 表示放行，否则返回需要等待的秒数
-function loginRetryAfter(ip, now) {
-    if (loginFailures.size > LOGIN_MAX_KEYS) loginFailures.clear();
-    var entry = loginFailures.get(ip);
-    if (!entry) return 0;
-    if (now >= entry.resetAt) { loginFailures.delete(ip); return 0; }
-    if (entry.count < LOGIN_MAX_ATTEMPTS) return 0;
-    return Math.ceil((entry.resetAt - now) / 1000);
-}
-
-function recordLoginFailure(ip, now) {
-    var entry = loginFailures.get(ip);
-    if (!entry || now >= entry.resetAt) {
-        entry = { count: 0, resetAt: now + LOGIN_WINDOW_MS };
-    }
-    entry.count += 1;
-    loginFailures.set(ip, entry);
-}
-
-// 成功登录后清空该 IP 的计数，避免正常管理员被自己的历史失败拖累
-function clearLoginFailures(ip) {
-    loginFailures.delete(ip);
-}
 
 // ------------------------------------------------------------------
 // /api/click —— 公开的埋点 ping（ui.js trackToolClick 调用）
@@ -233,119 +119,35 @@ async function handleRequest(request, env) {
             return handleClick(request, cors);
         }
 
-        // POST /api/admin/login — 密码验证
-        if (method === 'POST' && path === '/api/admin/login') {
-            var ip = clientIP(request);
-            var now = Date.now();
-            pruneLoginFailures(now);
-
-            var wait = loginRetryAfter(ip, now);
-            if (wait > 0) {
-                var limited = errorResponse('尝试过于频繁，请稍后再试', 429, cors);
-                limited.headers.set('Retry-After', String(wait));
-                return limited;
-            }
-
-            // 未配置管理员密码哈希时**直接失败关闭**，避免任何「空值比较恰好成立」的意外。
-            // 另外强校验格式：必须是 64 位十六进制 SHA-256。有人可能误把明文密码填进
-            // ADMIN_PASSWORD_HASH，那样登录会永久失败（比误放行安全，但要在部署时立刻发现）。
-            var expectedHash = (typeof env.ADMIN_PASSWORD_HASH === 'string')
-                ? env.ADMIN_PASSWORD_HASH.trim().toLowerCase() : '';
-            if (!/^[0-9a-f]{64}$/.test(expectedHash)) {
-                return errorResponse('服务端未正确配置 ADMIN_PASSWORD_HASH', 500, cors);
-            }
-
-            var body;
-            try {
-                body = await request.json();
-            } catch (e) {
-                return errorResponse('无效请求体', 400, cors);
-            }
-            var hash = await sha256(typeof body.password === 'string' ? body.password : '');
-            if (!(await timingSafeEqual(hash, expectedHash))) {
-                recordLoginFailure(ip, now);
-                return errorResponse('密码错误', 401, cors);
-            }
-            clearLoginFailures(ip);
-            var token = await generateToken(tokenSecret(env));
-            return jsonResponse({ token: token, ok: true }, 200, cors);
+        // POST /api/admin/login —— 已废弃（v3.2.0）
+        //
+        // 管理权限已改为 Supabase Auth 账号登录 + 数据库 RLS 的 admins 白名单，
+        // 前端不再调用本接口，写操作也改为浏览器带用户 JWT 直连 Supabase。
+        //
+        // 之所以在这里彻底关掉而不是「留着但改密码」：
+        //   1. 旧 ADMIN_PASSWORD_HASH 的明文早已公开，改密码不改变「单一共享口令」
+        //      这个本质缺陷——无法区分是谁在操作，也无法单独撤销某个人
+        //   2. 前端已不再使用，保留只会多一个可被攻击的入口
+        //   3. 即使拿到 token，写库也会被 Supabase RLS 拒绝（实测 401），
+        //      但不应让攻击者拿到看似有效的 token
+        //
+        // 返回 410 Gone 明确表达「该接口已被移除」。
+        if (path === '/api/admin/login') {
+            return errorResponse('该接口已废弃，请使用 Supabase 账号登录', 410, cors);
         }
 
-        // 以下路由需要 Bearer token 验证
-        var bearer = extractToken(request);
-        if (!bearer || !(await verifyToken(bearer, tokenSecret(env)))) {
-            return errorResponse('未授权', 401, cors);
-        }
-
-        // POST /api/admin/tools — 添加工具
-        if (method === 'POST' && path === '/api/admin/tools') {
-            var toolData = await request.json();
-            var verr = validateToolData(toolData, false);
-            if (verr) return errorResponse(verr, 400, cors);
-            var result = await supabaseRequest('POST', 'tools', toolData, env.SUPABASE_ADMIN_TOKEN);
-            if (!result.ok) return errorResponse('添加失败: ' + result.status, 500, cors);
-            return jsonResponse({ ok: true }, 200, cors);
-        }
-
-        // PUT/DELETE /api/admin/tools/:id — 更新/删除工具
-        var match = path.match(/^\/api\/admin\/tools\/(\d+)$/);
-        if (match) {
-            var toolId = match[1];
-            if (method === 'PUT') {
-                var updateData = await request.json();
-                var verr2 = validateToolData(updateData, true);
-                if (verr2) return errorResponse(verr2, 400, cors);
-                var resultUpd = await supabaseRequest('PATCH', 'tools?id=eq.' + toolId, updateData, env.SUPABASE_ADMIN_TOKEN);
-                if (!resultUpd.ok) return errorResponse('更新失败: ' + resultUpd.status, 500, cors);
-                return jsonResponse({ ok: true }, 200, cors);
-            }
-            if (method === 'DELETE') {
-                var resultDel = await supabaseRequest('DELETE', 'tools?id=eq.' + toolId, null, env.SUPABASE_ADMIN_TOKEN);
-                if (!resultDel.ok) return errorResponse('删除失败: ' + resultDel.status, 500, cors);
-                return jsonResponse({ ok: true }, 200, cors);
-            }
-        }
-
-        // POST /api/admin/tools/:id/pin — 切换置顶
-        var pinMatch = path.match(/^\/api\/admin\/tools\/(\d+)\/pin$/);
-        if (pinMatch) {
-            if (method === 'POST') {
-                var pinBody = await request.json();
-                if (!pinBody || typeof pinBody.pinned !== 'boolean') return errorResponse('pinned 必须是布尔值', 400, cors);
-                var resultPin = await supabaseRequest('PATCH', 'tools?id=eq.' + pinMatch[1], { pinned: pinBody.pinned }, env.SUPABASE_ADMIN_TOKEN);
-                if (!resultPin.ok) return errorResponse('置顶失败: ' + resultPin.status, 500, cors);
-                return jsonResponse({ ok: true }, 200, cors);
-            }
-        }
-
-        // POST /api/admin/announcements — 添加公告
-        if (method === 'POST' && path === '/api/admin/announcements') {
-            var annData = await request.json();
-            var resultAnn = await supabaseRequest('POST', 'announcements', annData, env.SUPABASE_ADMIN_TOKEN);
-            if (!resultAnn.ok) return errorResponse('添加公告失败: ' + resultAnn.status, 500, cors);
-            return jsonResponse({ ok: true }, 200, cors);
-        }
-
-        // PUT/DELETE /api/admin/announcements/:id — 更新/删除公告
-        var annMatch = path.match(/^\/api\/admin\/announcements\/(\d+)$/);
-        if (annMatch) {
-            if (method === 'PUT') {
-                var annUpdate = await request.json();
-                var resultAnnUpd = await supabaseRequest('PATCH', 'announcements?id=eq.' + annMatch[1], annUpdate, env.SUPABASE_ADMIN_TOKEN);
-                if (!resultAnnUpd.ok) return errorResponse('更新公告失败: ' + resultAnnUpd.status, 500, cors);
-                return jsonResponse({ ok: true }, 200, cors);
-            }
-            if (method === 'DELETE') {
-                var resultAnnDel = await supabaseRequest('DELETE', 'announcements?id=eq.' + annMatch[1], null, env.SUPABASE_ADMIN_TOKEN);
-                if (!resultAnnDel.ok) return errorResponse('删除公告失败: ' + resultAnnDel.status, 500, cors);
-                return jsonResponse({ ok: true }, 200, cors);
-            }
+        // 以下路由：旧的 token 鉴权写接口，v3.2.0 起整体废弃。
+        // 写操作现由浏览器带 Supabase 用户 JWT 直连，不经过 Worker。
+        // 相关实现（generateToken / verifyToken / validateToolData / supabaseRequest
+        // 以及全部 /api/admin/* 处理器）已删除，避免留下死代码与误用的入口。
+        if (path.indexOf('/api/admin/') === 0) {
+            return errorResponse('该接口已废弃，写操作请使用 Supabase 账号登录后直连', 410, cors);
         }
 
         return errorResponse('未找到路由: ' + method + ' ' + path, 404, cors);
 
     } catch(e) {
-        // 不回显内部错误细节；配置缺失（如 TOKEN_SECRET）按服务端故障处理
+        // 不回显内部错误细节
         console.error('worker error:', e && e.message);
         return errorResponse('服务器错误', 500, cors);
     }

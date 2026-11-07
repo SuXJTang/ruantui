@@ -153,6 +153,78 @@ async function handleRequest(request, env) {
     }
 }
 
+// ============================================
+// 静态资源缓存策略
+// ============================================
+// 目标：国内用户首次访问快、二次访问近乎瞬时。
+//
+// 分三类处理：
+//
+// 1. 带版本号的资源（*.js?v=15 / style.css?v=15）
+//    → 强缓存 1 年 + immutable。因为 URL 里已含版本戳，内容变了 URL 就变，
+//      不存在「缓存了旧版本」的风险。这是性能收益最大的一类，
+//      原先 max-age=0, must-revalidate 会导致每次访问都回源校验。
+//
+// 2. HTML（index.html、/、以及 SPA 回退页）
+//    → 不缓存（no-cache），必须每次回源。否则用户永远看不到新版本，
+//      而且 HTML 里引用的 ?v= 版本号也要能及时更新。
+//
+// 3. 图片 / 字体 / 图标（无版本号但内容稳定）
+//    → 缓存 7 天。折中：内容基本不变，但偶尔换图能在一周内生效。
+//
+// 另外统一加：
+//   X-Content-Type-Options: nosniff   防 MIME 嗅探
+//   Referrer-Policy: strict-origin-when-cross-origin  限制 Referer 泄露
+function applyCacheHeaders(request, response) {
+    // 只处理成功响应；错误页/重定向不缓存
+    if (!response || (response.status !== 200 && response.status !== 304)) return response;
+
+    var url = new URL(request.url);
+    var pathname = url.pathname;
+    var hasVersion = url.searchParams.has('v');   // ?v=15 这类版本戳
+
+    var contentType = response.headers.get('Content-Type') || '';
+
+    // 判断是否为 HTML 页面。不能只看 Content-Type：
+    //   · 根路径 "/" 在部分环境下不返回 Content-Type
+    //   · SPA 路由（/about）没有扩展名，但返回的是 index.html
+    // 所以同时用「路径无扩展名」来兜底，宁可把页面判为 HTML（不缓存）也不误缓存页面。
+    var lastSegment = pathname.split('/').pop();
+    var hasExt = /\.[a-z0-9]+$/i.test(lastSegment);
+    var isHTML = /text\/html/i.test(contentType) ||
+        pathname === '/' ||
+        /\.html?$/i.test(pathname) ||
+        !hasExt;   // 无扩展名 → 视为页面路由（SPA）
+
+    var cacheControl;
+    if (isHTML) {
+        cacheControl = 'no-cache, must-revalidate';
+    } else if (hasVersion) {
+        // URL 带版本戳 → 内容不可变，可永久缓存
+        cacheControl = 'public, max-age=31536000, immutable';
+    } else if (/\.(js|css)$/i.test(pathname)) {
+        // 没有版本戳的 JS/CSS 只能短缓存，避免更新不同步
+        cacheControl = 'public, max-age=3600';
+    } else if (/\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf)$/i.test(pathname)) {
+        cacheControl = 'public, max-age=604800';
+    } else {
+        // xml / txt / json 等（sitemap、robots、manifest）
+        cacheControl = 'public, max-age=3600';
+    }
+
+    // Response 头是不可变的，需要重建
+    var headers = new Headers(response.headers);
+    headers.set('Cache-Control', cacheControl);
+    if (!headers.has('X-Content-Type-Options')) headers.set('X-Content-Type-Options', 'nosniff');
+    if (!headers.has('Referrer-Policy')) headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: headers
+    });
+}
+
 // Worker 入口
 export default {
     async fetch(request, env, ctx) {
@@ -169,8 +241,8 @@ export default {
             // 保留原始 method / headers / body 等（旧实现 new Request(url) 会丢成 GET）
             var fallbackUrl = new URL(request.url);
             fallbackUrl.pathname = '/index.html';
-            return env.ASSETS.fetch(new Request(fallbackUrl, request));
+            return applyCacheHeaders(request, await env.ASSETS.fetch(new Request(fallbackUrl, request)));
         }
-        return response;
+        return applyCacheHeaders(request, response);
     }
 };

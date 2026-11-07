@@ -30,13 +30,15 @@
     "directory": ".",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    // 让 /api/* 先经过 Worker，而不是先去找同名静态资源；
-    // 仅靠 fetch 里的 pathname 判断时，若仓库根出现 api/ 目录，
-    // 资源会静默遮蔽 API。数组形式只对 /api/* 生效，静态资源其余路径
-    // 仍走 asset-first 的快速路径，不影响性能。
-    "run_worker_first": [
-      "/api/*"
-    ]
+    // 让所有请求都先经过 Worker，再由 Worker 内部调 env.ASSETS.fetch 取资源。
+    // 原因：`run_worker_first: false`（默认）时，能匹配到静态资源的请求会被
+    // Cloudflare 直接返回，**根本不进 Worker**，于是 Worker 里加的
+    // Cache-Control 等响应头全部无效（实测线上仍是 max-age=0）。
+    // 要让静态资源带上长缓存 / 安全头，必须走这个路径。
+    //
+    // 代价：每个请求都多进一次 Worker。但静态资源仍在同一个边缘节点内部读取，
+    // 实测 TTFB 无明显回退，换来的是可控制的缓存策略与安全头，值得。
+    "run_worker_first": true
   },
   "compatibility_flags": [
     "nodejs_compat"

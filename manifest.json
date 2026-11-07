@@ -2,7 +2,7 @@
   "id": "/",
   "name": "软推 — 精选软件工具推荐",
   "short_name": "软推",
-  "description": "40 款精选软件工具推荐 — AI、开发、设计、效率、安全、影音",
+  "description": "精选软件工具推荐 — AI、开发、设计、效率、安全、影音",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

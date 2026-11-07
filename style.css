@@ -467,6 +467,49 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .grid-empty i { font-size: 56px; opacity: .2; margin-bottom: 12px; display: block; }
 .grid-empty p { font-size: 15px; }
 
+/* ---------- 数据加载失败 / 离线提示 ---------- */
+/* 设计原则：故障必须可见，不能拿假数据填平 */
+.data-error {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--text-light);
+    background: var(--card);
+    border: 1px dashed rgba(239, 68, 68, .35);
+    border-radius: 16px;
+}
+.data-error i {
+    font-size: 44px;
+    color: #f59e0b;
+    opacity: .85;
+    margin-bottom: 16px;
+    display: block;
+}
+.data-error h3 {
+    font-size: 18px;
+    color: var(--text);
+    margin: 0 0 10px;
+}
+.data-error p {
+    font-size: 13px;
+    line-height: 1.7;
+    max-width: 520px;
+    margin: 0 auto;
+}
+.data-retry-btn {
+    margin-top: 20px;
+    padding: 9px 26px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--primary);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+}
+.data-retry-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(var(--primary-rgb), .35); }
+
 /* ---------- 骨架屏 ---------- */
 .skeleton-card {
     background: var(--card); border: 1px solid var(--border);

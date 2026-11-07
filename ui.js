@@ -13,10 +13,11 @@ var AD_CONFIG = {
 
 function rebuildCategories() {
     if (!filterBar) return;
-    var cats = [...new Set(App.state.tools.map(function(t) { return t.category; }))];
-    filterBar.innerHTML = '<button class="filter-tag active" data-filter="all"><span>全部</span> <em class="filter-count">' + App.state.tools.length + '</em></button>';
+    var list = Array.isArray(App.state.tools) ? App.state.tools : [];
+    var cats = [...new Set(list.map(function(t) { return t.category; }))];
+    filterBar.innerHTML = '<button class="filter-tag active" data-filter="all"><span>全部</span> <em class="filter-count">' + list.length + '</em></button>';
     cats.forEach(function(c) {
-        var count = App.state.tools.filter(function(t) { return t.category === c; }).length;
+        var count = list.filter(function(t) { return t.category === c; }).length;
         var b = document.createElement('button'); b.className = 'filter-tag'; b.dataset.filter = c;
         b.innerHTML = '<span>' + escHTML(c) + '</span> <em class="filter-count">' + count + '</em>';
         filterBar.appendChild(b);
@@ -84,7 +85,9 @@ function highlightText(text, query) {
 }
 
 function renderTools(filter) {
-    if (!App.state.tools || !grid) return;
+    // 注意：这里不能因为 tools 为空就提前 return —— 空/失败状态也要渲染提示界面。
+    if (!grid) return;
+    if (!Array.isArray(App.state.tools)) App.state.tools = [];
     var q = App.state.currentSearch.toLowerCase().trim();
     var filtered = App.state.tools.filter(function(t) {
         var matchFilter = (filter === 'all' || t.category === filter);
@@ -128,6 +131,15 @@ function renderTools(filter) {
         } else {
             resultBar.style.display = 'none';
         }
+    }
+
+    // 数据加载失败 / 为空 / 离线缓存 —— 必须让使用者看见，绝不静默伪装成正常
+    if (!App.state.tools || !App.state.tools.length) {
+        grid.innerHTML = renderDataErrorHTML();
+        var tcN = document.getElementById('totalCount'); if (tcN) tcN.textContent = '0';
+        var ccN = document.getElementById('categoryCount'); if (ccN) ccN.textContent = '0';
+        if (resultBar) resultBar.style.display = 'none';
+        return;
     }
 
     if (!filtered.length) {
@@ -196,6 +208,29 @@ function renderTools(filter) {
 
     var tc = document.getElementById('totalCount'); if (tc) tc.textContent = App.state.tools.length;
     var cc = document.getElementById('categoryCount'); if (cc) cc.textContent = new Set(App.state.tools.map(function(t) { return t.category; })).size;
+
+    syncJsonLd(filtered);
+}
+
+// ============================================
+// 用真实数据同步 SEO 结构化数据（ItemList）
+// 不写死在 HTML 里，避免收录到并不存在的工具。
+// ============================================
+function syncJsonLd(list) {
+    var el = document.getElementById('toolListJsonLd');
+    if (!el) return;
+    try {
+        var data = JSON.parse(el.textContent);
+        data.itemListElement = (list || []).slice(0, 20).map(function(t, i) {
+            var link = getToolLink(t) || t.url || '';
+            var item = { '@type': 'ListItem', position: i + 1, name: String(t.name || '') };
+            if (link) item.url = link;
+            return item;
+        });
+        el.textContent = JSON.stringify(data);
+    } catch (e) {
+        console.warn('JSON-LD 同步失败:', e);
+    }
 }
 
 // 点击追踪 — 仅本地统计 + 尽力而为的服务端埋点
@@ -224,6 +259,61 @@ function trackToolClick(toolId, toolName) {
 
 // 卡片点击 → 打开详情：由 modal.js 统一处理（唯一入口），这里不再注册开卡监听，
 // 否则与 modal.js 重复，并且历史上留下的 openDetail() 未定义会抛 ReferenceError。
+
+// ============================================
+// 数据加载失败界面
+// 设计原则：故障必须可见。绝不能拿假数据把错误「填平」。
+// ============================================
+function renderDataErrorHTML() {
+    var err = App.state.dataError;
+    var usingCache = App.state.usingCache;
+
+    var title, desc, icon, showRetry;
+
+    if (err === 'offline' || usingCache) {
+        // 有缓存但网络失败：仍显示内容（缓存是真实数据），外加一条提示均由页面顶部横幅承担
+        icon = 'fa-wifi';
+        title = '当前为离线缓存数据';
+        desc = '无法连接数据服务，正在展示上次成功加载的内容，可能与最新数据有差异。';
+        showRetry = true;
+    } else if (err === 'empty') {
+        icon = 'fa-inbox';
+        title = '暂无工具数据';
+        desc = '已成功连接数据服务，但其中还没有任何工具记录。请到管理面板添加。';
+        showRetry = false;
+    } else if (err === 'failed') {
+        icon = 'fa-triangle-exclamation';
+        title = '数据加载失败';
+        desc = '暂时无法获取工具列表。如果是本站站长，请检查 Supabase 项目是否处于运行状态（免费版闲置会被自动暂停）。';
+        showRetry = true;
+    } else {
+        icon = 'fa-circle-info';
+        title = '数据未加载';
+        desc = '暂时没有可显示的工具。';
+        showRetry = true;
+    }
+
+    return '<div class="data-error" role="alert">' +
+        '<i class="fas ' + icon + '"></i>' +
+        '<h3>' + escHTML(title) + '</h3>' +
+        '<p>' + escHTML(desc) + '</p>' +
+        (showRetry ? '<button type="button" class="data-retry-btn" onclick="retryLoadData()">重新加载</button>' : '') +
+        '</div>';
+}
+
+// 重新加载（供错误界面按钮调用）
+window.retryLoadData = function() {
+    var grid2 = document.getElementById('toolGrid');
+    if (grid2) grid2.innerHTML = '<div class="grid-empty"><i class="fas fa-spinner fa-spin"></i><p>正在重新加载…</p></div>';
+    try { localStorage.removeItem(App.constants.CACHE_KEY); } catch(e) {}
+    loadTools().then(function() {
+        rebuildCategories();
+        renderTools(App.state.currentFilter);
+        if (App.state.dataError) showToast('仍然无法获取数据', 'error');
+        else showToast('数据已更新', 'success');
+    });
+};
+
 
 // 访问链接埋点 — 模块作用域只注册一次（renderTools 会反复重建卡片，但监听器不需重建）
 if (grid) grid.addEventListener('click', function(e) {

@@ -134,17 +134,22 @@ function openMgmt() {
 var mgmtBtn = document.getElementById('mgmtBtn');
 if (mgmtBtn) mgmtBtn.onclick = function() { checkAdmin(); };
 
-// 导出数据为 data.js 文件
+// 导出全部工具为 JSON 备份（用于迁移 / 灾备，不再伪装成 data.js 兜底）
 var mgmtExportBtn = document.getElementById('mgmtExportBtn');
 if (mgmtExportBtn) mgmtExportBtn.onclick = function() {
-    var data = 'var FALLBACK_TOOLS = ' + JSON.stringify(App.state.tools, null, 2) + ';\n';
-    var blob = new Blob([data], { type: 'text/javascript' });
+    var payload = {
+        exportedAt: new Date().toISOString(),
+        count: (App.state.tools || []).length,
+        tools: App.state.tools || []
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'data.js';
+    var stamp = new Date().toISOString().slice(0, 10);
+    a.download = 'ruantui-tools-' + stamp + '.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    showToast('已导出 data.js', 'success');
+    showToast('已导出 ' + payload.count + ' 条工具数据', 'success');
 };
 
 var mgmtOverlay = document.getElementById('mgmtOverlay');

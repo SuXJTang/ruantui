@@ -1,49 +1,43 @@
 # 软推 · 迭代路线计划
 
-> 文档创建：2026-11-08  
+> 文档更新：2026-11-08（根据产品定位重写）  
 > 基线版本：v3.2.0  
 > 用途：后续迭代的路线图与任务清单，可按节奏逐步推进
 
 ---
 
-## 一、当前基线
+## 一、产品定位（已确认）
 
-### 技术栈
-| 层 | 技术 |
+软推是一个**工具推荐 + 会员下载**的站点，三层价值：
+
+### 第 1 层 · 收藏夹（所有用户）
+> 「觉得好用就点收藏，以后在收藏里找」
+
+用户看到喜欢的工具，一键收藏。收藏云同步，换设备不丢。
+这是最基础的留存能力，也是用户注册的第一个理由。
+
+### 第 2 层 · 流量与广告（变现基础）
+> 「希望有流量，有流量广告就能变现」
+
+靠内容量和 SEO 吸引搜索流量，用 AdSense 广告位变现。
+对应代码里已有的 `affiliateUrl`、AdSense 广告位、点击埋点。
+
+### 第 3 层 · VIP 会员（核心收入）
+> 「VIP 用户所有软件都可以下载，普通用户部分可以下载」
+
+| 角色 | 权限 |
 |---|---|
-| 前端 | HTML + CSS + Vanilla JS（无构建工具） |
-| 后端 | Supabase（Postgres + Auth + RLS） |
-| 部署 | Cloudflare Workers（主站 luoluo.fun）+ GitHub Pages + Vercel |
-| 自动化 | GitHub Actions（推送自动部署 + 每日保活） |
+| 游客 | 浏览、搜索、看详情 |
+| 普通注册用户 | 上述 + 收藏云同步 |
+| **VIP 用户** | 上述 + **下载全部工具的专属资源** |
 
-### 代码规模
-```
-JS    2948 行   (17 个文件)
-CSS   1006 行
-HTML   346 行
-```
-最大的几个文件：
-- `features.js` 676 行（管理面板 / AI / 分享 / 公告）
-- `ui.js` 368 行（卡片渲染 / 搜索 / 分类）
-- `engagement.js` 227 行（收藏 / 历史 / 评分）
+**VIP 开通方式：手动开通**
+用户微信/支付宝转账后，站长在管理面板一键设为 VIP。
+> 不接入在线支付——国内个人站收款需要营业执照，门槛高，前期没必要。
 
-### 数据现状
-| 指标 | 数值 |
-|---|---|
-| 工具总数 | **9 条** |
-| 分类 | 影视工具 5、云手机 2、听书工具 1、机场 1 |
-| `url`（官网）字段 | **9 条全部为空** |
-| `detail` / `usage` / `rating` | 齐全 |
-
-### 已有功能
-- 工具卡片展示、7 类筛选、模糊搜索、高亮
-- 收藏 / 浏览历史 / 评分（均存 localStorage）
-- 数据仪表盘、PWA 安装、离线提示
-- 5 色主题 + 暗色模式、粒子特效
-- 管理面板（Supabase 账号登录）、工具增删改、置顶
-- AI 生成评语（DeepSeek，Key 存本机）
-- 公告系统、分享（二维码 / 复制文案）
-- 点击埋点、AdSense 广告位
+**下载链接保护：数据库控制**
+VIP 专属链接存在数据库，**只有 VIP 登录后才能通过接口拿到**。
+普通用户在页面源码里看不到真实地址。
 
 ---
 
@@ -51,180 +45,300 @@ HTML   346 行
 
 ### 问题 1：内容量不足（最根本）
 
-只有 9 条工具。对一个「推荐站」而言，这个量级撑不起价值——用户搜不到东西、
-看完就没得看了，SEO 也拿不到长尾流量。
+只有 9 条工具，其中 `url`（官网）字段**全部为空**。
 
-> 之前曾有 40 条数据，但其中 30 条是从未真实推荐过的编造内容，已全部删除。
-> 现在的 9 条是真实数据，但数量不够。
+推荐站靠内容量吃饭——9 条撑不起价值，用户看完就没得看了，SEO 也拿不到长尾流量。
 
-### 问题 2：注册了但没用（功能缺口）
+### 问题 2：用户体系是空的
 
 Supabase 已开放注册，但注册后：
-- 没有个人页面
-- 收藏 / 历史 / 评分全在 localStorage，换设备就丢
-- 没有评论、没有互动
+- 没有个人页
+- 收藏存 localStorage，换设备就丢
+- 没有任何 VIP 相关能力
 
-**目前注册用户没有任何存在意义。** 这是最大的功能缺口。
+**现在注册用户没有任何价值**，而 VIP 模式完全建立在用户体系之上。
 
-### 问题 3：搜索能力弱
+### 问题 3：下载链接无保护
 
-现在只搜「名称 / 标签 / 分类 / 评语 / detail」，但：
-- 不支持拼音搜索
-- 不支持多关键词（"影视 免费"）
-- 没有搜索历史 / 热词
+现在 `download` 字段是公开可读的（RLS 对所有人生效）。
+如果要做「部分可下载」，必须把链接从公开表移到受保护的存储。
 
-### 问题 4：纯前端无构建的维护压力
+### 问题 4：无独立页面
 
-`features.js` 已 676 行，全是全局函数。继续加功能会越来越难维护。
-**但现在还不算紧急**——先功能后工程，等真的撑不住再重构。
+所有工具都在一页（`?tool=1` 可深链但共用同一套 meta），
+搜索引擎拿不到每款工具的独立信息。
 
 ---
 
 ## 三、迭代路线
 
-### 📌 第一阶段：内容先行（建议优先）
+### 📌 第一阶段：内容与基础（优先级最高）
 
-**目标：让站点有东西可看**
+**目标：让站点有东西可看，为后续一切打底**
 
 | # | 任务 | 说明 | 预计 |
 |---|---|---|---|
-| 1.1 | 工具扩充到 30+ | 从原 `migration.sql` 的 25 条里挑回适用的 + 新增 | 数天 |
-| 1.2 | 补齐 `url` 字段 | 现有 9 条官网全空，按钮只能显示「下载」 | 1 小时 |
+| 1.1 | 工具扩充到 30+ | 从原 `migration.sql` 的 25 条挑回适用的 + 新增 | 数天 |
+| 1.2 | 补齐 `url` 字段 | 现有 9 条官网全空 | 1 小时 |
 | 1.3 | 分类配图标 / 配色 | 影视 / 听书 / 机场 / 云手机 各配图标 | 半天 |
-| 1.4 | 详情内容增强 | 截图、版本号、更新时间 | 按需 |
+| 1.4 | 给每条工具定下载策略 | 标记哪些是「免费可下载」、哪些是「VIP 专属」 | 半天 |
 
-> **这一阶段基本不用写代码**，主要是数据录入。管理面板已可用。
+> 这一阶段**基本不用写代码**，主要是数据录入。管理面板已可用。
 
-**验收标准**：工具数 ≥ 30，每条至少有 `name / category / comment / detail / 一个外链`。
+**验收**：工具数 ≥ 30，每条至少有 `name / category / comment / detail / 一个外链`。
 
 ---
 
-### 📌 第二阶段：搜索与发现
+### 📌 第二阶段：收藏云同步（激活注册）
 
-**目标：让用户找得到、留得住**
+**目标：给「注册」一个真实理由**
+
+现在收藏存在 `localStorage`。改成登录后存数据库，游客继续用本地存储。
+
+**需要新建的表**
+
+```sql
+CREATE TABLE favorites (
+    user_id    UUID   REFERENCES auth.users(id) ON DELETE CASCADE,
+    tool_id    BIGINT REFERENCES tools(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, tool_id)
+);
+
+ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
+
+-- 只能读写自己的收藏
+CREATE POLICY "fav_select_own" ON favorites
+    FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "fav_insert_own" ON favorites
+    FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "fav_delete_own" ON favorites
+    FOR DELETE TO authenticated USING (user_id = auth.uid());
+```
+
+**实现要点**
+
+| 步骤 | 说明 |
+|---|---|
+| 登录后拉取 | `GET /rest/v1/favorites?select=tool_id` |
+| 收藏操作 | 插入 / 删除 `favorites` 行，同时更新本地缓存 |
+| 游客兜底 | 未登录时仍用 `localStorage`，登录后询问是否合并 |
+| 迁移策略 | 定期把 `engagement.js` 里的 localStorage 收藏合并到云端 |
+
+**验证**：A 设备收藏 → B 设备登录 → 能看到。
+
+---
+
+### 📌 第三阶段：VIP 与下载权限（核心收入）
+
+**目标：把「部分可下载」变成真正的收入来源**
+
+#### 3.1 数据表设计
+
+```sql
+-- 用户资料表（含会员状态）
+CREATE TABLE profiles (
+    id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    nickname    TEXT,
+    is_vip      BOOLEAN DEFAULT false,
+    vip_expires_at TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- 本人可读；更新只能改昵称，会员状态只能由管理员改
+CREATE POLICY "profile_select_own" ON profiles
+    FOR SELECT TO authenticated USING (id = auth.uid());
+
+-- 注册时自动建 profile
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+    INSERT INTO public.profiles (id, nickname)
+    VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'nickname', split_part(NEW.email,'@',1)));
+    RETURN NEW;
+END; $$;
+
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 判断当前用户是否 VIP（供 RLS 复用）
+CREATE OR REPLACE FUNCTION is_vip()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM profiles
+        WHERE id = auth.uid()
+          AND is_vip = true
+          AND (vip_expires_at IS NULL OR vip_expires_at > now())
+    );
+$$;
+```
+
+#### 3.2 下载链接保护（关键设计）
+
+**不要**给 `tools` 表加一个公开的 `vip_download` 字段——那样 RLS 读公开就行，等于没保护。
+
+正确做法是**拆成两张表**：
+
+```sql
+-- 公开信息表（保持现有 tools，删除 download 字段的敏感部分）
+-- 受保护表：只有 VIP 能读
+CREATE TABLE tool_downloads (
+    id          BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    tool_id     BIGINT REFERENCES tools(id) ON DELETE CASCADE,
+    label       TEXT NOT NULL,          -- 「普通下载」「高清版」「网盘」
+    url         TEXT NOT NULL,          -- 真实链接
+    is_vip_only BOOLEAN DEFAULT true,   -- 是否仅 VIP
+    sort_order  INT DEFAULT 0,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE tool_downloads ENABLE ROW LEVEL SECURITY;
+
+-- 免费链接：所有人可读
+CREATE POLICY "dl_public_free" ON tool_downloads
+    FOR SELECT USING (is_vip_only = false);
+
+-- VIP 链接：仅 VIP 可读
+CREATE POLICY "dl_vip_only" ON tool_downloads
+    FOR SELECT TO authenticated USING (is_vip_only = true AND is_vip());
+
+-- 管理端可全量读写
+CREATE POLICY "dl_admin_all" ON tool_downloads
+    FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+```
+
+**前端表现**
+
+| 用户 | 看到 |
+|---|---|
+| 游客 / 普通用户 | 免费下载按钮可用；VIP 按钮显示「🔒 VIP 专属」并引导升级 |
+| VIP | 全部下载按钮可用 |
+
+**重点**：普通用户的浏览器里**从未收到过 VIP 链接**，F12 也看不到。这是真正的保护。
+
+#### 3.3 管理面板增强
+
+| 任务 | 说明 |
+|---|---|
+| VIP 开关 | 工具列表每行加「设为 VIP」按钮 |
+| 会员管理页 | 列出所有注册用户，显示 VIP 状态、到期时间 |
+| 一键开通 | 输入邮箱或 UID → 设为 VIP → 设定到期时间 |
+| 下载链接管理 | 每条工具可配多个下载链接，标记免费/VIP |
+
+#### 3.4 用户中心页
+
+新建 `profile.html` 或页面内区块：
+
+- 头像、昵称、邮箱
+- 会员状态与到期时间
+- 我的收藏
+- 我的浏览历史
+
+---
+
+### 📌 第四阶段：搜索与发现
 
 | # | 任务 | 说明 | 优先级 |
 |---|---|---|---|
-| 2.1 | 拼音搜索 | 输入 `kkys` 能搜到「可可影视」 | 高 |
-| 2.2 | 多关键词 | 空格分词，AND 关系 | 中 |
-| 2.3 | 搜索历史 / 热词 | 存 localStorage，展示最近搜索 | 低 |
-| 2.4 | 相关推荐 | 「看过这个的还看了」，基于分类 + 标签 | 中 |
-| 2.5 | 工具对比 | 同时看 2-3 个工具差异 | 低 |
-
-**验收标准**：搜「影视」出 5 条，搜「kkys」出「可可影视」。
+| 4.1 | 拼音搜索 | 输入 `kkys` 能搜到「可可影视」 | 高 |
+| 4.2 | 多关键词 | 空格分词，"影视 免费" 同时匹配 | 中 |
+| 4.3 | 相关推荐 | 「看过这个的还看了」，基于分类 + 标签 | 中 |
+| 4.4 | 搜索历史 / 热词 | 存 localStorage | 低 |
 
 ---
 
-### 📌 第三阶段：用户体系（激活注册）
+### 📌 第五阶段：SEO 与流量
 
-**目标：让注册变得有意义**
-
-| # | 任务 | 说明 | 难点 |
-|---|---|---|---|
-| 3.1 | 收藏云同步 | 新建 `favorites` 表，登录后收藏存数据库 | 中 |
-| 3.2 | 历史云同步 | 同上，可选 | 低 |
-| 3.3 | 个人中心页 | 我的收藏 / 我的评分 | 中 |
-| 3.4 | 用户评分 | 现在 `rating` 是管理端手填固定值，改成用户真实评分聚合 | 中 |
-| 3.5 | 评论功能 | 需要审核机制，否则易被刷 | 高 |
-
-**数据表设计建议**
-
-```sql
--- 收藏
-CREATE TABLE favorites (
-    user_id  UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    tool_id  BIGINT REFERENCES tools(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (user_id, tool_id)
-);
-
--- 用户评分（与现有的 tools.rating 字段分开）
-CREATE TABLE ratings (
-    user_id  UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    tool_id  BIGINT REFERENCES tools(id) ON DELETE CASCADE,
-    score    SMALLINT CHECK (score BETWEEN 1 AND 5),
-    created_at TIMESTAMPTZ DEFAULT now(),
-    PRIMARY KEY (user_id, tool_id)
-);
-```
-
-> ⚠️ **注意**：开启这些表的 RLS，只允许用户读写自己的行。
-> 参考现有 `admins` 表的写法。
-
-**验收标准**：登录后在 A 设备收藏，B 设备登录能看到。
-
----
-
-### 📌 第四阶段：SEO 与增长
-
-**目标：让搜索引擎和外部用户找到**
+**目标：让搜索引擎带来流量，广告才有收益**
 
 | # | 任务 | 说明 |
 |---|---|---|
-| 4.1 | 每个工具独立 URL | 现在全在一页，`?tool=1` 可深链但无独立 meta |
-| 4.2 | 动态 meta / og 标签 | 分享时显示工具名和图标 |
-| 4.3 | 工具详情静态化 | 每工具生成独立页面，利于收录 |
-| 4.4 | 提交搜索引擎 | Google Search Console / 百度站长 / Bing |
-| 4.5 | 结构化数据完善 | ItemList 已动态生成，可细化到 SoftwareApplication |
+| 5.1 | 每个工具独立 URL | 如 `/tool/kekeyingshi`，替代当前的 `?tool=1` |
+| 5.2 | 动态 meta / og 标签 | 分享时显示工具名、图标、评语 |
+| 5.3 | 独立页静态化 | 利于收录（需构建步骤或在 Worker 里渲染） |
+| 5.4 | 提交搜索引擎 | Google Search Console / 百度站长 / Bing |
+| 5.5 | 结构化数据细化 | 从 ItemList 细化到 SoftwareApplication |
 
-> 4.1-4.3 需要改架构（现在是纯单页）。如果流量是目标，这是必须的。
+> ⚠️ 5.1-5.3 需要改架构（当前是纯单页）。如果流量是核心目标，这是必须的一步。
+> Cloudflare Worker 已经接管了所有请求，可以在 Worker 里做服务端渲染，不用引入构建工具。
 
 ---
 
-### 📌 第五阶段：工程化（按需，不急）
+### 📌 第六阶段：工程化（按需，不急）
 
-**触发条件**：代码超 5000 行，或改动时频繁出错。
+**触发条件**：代码超 5000 行，或改动频繁出错。
 
-| # | 任务 | 说明 |
-|---|---|---|
-| 5.1 | 引入 Vite 构建 | 模块化、Tree-shaking、压缩 |
-| 5.2 | 拆分 features.js | 按功能拆成 admin / ai / share / announcement |
-| 5.3 | TypeScript | 可选 |
-| 5.4 | 单元测试 | 关键逻辑（搜索 / 权限）加测试 |
+当前 `features.js` 已 676 行。等加了 VIP 管理、用户中心之后会明显变大，
+届时再拆。
 
-> **现在不做**。当前纯前端方案跑得很好，加构建工具反而增加部署复杂度。
+| # | 任务 |
+|---|---|
+| 6.1 | 拆分 `features.js` 为 admin / ai / share / announcement |
+| 6.2 | 可选引入 Vite |
+| 6.3 | 可选 TypeScript |
 
 ---
 
 ## 四、建议的执行顺序
 
 ```
-第一优先  →  1. 内容扩充（否则一切功能都无意义）
-第二优先  →  3.1 收藏云同步（激活已注册用户，投入产出比最高）
-第三优先  →  2.1 拼音搜索 + 2.4 相关推荐（提升留存）
-第四优先  →  4. SEO 与独立页面（如果要流量）
-延后      →  5. 工程化重构（等代码撑不住）
+第一优先  →  1. 内容扩充 + 4 分类整理
+第二优先  →  2. 收藏云同步（给注册一个理由）
+第三优先  →  3. VIP 与下载权限（核心收入）
+第四优先  →  5. SEO 独立页面（流量来源）
+第五优先  →  4. 搜索增强（提升留存）
+延后      →  6. 工程化重构
 ```
+
+**关键路径**：内容 → 用户体系 → VIP → 变现。
+
+收藏云同步必须在 VIP 之前，因为它们是同一套用户体系的基础。
 
 ---
 
-## 五、待确认的产品方向
+## 五、技术要点提示
 
-路线取决于站点目标，请确认属于哪种：
+### 关于「下载保护」的常见误区
 
-| 类型 | 特征 | 优先做 |
-|---|---|---|
-| **A. 个人收藏夹** | 自己记录用过的工具 | 搜索 + 备注，内容不用多 |
-| **B. 对外推荐站** | 给别人看，可能有流量 | 内容量 + SEO |
-| **C. 流量变现** | 联盟链接、广告 | SEO + 内容量 + 转化追踪 |
+| 错误做法 | 问题 |
+|---|---|
+| 把 VIP 链接放 `tools` 表 | 该表公开可读，等于没保护 |
+| 前端判断 VIP 后显示链接 | F12 能看到，链接照样被盗用 |
+| 链接用简单 base64 编码 | 一样能解开 |
 
-> 从代码看（有 `affiliateUrl`、AdSense、点击埋点），**倾向是 C**。
-> 如果是 C，则「第一 + 第四阶段」最优先，用户体系可以延后。
+**唯一可靠做法**：链接存受 RLS 保护的表，非 VIP 的请求根本查不到这一行。
+
+### 关于手动开通 VIP
+
+你选的方案（转账后手动开通）在技术上完全可行：
+
+1. 用户在站内看到「联系站长开通 VIP」
+2. 你收到转账后，在管理面板输入其邮箱/UID
+3. 执行 `UPDATE profiles SET is_vip = true, vip_expires_at = now() + interval '1 year' WHERE id = '...'`
+4. 用户刷新即生效
+
+**不需要任何支付接口**，也没有资金安全风险。
+
+未来若要做自动支付，Supabase 支持 Edge Function 做支付回调，
+到时只需加一个 Function，数据表不用改。
 
 ---
 
 ## 六、当前已完成（v3.2.0 基线）
 
-这些是本次维护已解决的，无需再处理：
+以下已解决，无需再处理：
 
 - ✅ 删除 40 条编造的工具假数据，改为「故障可见」的加载状态
 - ✅ 管理权限从公开密码改为 Supabase 账号登录
-- ✅ 从 git 历史清除泄露的凭据（密码哈希、API Key）
+- ✅ 从 git 历史清除泄露凭据（密码哈希、API Key）
 - ✅ 旧密码登录接口全部返回 410
 - ✅ 静态资源长缓存（二次访问 836ms → 336ms）
 - ✅ 自动部署（git push 即上线）
 - ✅ Supabase 每日保活
-- ✅ 修复 30+ 处功能缺陷（点击监听泄漏、编辑按钮失效等）
+- ✅ 修复 30+ 处功能缺陷
 - ✅ SEO 地址统一到 luoluo.fun
 
 ---
@@ -244,12 +358,18 @@ git push
 打开 https://luoluo.fun → 点「管理」→ 用邮箱 `1557003690@qq.com` 登录。
 
 ### 数据库被暂停（免费版闲置）
-登录 Supabase 控制台点「Resume project」。  
-保活任务已配置，正常情况不会再发生。
+登录 Supabase 控制台点「Resume project」。保活任务已配置，正常不会再发生。
 
 ### 添加管理员
 ```sql
-INSERT INTO admins (user_id, note) VALUES ('用户的UID', '备注');
+INSERT INTO admins (user_id, note) VALUES ('用户UID', '备注');
+```
+
+### 手动开通 VIP（第三阶段完成后）
+```sql
+UPDATE profiles
+SET is_vip = true, vip_expires_at = now() + interval '1 year'
+WHERE id = '用户UID';
 ```
 
 ---
@@ -260,7 +380,8 @@ INSERT INTO admins (user_id, note) VALUES ('用户的UID', '备注');
 |---|---|
 | `README.md` | 项目说明与配置指南 |
 | `CHANGELOG.md` | 版本变更记录 |
-| `migration.sql` | 建表脚本（含历史数据，**注意已弃用的 RLS 策略**） |
+| `ROADMAP.md` | 本文档 —— 迭代路线 |
+| `migration.sql` | 建表脚本（含历史数据，注意已弃用的 RLS 策略） |
 | `migration-auth.sql` | Supabase Auth 权限迁移脚本 |
 | `.github/workflows/deploy.yml` | 自动部署 |
 | `.github/workflows/keep-alive.yml` | 数据库保活 |

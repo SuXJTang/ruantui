@@ -91,10 +91,13 @@ jobs:
           fi
 
           echo "=== 开始部署 ==="
-          # --autoconfig=false：本项目不是框架项目，关闭框架自动检测
-          # --non-interactive：CI 环境禁止交互提示
+          # 只用最基础的 deploy 命令，不加任何可选参数。
+          # 教训：不同 wrangler 4.x 小版本支持的选项不一样，
+          #   --non-interactive 在 CI 安装到的版本里直接报
+          #   "Unknown arguments: non-interactive"，导致部署失败。
+          #   wrangler 在 CI 环境（CI=true）下本身就是非交互的。
           set +e
-          OUT=$(wrangler deploy --non-interactive --autoconfig=false 2>&1)
+          OUT=$(wrangler deploy 2>&1)
           CODE=$?
           set -e
           echo "$OUT"

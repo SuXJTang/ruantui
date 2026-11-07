@@ -21,6 +21,10 @@
   // ============================================================
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ruantui",
+  // 账户 ID 显式写入：CI（GitHub Actions）环境下若只靠环境变量，
+  // wrangler 可能因读不到而报 "Could not determine account" 之类错误。
+  // 这不是密钥，公开无风险（只是账户标识）。
+  "account_id": "5214a85c8bde6fb1c09e690acb08c26d",
   "main": "worker/index.js",
   "compatibility_date": "2026-05-28",
   "observability": {
@@ -42,6 +46,14 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  // 主站域名。写上后部署会自动维护这条 Custom Domain 绑定，
+  // 不必再依赖在 Dashboard 手工配置（否则 CI 部署可能因「无目标」而报错）。
+  "routes": [
+    {
+      "pattern": "luoluo.fun",
+      "custom_domain": true
+    }
   ],
   "workers_dev": false,
   "preview_urls": false

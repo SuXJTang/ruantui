@@ -7,12 +7,12 @@
 //   2. 静态资源走 stale-while-revalidate —— 先给缓存保证秒开，同时后台
 //      拉新写回缓存，下次访问即最新；之前 `return cached || fetchPromise`
 //      既拿不到后台更新的结果，又让后台那次写缓存毫无意义。
-//   3. 匹配统一带 ignoreSearch —— 页面请求 style.css?v=20 而预缓存的是
+//   3. 匹配统一带 ignoreSearch —— 页面请求 style.css?v=21 而预缓存的是
 //      ./style.css，query 不同会导致双份缓存；现在一律按路径匹配。
 //   4. 预缓存清单改为页面真实依赖的前端资源；去掉 sitemap.xml / robots.txt
 //      （搜索引擎抓取用，不是页面依赖，首次安装时多两次无谓请求）。
 var CACHE_PREFIX = 'ruantui';
-var CACHE_VERSION = 'v28';  // 与 index.html 的 ?v=20 同属一次发布，详见 README「缓存版本号」
+var CACHE_VERSION = 'v29';  // 与 index.html 的 ?v=21 同属一次发布，详见 README「缓存版本号」
 var CACHE = CACHE_PREFIX + '-' + CACHE_VERSION;
 // 离线回退页：优先 ./，再退到 ./index.html（GitHub Pages 目录会自动解析到 index.html）
 var OFFLINE_URLS = ['./', './index.html'];
@@ -62,8 +62,8 @@ function isCacheable(res) {
     return res && res.ok && res.type === 'basic';
 }
 
-// 缓存 key 统一剥掉 query（?v=20 只是防 HTTP 缓存的版本戳，不是独立资源），
-// 否则页面里的 style.css?v=20 会和预缓存的 ./style.css 各存一份。
+// 缓存 key 统一剥掉 query（?v=21 只是防 HTTP 缓存的版本戳，不是独立资源），
+// 否则页面里的 style.css?v=21 会和预缓存的 ./style.css 各存一份。
 // 不依赖 caches.match 的 ignoreSearch，因为 put 阶段同样需要归一化。
 function cacheKey(request) {
     var u = new URL(typeof request === 'string' ? request : request.url);
@@ -79,12 +79,56 @@ function putInCache(request, res) {
     caches.open(CACHE).then(function(c) { c.put(key, clone); }).catch(function() {});
 }
 
-// 资源：stale-while-revalidate（命中即回，同时后台刷新）
+// 资源：默认 stale-while-revalidate（命中即回保证秒开，同时后台刷新缓存）。
+// ⚠️ 但带版本戳的资源要判版本：
+//    资源 URL 上的 ?v=N 是发布版本戳。cacheKey() 会剥掉 query，所以 v=19 和 v=20
+//    在缓存里是同一个 key。若只做 SWR，用户会一直命中旧文件，改版本号等于无效
+//    （曾经的真实 bug：必须手动清缓存才能看到更新）。
+//    因此：缓存版本号 ≠ 页面请求的版本号时，改为 network-first 取最新；
+//    网络失败仍回退旧缓存，不破坏离线可用性。
+var CACHED_VER_KEY = 'ruantui-res-ver';
+
+function requestVersion(url) {
+    try { return new URL(url).searchParams.get('v') || ''; } catch (e) { return ''; }
+}
+
+// 记录本次发布版本，供下次访问比对
+function rememberVersion(ver) {
+    if (!ver) return;
+    caches.open(CACHE).then(function(c) {
+        return c.put(CACHED_VER_KEY, new Response(ver));
+    }).catch(function() {});
+}
+
 function staleWhileRevalidate(e) {
     var key = cacheKey(e.request);
-    return caches.match(key).then(function(cached) {
+    var wantVer = requestVersion(e.request.url);
+
+    return Promise.all([
+        caches.match(key),
+        caches.open(CACHE).then(function(c) {
+            return c.match(CACHED_VER_KEY).then(function(r) { return r ? r.text() : ''; });
+        }).catch(function() { return ''; })
+    ]).then(function(pair) {
+        var cached = pair[0];
+        var cachedVer = (pair[1] || '').trim();
+        var versionChanged = !!(wantVer && cachedVer && cachedVer !== wantVer);
+
+        // 版本变了：优先网络，拿到就用最新的
+        if (versionChanged) {
+            return fetch(e.request).then(function(res) {
+                putInCache(e.request, res);
+                rememberVersion(wantVer);
+                return res;
+            }).catch(function() {
+                return cached;  // 断网时仍用旧缓存
+            });
+        }
+
+        // 版本一致或首次访问：标准 SWR
         var network = fetch(e.request).then(function(res) {
             putInCache(e.request, res);
+            rememberVersion(wantVer);
             return res;
         }).catch(function() {
             return cached;

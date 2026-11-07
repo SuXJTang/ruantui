@@ -83,6 +83,10 @@
 
     function showInstallBanner() {
         if (installBanner) return;
+        // 嵌入页脚区域，作为正常文档流元素参与排版。
+        // 之前是 position:fixed + z-index:9998 悬浮在视口底部，会遮住卡片和页脚内容，
+        // 在手机上尤其碍事。现在改为插入到站点容器末尾，跟随页面滚动。
+        var host = document.querySelector('.container') || document.querySelector('footer.footer') || document.body;
         installBanner = document.createElement('div');
         installBanner.className = 'install-banner';
         installBanner.innerHTML =
@@ -90,9 +94,17 @@
             '<span class="install-banner-icon">🧰</span>' +
             '<div class="install-banner-text"><strong>安装软推到桌面</strong><small>离线可用 · 随时访问</small></div>' +
             '<button class="install-banner-btn" id="installAccept">安装</button>' +
-            '<button class="install-banner-close" id="installDismiss"><i class="fas fa-times"></i></button>' +
+            '<button class="install-banner-close" id="installDismiss" aria-label="关闭"><i class="fas fa-times"></i></button>' +
             '</div>';
-        document.body.appendChild(installBanner);
+
+        // 若插到 .container 内，则追加到尾部；否则插到 footer 之前
+        if (host.classList && host.classList.contains('container')) {
+            host.appendChild(installBanner);
+        } else if (host.parentNode) {
+            host.parentNode.insertBefore(installBanner, host);
+        } else {
+            document.body.appendChild(installBanner);
+        }
 
         requestAnimationFrame(function() { installBanner.classList.add('show'); });
 
@@ -129,8 +141,9 @@
     // ---------- 注入移动端样式 ----------
     var style = document.createElement('style');
     style.textContent = [
-        '.install-banner{position:fixed;bottom:-80px;left:50%;transform:translateX(-50%);z-index:9998;width:calc(100% - 32px);max-width:420px;background:var(--card-solid);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.15);backdrop-filter:blur(16px);overflow:hidden;transition:bottom .4s cubic-bezier(.34,1.56,.64,1);}',
-        '.install-banner.show{bottom:20px;}',
+        // 安装提示条：嵌入页面文档流（不悬浮、不遮挡内容）
+        '.install-banner{margin:24px auto 8px;width:100%;max-width:460px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.06);overflow:hidden;opacity:0;transform:translateY(-8px);transition:opacity .35s ease,transform .35s ease;}',
+        '.install-banner.show{opacity:1;transform:translateY(0);}',
         '.install-banner-content{display:flex;align-items:center;gap:12px;padding:12px 16px;}',
         '.install-banner-icon{font-size:28px;}',
         '.install-banner-text{flex:1;}',

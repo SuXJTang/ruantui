@@ -16,6 +16,10 @@
 # 文档
 *.md
 
+# 所有 SQL 文件：含库结构、RLS 策略，以及可能含管理员 UID 的一次性脚本
+# （曾遗漏 *.sql，导致 setup-admin.sql 连同管理员 UID 被部署公开）
+*.sql
+
 # 完整库结构 + RLS 策略，绝不能公开
 migration.sql
 
@@ -29,3 +33,7 @@ worker
 .verify.js
 .verify2.js
 .check-*.js
+*.test.js
+test-*.js
+verify-*.js
+check-*.js

@@ -63,66 +63,103 @@ window.downloadQR = function(id) {
 };
 
 // ---------- 管理面板 ----------
-var ADMIN_TOKEN_KEY = App.constants.ADMIN_TOKEN_KEY;
-
-function getStoredToken() {
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY);
-}
-
-function setStoredToken(token) {
-    if (token) {
-        sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-        App.state.adminToken = token;
-        App.state.isAdmin = true;
-    } else {
-        sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-        App.state.adminToken = null;
-        App.state.isAdmin = false;
-    }
-}
+// 权限模型：Supabase Auth 账号登录，是否可写由数据库 RLS 的 is_admin() 判定。
+// 前端不做「管理员」这个判断，只负责发起登录并展示结果。
 
 window.logoutAdmin = function() {
-    setStoredToken(null);
-    showToast('已退出管理', 'info');
+    if (window.Auth) window.Auth.signOut();
+    setAdminFlag(false);
+    var o = document.getElementById('mgmtOverlay');
+    if (o) { o.classList.remove('active'); o.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; }
+    showToast('已退出登录', 'info');
 };
 
-function checkAdmin() {
-    if (getStoredToken()) { openMgmt(); return true; }
-    // 弹出自定义密码输入框
+function setAdminFlag(v) {
+    App.state.isAdmin = !!v;
+    App.state.adminToken = v ? 'session' : null;
+    // 管理按钮在未登录时显示「管理」，已登录时显示「管理面板」
+    var b = document.getElementById('mgmtBtn');
+    if (b) {
+        b.innerHTML = v ? '<i class="fas fa-cog"></i> 管理面板' : '<i class="fas fa-cog"></i> 管理';
+    }
+}
+
+// 弹出登录框
+function showLoginBox() {
     var box = document.createElement('div');
-    box.id = '_pwdBox';
-    box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;';
-    box.innerHTML = '<div style="background:var(--card);border-radius:16px;padding:28px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;">'
-        + '<h3 style="font-size:18px;font-weight:700;margin-bottom:4px;">需要管理员密码</h3>'
-        + '<p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">输入密码后进入管理面板</p>'
-        + '<input type="password" id="_pwdInput" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;" placeholder="输入密码">'
-        + '<div style="display:flex;gap:8px;margin-top:14px;">'
-        + '<button id="_pwdCancel" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:14px;font-weight:600;">取消</button>'
-        + '<button id="_pwdSubmit" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:600;">确认</button>'
+    box.id = '_loginBox';
+    box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    box.innerHTML = '<div style="background:var(--card);border-radius:16px;padding:28px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;">'
+        + '<h3 style="font-size:18px;font-weight:700;margin-bottom:4px;">管理员登录</h3>'
+        + '<p style="font-size:13px;color:var(--text-light);margin-bottom:18px;">使用管理员账号登录后即可管理工具</p>'
+        + '<input type="email" id="_loginEmail" autocomplete="username" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;margin-bottom:10px;" placeholder="管理员邮箱">'
+        + '<input type="password" id="_loginPwd" autocomplete="current-password" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;" placeholder="密码">'
+        + '<div id="_loginErr" style="color:#ef4444;font-size:12px;margin-top:10px;min-height:16px;"></div>'
+        + '<div style="display:flex;gap:8px;margin-top:8px;">'
+        + '<button id="_loginCancel" style="flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">取消</button>'
+        + '<button id="_loginSubmit" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">登录</button>'
         + '</div></div>';
     document.body.appendChild(box);
-    var input = document.getElementById('_pwdInput');
-    input.focus();
-    input.onkeydown = function(e) { if (e.key === 'Enter') submitPwd(); };
-    document.getElementById('_pwdCancel').onclick = function() { box.remove(); };
-    document.getElementById('_pwdSubmit').onclick = submitPwd;
-    async function submitPwd() {
-        var v = input.value;
-        var token = await verifyAdminPassword(v);
-        if (token) {
-            setStoredToken(token);
-            box.remove();
-            showToast('验证通过 ✓', 'success');
-            openMgmt();
-        }
-        else {
-            showToast('密码错误 ✗', 'error');
-            input.value = '';
-            input.focus();
-            input.style.borderColor = '#ef4444';
-            setTimeout(function() { input.style.borderColor = ''; }, 1500);
-        }
+
+    var emailEl = document.getElementById('_loginEmail');
+    var pwdEl = document.getElementById('_loginPwd');
+    var errEl = document.getElementById('_loginErr');
+    var btnEl = document.getElementById('_loginSubmit');
+    emailEl.focus();
+
+    function fail(msg) {
+        errEl.textContent = msg || '';
+        pwdEl.style.borderColor = '#ef4444';
+        setTimeout(function() { pwdEl.style.borderColor = ''; }, 1500);
     }
+
+    async function submit() {
+        var email = (emailEl.value || '').trim();
+        var pwd = pwdEl.value || '';
+        if (!email || !pwd) { fail('请填写邮箱和密码'); return; }
+        errEl.textContent = '';
+        btnEl.disabled = true;
+        btnEl.textContent = '登录中…';
+        var r = await window.Auth.signIn(email, pwd);
+        if (!r.ok) {
+            btnEl.disabled = false;
+            btnEl.textContent = '登录';
+            fail(r.error);
+            return;
+        }
+        // 登录成功：再确认是否在管理员名单（RLS 只让本人读到自己的 admins 行）
+        var v = await window.Auth.verifyAdmin();
+        if (!v.isAdmin) {
+            await window.Auth.signOut();
+            btnEl.disabled = false;
+            btnEl.textContent = '登录';
+            fail('该账号不在管理员名单中（请让站长在 admins 表登记）');
+            return;
+        }
+        box.remove();
+        setAdminFlag(true);
+        showToast('登录成功 ✓', 'success');
+        openMgmt();
+    }
+
+    document.getElementById('_loginCancel').onclick = function() { box.remove(); };
+    btnEl.onclick = submit;
+    [emailEl, pwdEl].forEach(function(el) {
+        el.onkeydown = function(e) { if (e.key === 'Enter') submit(); };
+    });
+}
+
+// 点击「管理」：已登录且是管理员 → 直接进面板；否则弹登录框
+async function checkAdmin() {
+    if (!window.Auth) { showToast('登录模块未加载', 'error'); return; }
+    if (window.Auth.isLoggedIn()) {
+        var v = await window.Auth.verifyAdmin();
+        if (v.isAdmin) { setAdminFlag(true); openMgmt(); return; }
+        // 有会话但不是管理员（或已过期）：清掉并重新登录
+        await window.Auth.signOut();
+        setAdminFlag(false);
+    }
+    showLoginBox();
 }
 
 function openMgmt() {
@@ -133,6 +170,15 @@ function openMgmt() {
 
 var mgmtBtn = document.getElementById('mgmtBtn');
 if (mgmtBtn) mgmtBtn.onclick = function() { checkAdmin(); };
+
+// 页面加载时若已有会话，静默恢复「已登录」状态（不弹窗）
+(function restoreSession() {
+    if (!window.Auth || !window.Auth.isLoggedIn()) return;
+    window.Auth.verifyAdmin().then(function(v) {
+        if (v.isAdmin) setAdminFlag(true);
+        else if (!v.loggedIn) setAdminFlag(false);
+    });
+})();
 
 // 导出全部工具为 JSON 备份（用于迁移 / 灾备，不再伪装成 data.js 兜底）
 var mgmtExportBtn = document.getElementById('mgmtExportBtn');

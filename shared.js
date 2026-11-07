@@ -93,19 +93,5 @@ function fallbackCopy(text, msg) {
     document.body.removeChild(ta);
 }
 
-// 管理面板密码验证（走 Worker）
-// 验证密码，返回 token（成功）或 null
-async function verifyAdminPassword(password) {
-    try {
-        var r = await fetch('/api/admin/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: password })
-        });
-        if (!r.ok) return null;
-        var d = await r.json();
-        return d.token || null;
-    } catch(e) {
-        return null;
-    }
-}
+// 管理权限：已改为 Supabase 账号登录（见 auth.js），不再有密码校验函数。
+// 是否可写由数据库 RLS 的 is_admin() 判定，前端无法绕过。

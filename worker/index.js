@@ -246,6 +246,15 @@ async function handleRequest(request, env) {
                 return limited;
             }
 
+            // 未配置管理员密码哈希时**直接失败关闭**，避免任何「空值比较恰好成立」的意外。
+            // 另外强校验格式：必须是 64 位十六进制 SHA-256。有人可能误把明文密码填进
+            // ADMIN_PASSWORD_HASH，那样登录会永久失败（比误放行安全，但要在部署时立刻发现）。
+            var expectedHash = (typeof env.ADMIN_PASSWORD_HASH === 'string')
+                ? env.ADMIN_PASSWORD_HASH.trim().toLowerCase() : '';
+            if (!/^[0-9a-f]{64}$/.test(expectedHash)) {
+                return errorResponse('服务端未正确配置 ADMIN_PASSWORD_HASH', 500, cors);
+            }
+
             var body;
             try {
                 body = await request.json();
@@ -253,7 +262,7 @@ async function handleRequest(request, env) {
                 return errorResponse('无效请求体', 400, cors);
             }
             var hash = await sha256(typeof body.password === 'string' ? body.password : '');
-            if (!(await timingSafeEqual(hash, env.ADMIN_PASSWORD_HASH || ''))) {
+            if (!(await timingSafeEqual(hash, expectedHash))) {
                 recordLoginFailure(ip, now);
                 return errorResponse('密码错误', 401, cors);
             }

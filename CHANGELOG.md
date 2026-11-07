@@ -1,5 +1,63 @@
 # 更新日志 (CHANGELOG)
 
+## v3.1.1 — 2026-11-08
+
+**凭据泄露修复**。本版只做安全加固，不改任何业务功能。
+
+### 已确认的真实泄露（需你尽快轮换）
+
+- **管理员密码可被反推**。`.dev.vars.example` 里提交了真实的 `ADMIN_PASSWORD_HASH`，
+  实测其明文可被直接命中（`<redacted-password>`），即管理面板等同于对所有人开放。
+  该哈希自 `a1a0bc2` 起就在公开仓库中，历史版本还另有一个 `<redacted-password>` 的哈希。
+- **DeepSeek API Key 可被解密取走**。`apikey-config.js` 里的「管理密码加密」是假防护：
+  解密用的密码就是上面那个公开可反推的管理员密码。实测用 `<redacted-password>`
+  成功解出真实 Key（`sk-REDACTED…`，35 位）。该 Key 的明文在历史提交 `a8e7513`
+  中曾直接以明文存在过，因此**无论如何改密码，Key 都必须视为已泄露并作废**。
+
+> 这两个凭据都已进入 git 历史，仅改当前文件无法真正收回。
+> 必须去对应平台**重新签发**，见文末「必须手动完成的处置」。
+
+### 修复
+
+- `.dev.vars.example`：三个变量全部改为空占位，删除真实哈希；补充「本文件只放占位符」的警示。
+- `apikey-config.js`：删除内置的 API Key 密文与盐/IV，改为纯说明文件。
+  仓库里不再存放任何 API Key（明文、密文都不放），Key 只留在使用者本机 `localStorage`。
+- `features.js`：移除 `decryptApiKey` / `tryDecrypt` / `_hexToBytes` 等整套假加密逻辑
+  （含登录成功后那次无意义的 `await tryDecrypt(v)`），以及首次使用时的
+  「先输管理密码再输 Key」的冗余二次询问。现在直接询问一次 Key 并保存在本地。
+  移除后 `_hexToBytes` 等已无引用，一并删除。
+- `worker/index.js`：登录接口对 `ADMIN_PASSWORD_HASH` 增加**格式强校验**
+  （必须为 64 位十六进制 SHA-256），空值或误填明文密码时直接返回 500 失败关闭，
+  避免「未配置」被当成可登录状态。
+
+### 验证
+
+- 浏览器实测：40 张卡片正常渲染、AI 三个按钮入口存在、取消输入不抛异常并回退默认文案、
+  管理面板按钮可点，全程无未捕获异常。
+- Worker 实测 11 项：空哈希 / 未定义 / 明文冒充哈希 / 过短 hex 均 500 失败关闭；
+  正确哈希放行签发 token；错误密码 401；缺失 `TOKEN_SECRET` 500；
+  `/api/click` 免鉴权 204；管理路由无 token 401。
+- 源文件扫描：`apikey-config.js`、`features.js` 中不再有 `sk-` 密钥或长 hex 密文；
+  `.dev.vars.example` 无 64 位哈希。
+
+### 必须手动完成的处置（代码改不了）
+
+1. **作废并重新签发 DeepSeek API Key**：https://platform.deepseek.com/api_keys
+   （旧 Key 已可从 git 历史还原，必须吊销）。
+2. **改管理密码**（不要再沿用 `<redacted-password>` / `<redacted-password>`），重新生成哈希后设置：
+   ```bash
+   node -e "console.log(require('crypto').createHash('sha256').update('新密码').digest('hex'))"
+   wrangler secret put ADMIN_PASSWORD_HASH
+   wrangler secret put TOKEN_SECRET          # 随机 32 字节 hex
+   wrangler secret put SUPABASE_ADMIN_TOKEN  # 与 Supabase app.admin_token 一致
+   ```
+3. **轮换 Supabase `app.admin_token`**（若曾写进过任何公开位置）。
+4. 若希望彻底从历史中抹除，需用 `git filter-repo` 重写历史并强推——这会改写所有提交哈希，
+   其他协作者的克隆需要重新拉取，请自行权衡。**注意：即使重写历史，已泄露的凭据也必须轮换**，
+   因为可能已被抓取或 fork。
+
+---
+
 ## v3.1.0 — 2026-11-07
 
 维护性修复：只修 bug，不新增功能、不改视觉与交互。共修复 30+ 处真实缺陷，

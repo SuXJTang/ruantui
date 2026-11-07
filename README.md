@@ -49,7 +49,7 @@ ruantui/
 ├── engagement.js          # 阅读进度 / 仪表盘数据
 ├── mobile.js              # 移动端手势 / 安装引导
 ├── analytics.js           # 本地访问统计
-├── apikey-config.js       # DeepSeek API Key 加密存储
+├── apikey-config.js       # DeepSeek Key 说明（仓库内不存放任何 Key）
 ├── adsense.js             # Google AdSense（唯一的广告推送入口）
 ├── sw.js                  # Service Worker
 ├── manifest.json          # PWA 配置
@@ -153,7 +153,27 @@ wrangler secret put TOKEN_SECRET          # 随机长字符串，用于签发管
 - Supabase 写操作的授权由 RLS `is_admin()` 完成，凭据不下发到浏览器
 - 管理 token 由 `TOKEN_SECRET` 签名、1 小时过期；缺失密钥时失败关闭
 - 登录接口带按 IP 的失败限流（尽力而为）
-- DeepSeek API Key 使用 AES-256-GCM 加密硬编码，仅管理密码可解密
+- DeepSeek API Key **不存放于仓库**（明文、密文都不放），仅保存在使用者本机 `localStorage`，
+  首次使用 AI 功能时手动输入一次
+
+## 🤖 AI 功能与 DeepSeek Key
+
+仓库里**不含任何** DeepSeek API Key。第一次点管理面板里的 🤖 按钮时会提示输入一次，
+随后保存在本机 `localStorage`（键名 `deepseek_api_key`），不会上传，也不进仓库。
+
+> 以前的做法是「把 Key 用管理密码加密后硬编码进 `apikey-config.js`」——**那层保护是假的**：
+> 管理密码的哈希就写在同一个公开仓库里，而密码本身是弱口令，任何人都能反推出密码、
+> 再解开密文取走 Key。所以该方案已被移除，且旧 Key 必须作废重签。
+
+想让 AI 功能开箱即用又不想暴露 Key，正确做法是**由 Worker 代调用**：
+
+```bash
+wrangler secret put DEEPSEEK_API_KEY
+```
+
+然后在 `worker/index.js` 增加一个 `/api/ai` 路由，服务端带上 Key 请求 DeepSeek，
+前端只调用自己的 `/api/ai`，永远拿不到 Key。实现之后可以删掉 `apikey-config.js`
+及 `index.html` 里对它的 `<script>` 引用。
 
 ## 📄 许可
 

@@ -1,7 +1,9 @@
 # Cloudflare Worker 环境变量配置
 # 复制此文件为 .dev.vars（本地开发）或通过 wrangler secret 设置（生产环境）
 
-# ⚠ 本文件（含下面的哈希）会提交进仓库。它只是「示例」，不是真正的密钥。
+# ⚠ 本文件会提交进仓库，所以下面【一律只放占位符，绝不放真实值】。
+# 提交真实密钥等于把后台公开：历史上这里曾提交过真实密码哈希，对应明文密码
+# 可被直接反查命中，管理员面板等同于对所有人开放。请勿重蹈覆辙。
 # 生产环境务必用 `wrangler secret put` 逐个设置，不要依赖 .dev.vars 上云：
 #   wrangler secret put ADMIN_PASSWORD_HASH
 #   wrangler secret put SUPABASE_ADMIN_TOKEN
@@ -10,16 +12,16 @@
 
 # 管理员密码的 SHA-256 哈希
 # 生成命令（Node.js）:
-#   require('crypto').createHash('sha256').update('你的密码').digest('hex')
-# 建议：换一个只有你知道、且足够长的密码再生成哈希。
-ADMIN_PASSWORD_HASH = "0000000000000000000000000000000000000000000000000000000000000000"
+#   node -e "console.log(require('crypto').createHash('sha256').update('你的密码').digest('hex'))"
+ADMIN_PASSWORD_HASH = ""
 
 # Supabase RLS admin token — 需与 Supabase SQL 中 SELECT set_config('app.admin_token', '...', false) 的值一致
 # 用于 Worker 调用 Supabase 写入 API 时通过 RLS is_admin() 校验
 # 必须是一串强随机值；留空等于 RLS 写入校验形同虚设。
+# 生成命令（Node.js）: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 SUPABASE_ADMIN_TOKEN = ""
 
 # Token 签名密钥 — 用于签发/校验管理端会话 token（1 小时有效）
-# 必填：Worker 未配置时 /api/admin/login 会直接返回 500，不再回落到源码里的公开默认值。
-# 生成命令（Node.js）: require('crypto').randomBytes(32).toString('hex')
-TOKEN_SECRET = "your-random-token-secret-here"
+# 必填：Worker 未配置时 /api/admin/login 会直接返回 500，不会回落到源码里的公开默认值。
+# 生成命令（Node.js）: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+TOKEN_SECRET = ""

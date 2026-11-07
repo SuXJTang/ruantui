@@ -113,7 +113,6 @@ function checkAdmin() {
             setStoredToken(token);
             box.remove();
             showToast('验证通过 ✓', 'success');
-            await tryDecrypt(v);  // 同步解密 API Key
             openMgmt();
         }
         else {
@@ -372,50 +371,23 @@ window.copyQQNumber = function() { copyToClipboard(document.getElementById('qqNu
 // ---------- AI：DeepSeek 集成 ----------
 var DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
-// 解密：用管理密码从 apikey-config.js 密文恢复 API Key
+// Key 只存本机 localStorage，仓库里不放任何 Key（见 apikey-config.js 顶部说明）。
+// 原先那套「用管理密码解密内置密文」的逻辑已移除：管理密码哈希是公开的，
+// 那层加密挡不住任何人，留着只会让人误以为密文安全。
 var _cachedKey = null;
-async function decryptApiKey(password) {
-    try {
-        var enc = new TextEncoder();
-        var salt = _hexToBytes(API_KEY_SALT);
-        var iv = _hexToBytes(API_KEY_IV);
-        var ct = _hexToBytes(ENCRYPTED_API_KEY);
-        var km = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-        var ak = await crypto.subtle.deriveKey(
-            { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
-            km, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
-        );
-        var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, ak, ct);
-        return new TextDecoder().decode(pt);
-    } catch(e) { return null; }
-}
-// 尝试用密码解密，成功则缓存并返回
-async function tryDecrypt(pw) {
-    if (!ENCRYPTED_API_KEY || !API_KEY_SALT || !API_KEY_IV) return null;
-    var dk = await decryptApiKey(pw);
-    if (dk) { _cachedKey = dk; return dk; }
-    return null;
-}
 
 async function getApiKey() {
     if (_cachedKey) return _cachedKey;
     var k = localStorage.getItem('deepseek_api_key');
     if (k) return k;
-    // 密码解密（与管理密码一致）
-    var pw = prompt('🔐 输入管理密码：');
-    if (pw && pw.trim()) {
-        k = await tryDecrypt(pw.trim());
-        if (k) { showToast('解密成功 ✓', 'success'); return k; }
-        showToast('密码错误', 'error');
-    }
-    // 回退
-    k = prompt('输入 DeepSeek API Key：\nhttps://platform.deepseek.com/api_keys');
+    // 仓库里不再内置任何 API Key（明文和密文都不放），所以直接向使用者索取一次。
+    // 之前是「先要管理密码 → 解密内置密文 → 失败再要 Key」，仓库侧已不再有密文，
+    // 那个分支只会让用户白输一次密码，故移除。
+    k = prompt('输入 DeepSeek API Key（仅保存在本机浏览器，不会上传）\n申请地址：https://platform.deepseek.com/api_keys');
     if (k && k.trim()) { localStorage.setItem('deepseek_api_key', k.trim()); return k.trim(); }
     return null;
 }
 window.resetApiKey = function() { localStorage.removeItem('deepseek_api_key'); _cachedKey = null; showToast('已清除', 'info'); };
-
-function _hexToBytes(hex) { var b = new Uint8Array(hex.length/2); for (var i=0;i<hex.length;i+=2) b[i/2]=parseInt(hex.substr(i,2),16); return b; }
 
 async function callDeepSeek(userPrompt) {
     var k = await getApiKey(); if (!k) return null;

@@ -70,12 +70,19 @@ function showToast(msg, type) {
     document.head.appendChild(s);
 })();
 
-// 渲染工具图标 HTML（三处共享）
-function renderIconHTML(tool) {
+// 渲染工具图标 HTML（卡片 / 弹窗 / 管理面板共用）
+// opts.eager: 是否立即加载图片。
+//   卡片列表用 eager —— 用户必然会滚动浏览，懒加载反而在快速滚动时看到空白方块，
+//   而全部图标加起来只有几十 KB，预加载的代价可以忽略。
+//   弹窗等按需出现的场景仍用 lazy。
+function renderIconHTML(tool, opts) {
+    var eager = opts && opts.eager;
     var imgSrc = escHTML(tool.iconUrl || (tool.slug ? 'https://cdn.simpleicons.org/' + tool.slug + '/ffffff' : ''));
     var hasImg = tool.iconUrl || tool.slug;
     if (hasImg) {
-        return '<img src="' + imgSrc + '" alt="' + escHTML(tool.name) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-block\'"><i class="' + escHTML(tool.icon || 'fa-cube') + '" style="display:none;"></i>';
+        return '<img src="' + imgSrc + '" alt="' + escHTML(tool.name) + '"' +
+            (eager ? '' : ' loading="lazy"') +
+            ' decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-block\'"><i class="' + escHTML(tool.icon || 'fa-cube') + '" style="display:none;"></i>';
     }
     return '<i class="' + escHTML(tool.icon || 'fa-cube') + '"></i>';
 }

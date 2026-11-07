@@ -165,7 +165,7 @@ function renderTools(filter) {
         card.style.animationDelay = (idx * 0.04) + 's';
         card.dataset.id = t.id;
 
-        var iconHTML = renderIconHTML(t);
+        var iconHTML = renderIconHTML(t, { eager: true });  // 卡片图标立即加载，避免滚动时空白
         var tagsArr = Array.isArray(t.tags) ? t.tags : [];
         var tagsHTML = tagsArr.map(function(tag) {
             return '<span class="tool-tag">' + highlightText(tag, App.state.currentSearch.trim()) + '</span>';

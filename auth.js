@@ -71,9 +71,13 @@
             return res.json().catch(function() { return {}; }).then(function(d) {
                 if (!res.ok) {
                     var msg = d.error_description || d.msg || d.error || ('HTTP ' + res.status);
+                    var code = d.error_code || '';
                     // 常见错误翻译成人话
                     if (/Invalid login credentials/i.test(msg)) msg = '邮箱或密码错误';
-                    else if (/Email not confirmed/i.test(msg)) msg = '邮箱尚未验证，请先在邮箱里点确认链接';
+                    else if (/Email not confirmed/i.test(msg) || code === 'email_not_confirmed') {
+                        // 带上 needsConfirm 标记，让前端能给出「重新发送验证邮件」的操作
+                        return { ok: false, error: '邮箱尚未验证。请到邮箱点确认链接后再登录，或点下方按钮重发邮件。', needsConfirm: true };
+                    }
                     else if (/too many requests/i.test(msg)) msg = '尝试过于频繁，请稍后再试';
                     return { ok: false, error: msg };
                 }
@@ -207,6 +211,32 @@
         });
     }
 
+    // ---------- 重发验证邮件 ----------
+    // 用户登录时如果提示「邮箱未验证」，可以点按钮重发一封。
+    // Supabase 的 /auth/v1/resend 有频率限制（默认 60 秒一次），这里把
+    // 429 也翻译成可读提示，避免用户以为是坏了。
+    function resendConfirm(email) {
+        return fetch(SUPABASE_URL + '/auth/v1/resend', {
+            method: 'POST',
+            headers: authHeaders(null),
+            body: JSON.stringify({ type: 'signup', email: email })
+        }).then(function(res) {
+            return res.json().catch(function() { return {}; }).then(function(d) {
+                if (!res.ok) {
+                    var msg = d.error_description || d.msg || d.error || ('HTTP ' + res.status);
+                    if (res.status === 429 || /too many|rate limit|seconds/i.test(msg)) {
+                        return { ok: false, error: '发送太频繁，请等 1 分钟后再试' };
+                    }
+                    if (/already confirmed/i.test(msg)) return { ok: true, alreadyConfirmed: true };
+                    return { ok: false, error: msg };
+                }
+                return { ok: true };
+            });
+        }).catch(function(e) {
+            return { ok: false, error: '网络错误：' + (e && e.message ? e.message : '无法连接') };
+        });
+    }
+
     // ---------- 导出 ----------
     window.Auth = {
         signIn: signIn,
@@ -216,6 +246,7 @@
         getAccessToken: getAccessToken,
         currentUser: currentUser,
         isLoggedIn: isLoggedIn,
-        verifyAdmin: verifyAdmin
+        verifyAdmin: verifyAdmin,
+        resendConfirm: resendConfirm
     };
 })();

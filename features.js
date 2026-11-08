@@ -237,7 +237,9 @@ function showAuthBox(mode) {
         submitBtn.textContent = isReg ? '注册并登录' : '登录';
         msg.textContent = '';
         msg.className = 'auth-msg';
-        tip.textContent = isReg ? '注册后即可直接使用，邮箱无需验证' : '';
+        // 不预先承诺「无需验证」——是否要验证取决于 Supabase 的 Confirm email 开关，
+        // 前端无法可靠得知。这里只说明会发邮件，实际流程由注册结果决定。
+        tip.textContent = isReg ? '注册后会向你的邮箱发送确认邮件，如未收到请检查垃圾箱' : '';
         pwdEl.autocomplete = isReg ? 'new-password' : 'current-password';
         setTimeout(function() { emailEl.focus(); }, 50);
     }
@@ -258,10 +260,39 @@ function showAuthBox(mode) {
         var email = (emailEl.value || '').trim();
         var pwd = pwdEl.value || '';
         if (!email || !pwd) return fail('请填写邮箱和密码');
+        var oldResend = document.getElementById('_authResend');
+        if (oldResend) oldResend.remove();
         submitBtn.disabled = true; submitBtn.textContent = '登录中…';
         var r = await window.Auth.signIn(email, pwd);
         submitBtn.disabled = false;
-        if (!r.ok) { submitBtn.textContent = '登录'; return fail(r.error); }
+        if (!r.ok) {
+            submitBtn.textContent = '登录';
+            fail(r.error);
+            // 「邮箱未验证」时给一个可点的重发按钮，而不是让用户干等
+            if (r.needsConfirm) {
+                var btn = document.createElement('button');
+                btn.id = '_authResend';
+                btn.type = 'button';
+                btn.className = 'auth-resend';
+                btn.textContent = '重新发送验证邮件';
+                btn.onclick = async function() {
+                    btn.disabled = true;
+                    btn.textContent = '发送中…';
+                    var rr = await window.Auth.resendConfirm(emailEl.value.trim());
+                    btn.disabled = false;
+                    if (rr.ok) {
+                        btn.textContent = '已发送，请查收邮箱';
+                        okay(rr.alreadyConfirmed ? '该邮箱已通过验证，可直接登录' : '验证邮件已重发，请查收（含垃圾箱）');
+                        if (rr.alreadyConfirmed) setTimeout(function() { btn.remove(); }, 1500);
+                    } else {
+                        btn.textContent = '重新发送验证邮件';
+                        fail(rr.error);
+                    }
+                };
+                msg.parentNode.insertBefore(btn, msg.nextSibling);
+            }
+            return;
+        }
         var v = await window.Auth.verifyAdmin();
         setAdminFlag(!!v.isAdmin);
         close();

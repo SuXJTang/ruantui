@@ -1355,3 +1355,18 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .auth-submit:active:not(:disabled) { transform: scale(.985); }
 .auth-submit:disabled { opacity: .65; cursor: default; }
 .auth-tip { font-size: 11.5px; color: var(--text-light); text-align: center; margin-top: 12px; line-height: 1.5; }
+
+/* 「重新发送验证邮件」按钮 */
+.auth-resend {
+    display: block; width: 100%;
+    margin: 2px 0 8px; padding: 9px 0;
+    border: 1.5px dashed var(--border); border-radius: 10px;
+    background: transparent; color: var(--text);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all .2s;
+}
+.auth-resend:hover:not(:disabled) {
+    border-color: var(--primary); color: var(--primary);
+    background: rgba(var(--primary-rgb),0.06);
+}
+.auth-resend:disabled { opacity: .6; cursor: default; }

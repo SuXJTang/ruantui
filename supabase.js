@@ -9,11 +9,28 @@
 // 管理面板实际不可用。现改为浏览器带用户 JWT 直连 Supabase，
 // 不需要任何后端，写权限完全由数据库 RLS 控制。
 // ============================================
-var SUPABASE_URL = 'https://gxlykcseepskxccdxmxc.supabase.co';
+// Supabase 的直连地址（国内访问不稳定，仅作兜底）
+var SUPABASE_DIRECT = 'https://gxlykcseepskxccdxmxc.supabase.co';
+// 同域反代地址：由 Cloudflare Worker 转发到 Supabase，见 worker/index.js handleSupabaseProxy。
+// 浏览器只与 luoluo.fun 通信，不再需要直连 supabase.co，
+// 这是国内网络下能稳定加载数据的关键。
+//
+// 只在正式域名下启用代理；本地 file:// 或 127.0.0.1 调试时没有 Worker，
+// 仍走直连，避免本地开发时全部请求 404。
+var SUPABASE_URL = (function () {
+    try {
+        var h = location.hostname;
+        if (h === 'luoluo.fun' || h === 'www.luoluo.fun' || /\.luoluo\.fun$/.test(h)) {
+            return location.origin + '/sb';
+        }
+    } catch (e) {}
+    return SUPABASE_DIRECT;
+})();
+
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4bHlrY3NlZXBza3hjY2R4bXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDA2MjksImV4cCI6MjA5NTE3NjYyOX0.oc8MKQ56zk585KgKPXXah_fsLzC5VZqHihOsCWH_zhE';
 
-// 暴露给 engagement.js 做收藏云同步（复用同一份配置，避免重复硬编码）
-window.RuantuiSupabase = { url: SUPABASE_URL, key: SUPABASE_KEY };
+// 暴露给 engagement.js / auth.js 复用（避免多处重复硬编码）
+window.RuantuiSupabase = { url: SUPABASE_URL, key: SUPABASE_KEY, direct: SUPABASE_DIRECT };
 
 // ---------- 读操作：直连 Supabase（公开可读） ----------
 

@@ -225,10 +225,121 @@ function applyCacheHeaders(request, response) {
     });
 }
 
+// ------------------------------------------------------------------
+// Supabase 反向代理
+// ------------------------------------------------------------------
+// 把 /sb/<path> 转发到 https://<project>.supabase.co/<path>。
+// 目的：绕开国内直连 supabase.co 不稳定的问题，让浏览器只与同域的 luoluo.fun 通信。
+//
+// 注意点：
+//  1. 只转发白名单路径（rest/v1、auth/v1），不开放任意路径，避免变成开放代理
+//  2. 透传 method / body / 需要的请求头（apikey、Authorization、Content-Type、Prefer）
+//  3. 同源请求，不需要 CORS 头；但仍透传 Supabase 返回的必要头
+//  4. 不缓存任何响应（数据实时性优先，且含用户私有数据）
+var SB_PROXY_BASE = 'https://gxlykcseepskxccdxmxc.supabase.co';
+
+// 允许转发的路径前缀（防止变成开放代理）
+var SB_ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/'];
+
+// 需要透传给 Supabase 的请求头
+var SB_FORWARD_HEADERS = [
+    'apikey',
+    'authorization',
+    'content-type',
+    'prefer',
+    'accept',
+    'accept-profile',
+    'content-profile',
+    'x-client-info',
+    'range',
+];
+
+async function handleSupabaseProxy(request, url) {
+    // /sb/rest/v1/tools → /rest/v1/tools
+    var subPath = url.pathname.slice(3); // 去掉 '/sb'
+    if (!subPath.startsWith('/')) subPath = '/' + subPath;
+
+    // 白名单校验
+    var allowed = SB_ALLOWED_PREFIXES.some(function (p) {
+        return subPath.startsWith(p);
+    });
+    if (!allowed) {
+        return new Response(JSON.stringify({ error: 'path not allowed' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
+
+    var target = SB_PROXY_BASE + subPath + (url.search || '');
+
+    // 构造转发请求头
+    var headers = new Headers();
+    SB_FORWARD_HEADERS.forEach(function (name) {
+        var v = request.headers.get(name);
+        if (v) headers.set(name, v);
+    });
+
+    // 构造转发请求
+    var init = {
+        method: request.method,
+        headers: headers,
+        redirect: 'manual',
+    };
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+        init.body = await request.arrayBuffer();
+    }
+
+    var upstream;
+    try {
+        upstream = await fetch(target, init);
+    } catch (e) {
+        return new Response(JSON.stringify({
+            error: 'upstream_unreachable',
+            message: 'Supabase 转发失败：' + (e && e.message ? e.message : '网络错误'),
+        }), {
+            status: 502,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
+
+    // 透传响应（同源，无需 CORS 头）
+    var outHeaders = new Headers();
+    var passHeaders = ['content-type', 'content-range', 'x-total-count', 'location', 'www-authenticate'];
+    passHeaders.forEach(function (name) {
+        var v = upstream.headers.get(name);
+        if (v) outHeaders.set(name, v);
+    });
+    // 代理响应一律不缓存
+    outHeaders.set('Cache-Control', 'no-store');
+    outHeaders.set('X-Proxy', 'sb');
+
+    return new Response(upstream.body, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: outHeaders,
+    });
+}
+
 // Worker 入口
 export default {
     async fetch(request, env, ctx) {
         var url = new URL(request.url);
+
+        // ---------- Supabase 转发 ----------
+        // 背景：国内网络直连 <project>.supabase.co 很不稳定（时通时断），
+        // 用户会看到「数据加载失败 / 网络连接失败」。
+        // 而 luoluo.fun 走 Cloudflare，国内可访问。
+        // 所以把 /sb/* 反向代理到 Supabase，前端改成请求同域的 /sb/...，
+        // 由 Worker 在服务端转发 —— 浏览器不再需要直连 supabase.co。
+        //
+        // 路径映射：
+        //   /sb/rest/v1/tools      → https://<proj>.supabase.co/rest/v1/tools
+        //   /sb/auth/v1/token      → https://<proj>.supabase.co/auth/v1/token
+        // 这样前端只要把 base URL 换成 '/sb' 即可，其余代码不用动。
+        if (url.pathname === '/sb' || url.pathname.startsWith('/sb/')) {
+            return handleSupabaseProxy(request, url);
+        }
+
         // API 请求由 handleRequest 处理。
         // 注：assets.run_worker_first 已把 /api/* 交给 Worker 先行处理；
         // 下面的路径判断保留为兜底（本地 dev / 配置回退时同样正确）。

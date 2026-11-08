@@ -375,7 +375,11 @@ export default {
             var htmlRes = await env.ASSETS.fetch(htmlReq);
             if (htmlRes.status === 200) {
                 var page = await injectToolMeta(htmlRes, toolId, url, ctx);
-                if (page) return applyCacheHeaders(request, page);
+                // 直接返回，不要经过 applyCacheHeaders ——
+                // 后者会把 injectToolMeta 设好的 no-store 覆盖成 no-cache，
+                // 而 no-cache 实测阻挡不住 Cloudflare 边缘缓存，
+                // 导致改了注入逻辑后 /t/{id} 一直返回旧版本。
+                if (page) return page;
             }
             // 取不到数据时退回普通首页，不要给用户 404
             var fb = new Request(new URL('/index.html', url), request);
@@ -604,6 +608,9 @@ async function injectToolList(htmlRes, url, ctx) {
     // 已有缓存的 /t/{id} 会一直返回旧版本（实测踩过）。
     var metaHeaders = new Headers(htmlRes.headers);
     metaHeaders.set('Cache-Control', 'no-store, must-revalidate');
+    // 这里不再经过 applyCacheHeaders，所以安全头要自己补上
+    if (!metaHeaders.has('X-Content-Type-Options')) metaHeaders.set('X-Content-Type-Options', 'nosniff');
+    if (!metaHeaders.has('Referrer-Policy')) metaHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     return new Response(html, { status: 200, headers: metaHeaders });
 }
 

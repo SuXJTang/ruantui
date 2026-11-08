@@ -170,9 +170,47 @@
         });
     }
 
+    // ---------- 注册 ----------
+    // 返回 Promise<{ok:true} | {ok:true, needsConfirm:true} | {ok:false, error}>
+    // needsConfirm 表示 Supabase 开启了「邮箱验证」，需要用户点邮件链接后才能登录。
+    // Supabase 的 signUp 在邮箱已存在时也会返回 200（不报错，防止账号枚举），
+    // 这种情况拿不到 session，按「需要验证」处理并提示用户。
+    function signUp(email, password) {
+        return fetch(SUPABASE_URL + '/auth/v1/signup', {
+            method: 'POST',
+            headers: authHeaders(null),
+            body: JSON.stringify({ email: email, password: password })
+        }).then(function(res) {
+            return res.json().catch(function() { return {}; }).then(function(d) {
+                if (!res.ok) {
+                    var msg = d.error_description || d.msg || d.error || ('HTTP ' + res.status);
+                    if (/already registered|already been registered|User already/i.test(msg)) msg = '该邮箱已注册，请直接登录';
+                    else if (/Password should be at least/i.test(msg)) msg = '密码太短，至少 6 位';
+                    else if (/Invalid email/i.test(msg)) msg = '邮箱格式不正确';
+                    else if (/too many requests|rate limit/i.test(msg)) msg = '操作过于频繁，请稍后再试';
+                    else if (/signups not allowed|Email signups are disabled/i.test(msg)) msg = '站点已关闭注册';
+                    return { ok: false, error: msg };
+                }
+                // 有 session 说明直接注册并登录成功；没有则需邮件验证
+                if (d.access_token) {
+                    var s = toSession(d, email);
+                    if (s) {
+                        writeSession(s);
+                        if (window.syncFavorites) { try { window.syncFavorites(); } catch(e) {} }
+                        return { ok: true, session: s };
+                    }
+                }
+                return { ok: true, needsConfirm: true };
+            });
+        }).catch(function(e) {
+            return { ok: false, error: '网络错误：' + (e && e.message ? e.message : '无法连接') };
+        });
+    }
+
     // ---------- 导出 ----------
     window.Auth = {
         signIn: signIn,
+        signUp: signUp,
         signOut: signOut,
         refresh: refresh,
         getAccessToken: getAccessToken,

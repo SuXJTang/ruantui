@@ -92,12 +92,240 @@ window.logoutAdmin = function() {
 function setAdminFlag(v) {
     App.state.isAdmin = !!v;
     App.state.adminToken = v ? 'session' : null;
-    // 管理按钮在未登录时显示「管理」，已登录时显示「管理面板」
+    // 管理面板按钮只在「已登录且是管理员」时出现 —— 普通用户和游客都看不到，
+    // 避免暴露后台入口（真正的权限仍由数据库 RLS 的 is_admin() 判定）。
     var b = document.getElementById('mgmtBtn');
-    if (b) {
-        b.innerHTML = v ? '<i class="fas fa-cog"></i> 管理面板' : '<i class="fas fa-cog"></i> 管理';
-    }
+    if (b) b.style.display = v ? '' : 'none';
+    updateAccountUI();
 }
+
+// 账号按钮的三种状态：未登录 / 已登录普通用户 / 已登录管理员
+function updateAccountUI() {
+    var btn = document.getElementById('accountBtn');
+    var label = document.getElementById('accountLabel');
+    if (!btn || !label) return;
+    var loggedIn = window.Auth && window.Auth.isLoggedIn();
+    if (!loggedIn) {
+        btn.classList.remove('account-in');
+        btn.setAttribute('title', '登录 / 注册');
+        btn.setAttribute('aria-label', '登录');
+        label.textContent = '登录';
+        btn.querySelector('i').className = 'fas fa-user';
+        return;
+    }
+    var u = window.Auth.currentUser() || {};
+    var admin = !!App.state.isAdmin;
+    btn.classList.add('account-in');
+    btn.setAttribute('title', admin ? '管理员：' + (u.email || '') : (u.email || '已登录'));
+    btn.setAttribute('aria-label', '账号');
+    label.textContent = admin ? '管理员' : '我的';
+    btn.querySelector('i').className = admin ? 'fas fa-user-shield' : 'fas fa-user-check';
+}
+window.updateAccountUI = updateAccountUI;
+
+// 账号下拉菜单
+function showAccountMenu() {
+    var old = document.getElementById('_accountMenu');
+    if (old) { old.remove(); return; }
+
+    var btn = document.getElementById('accountBtn');
+    var r = btn.getBoundingClientRect();
+    var loggedIn = window.Auth && window.Auth.isLoggedIn();
+    var admin = !!App.state.isAdmin;
+    var u = (window.Auth && window.Auth.currentUser()) || {};
+
+    var menu = document.createElement('div');
+    menu.id = '_accountMenu';
+    menu.className = 'account-menu';
+    menu.style.top = (r.bottom + 8) + 'px';
+
+    var html = '';
+    if (!loggedIn) {
+        html += '<div class="am-head"><strong>还没有账号？</strong><small>注册后可云端同步收藏</small></div>';
+        html += '<button class="am-item am-primary" data-act="login"><i class="fas fa-right-to-bracket"></i> 登录</button>';
+        html += '<button class="am-item" data-act="register"><i class="fas fa-user-plus"></i> 注册新账号</button>';
+    } else {
+        html += '<div class="am-head"><strong>' + escHTML(u.email || '已登录') + '</strong><small>' + (admin ? '管理员' : '普通用户') + '</small></div>';
+        if (admin) html += '<button class="am-item" data-act="manage"><i class="fas fa-cog"></i> 管理面板</button>';
+        html += '<button class="am-item" data-act="favs"><i class="fas fa-heart"></i> 我的收藏</button>';
+        html += '<button class="am-item am-danger" data-act="logout"><i class="fas fa-right-from-bracket"></i> 退出登录</button>';
+    }
+    menu.innerHTML = html;
+    document.body.appendChild(menu);
+
+    menu.querySelectorAll('[data-act]').forEach(function(el) {
+        el.onclick = function() {
+            var act = el.dataset.act;
+            menu.remove();
+            if (act === 'login') showAuthBox('login');
+            else if (act === 'register') showAuthBox('register');
+            else if (act === 'manage') { setAdminFlag(true); openMgmt(); }
+            else if (act === 'favs') { var f = document.querySelector('.dash-fab'); if (f) f.click(); }
+            else if (act === 'logout') window.logoutAdmin();
+        };
+    });
+
+    // 点外面关闭
+    setTimeout(function() {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!e.target.closest('#_accountMenu') && !e.target.closest('#accountBtn')) {
+                var m = document.getElementById('_accountMenu');
+                if (m) m.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 0);
+}
+
+// 登录 / 注册弹窗（mode: 'login' | 'register'）
+// 设计原则：把「登录」和「注册」放在同一个弹窗里用 tab 切换，
+// 用户不用在两个入口之间找；注册成功直接进入已登录态并同步收藏。
+function showAuthBox(mode) {
+    var old = document.getElementById('_authBox');
+    if (old) old.remove();
+
+    var box = document.createElement('div');
+    box.id = '_authBox';
+    box.className = 'auth-overlay';
+    box.innerHTML =
+        '<div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="_authTitle">' +
+        '<button class="auth-close" id="_authClose" aria-label="关闭"><i class="fas fa-times"></i></button>' +
+        '<div class="auth-head">' +
+        '<div class="auth-logo">🧰</div>' +
+        '<h3 id="_authTitle">欢迎回来</h3>' +
+        '<p id="_authSub">登录后可同步收藏、跨设备使用</p>' +
+        '</div>' +
+        '<div class="auth-tabs">' +
+        '<button class="auth-tab" data-mode="login">登录</button>' +
+        '<button class="auth-tab" data-mode="register">注册</button>' +
+        '</div>' +
+        '<div class="auth-body">' +
+        '<div class="auth-field"><i class="fas fa-envelope"></i>' +
+        '<input type="email" id="_authEmail" autocomplete="username" placeholder="邮箱地址"></div>' +
+        '<div class="auth-field" id="_authPwdWrap"><i class="fas fa-lock"></i>' +
+        '<input type="password" id="_authPwd" autocomplete="current-password" placeholder="密码"></div>' +
+        '<div class="auth-field auth-extra" id="_authPwd2Wrap"><i class="fas fa-lock"></i>' +
+        '<input type="password" id="_authPwd2" autocomplete="new-password" placeholder="确认密码"></div>' +
+        '<div class="auth-msg" id="_authMsg"></div>' +
+        '<button class="auth-submit" id="_authSubmit">登录</button>' +
+        '<p class="auth-tip" id="_authTip"></p>' +
+        '</div>' +
+        '</div>';
+    document.body.appendChild(box);
+
+    var tabLogin = box.querySelector('[data-mode="login"]');
+    var tabReg = box.querySelector('[data-mode="register"]');
+    var title = document.getElementById('_authTitle');
+    var sub = document.getElementById('_authSub');
+    var pwd2Wrap = document.getElementById('_authPwd2Wrap');
+    var msg = document.getElementById('_authMsg');
+    var submitBtn = document.getElementById('_authSubmit');
+    var tip = document.getElementById('_authTip');
+    var emailEl = document.getElementById('_authEmail');
+    var pwdEl = document.getElementById('_authPwd');
+    var pwd2El = document.getElementById('_authPwd2');
+    var curMode = 'login';
+
+    function setMode(m) {
+        curMode = m;
+        var isReg = m === 'register';
+        tabLogin.classList.toggle('active', !isReg);
+        tabReg.classList.toggle('active', isReg);
+        title.textContent = isReg ? '创建账号' : '欢迎回来';
+        sub.textContent = isReg ? '注册后收藏自动云端同步' : '登录后可同步收藏、跨设备使用';
+        pwd2Wrap.style.display = isReg ? '' : 'none';
+        submitBtn.textContent = isReg ? '注册并登录' : '登录';
+        msg.textContent = '';
+        msg.className = 'auth-msg';
+        tip.textContent = isReg ? '注册后即可直接使用，邮箱无需验证' : '';
+        pwdEl.autocomplete = isReg ? 'new-password' : 'current-password';
+        setTimeout(function() { emailEl.focus(); }, 50);
+    }
+    tabLogin.onclick = function() { setMode('login'); };
+    tabReg.onclick = function() { setMode('register'); };
+
+    function fail(t) { msg.textContent = t || ''; msg.className = 'auth-msg err'; }
+    function okay(t) { msg.textContent = t || ''; msg.className = 'auth-msg ok'; }
+
+    function close() { box.remove(); }
+    document.getElementById('_authClose').onclick = close;
+    box.onclick = function(e) { if (e.target === box) close(); };
+    document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+    });
+
+    async function doLogin() {
+        var email = (emailEl.value || '').trim();
+        var pwd = pwdEl.value || '';
+        if (!email || !pwd) return fail('请填写邮箱和密码');
+        submitBtn.disabled = true; submitBtn.textContent = '登录中…';
+        var r = await window.Auth.signIn(email, pwd);
+        submitBtn.disabled = false;
+        if (!r.ok) { submitBtn.textContent = '登录'; return fail(r.error); }
+        var v = await window.Auth.verifyAdmin();
+        setAdminFlag(!!v.isAdmin);
+        close();
+        showToast(v.isAdmin ? '登录成功，管理员' : '登录成功 ✓', 'success');
+        if (v.isAdmin) openMgmt();
+    }
+
+    async function doRegister() {
+        var email = (emailEl.value || '').trim();
+        var pwd = pwdEl.value || '';
+        var pwd2 = pwd2El.value || '';
+        if (!email || !pwd) return fail('请填写邮箱和密码');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('邮箱格式不正确');
+        if (pwd.length < 6) return fail('密码至少 6 位');
+        if (pwd !== pwd2) return fail('两次输入的密码不一致');
+        submitBtn.disabled = true; submitBtn.textContent = '注册中…';
+        var r = await window.Auth.signUp(email, pwd);
+        submitBtn.disabled = false;
+        if (!r.ok) { submitBtn.textContent = '注册并登录'; return fail(r.error); }
+
+        // 情况一：Supabase 关闭了邮箱验证 → 注册即登录
+        if (r.session) {
+            var v = await window.Auth.verifyAdmin();
+            setAdminFlag(!!v.isAdmin);
+            close();
+            showToast('注册成功 ✓ 已自动登录', 'success');
+            return;
+        }
+
+        // 情况二：开启了邮箱验证 → 提示去邮箱点链接，并引导到登录页
+        // （此时账号已创建，只是未验证，直接登录会被拒）
+        setMode('login');
+        pwdEl.value = '';
+        okay('账号已创建！请到 ' + email + ' 查收验证邮件，点其中的链接激活后即可登录。');
+        submitBtn.textContent = '去邮箱验证后再登录';
+        submitBtn.disabled = true;
+        setTimeout(function() {
+            if (document.getElementById('_authBox')) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '登录';
+                tip.textContent = '没收到邮件？检查垃圾箱，或过几分钟重新注册。';
+            }
+        }, 4000);
+    }
+
+    submitBtn.onclick = function() { curMode === 'register' ? doRegister() : doLogin(); };
+    [emailEl, pwdEl, pwd2El].forEach(function(el) {
+        el.onkeydown = function(e) { if (e.key === 'Enter') submitBtn.click(); };
+    });
+
+    setMode(mode === 'register' ? 'register' : 'login');
+}
+window.showAuthBox = showAuthBox;
+
+// 弹登录框（旧入口兼容：管理员点「管理」但未登录时走这里）
+function showLoginBox() { showAuthBox('login'); }
+
+// 账号按钮：已登录 → 下拉菜单；未登录 → 打开登录框
+var accountBtn = document.getElementById('accountBtn');
+if (accountBtn) accountBtn.onclick = function(e) {
+    e.stopPropagation();
+    if (window.Auth && window.Auth.isLoggedIn()) showAccountMenu();
+    else showAuthBox('login');
+};
 
 // 弹出登录框
 function showLoginBox() {

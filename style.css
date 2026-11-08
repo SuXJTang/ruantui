@@ -1240,3 +1240,118 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
         padding-right: max(24px, 4vw);
     }
 }
+
+/* ================================================================
+   账号入口 / 登录注册弹窗 / 账号下拉菜单
+   ================================================================ */
+
+/* 顶栏账号按钮 */
+.account-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 0 12px; width: auto !important; min-width: 44px;
+    font-size: 13px; font-weight: 600;
+}
+.account-label { font-size: 13px; white-space: nowrap; }
+.account-btn.account-in { color: var(--primary); border-color: var(--border-glow); }
+.account-btn.account-in .account-label { color: var(--primary); }
+@media (max-width: 480px) { .account-label { display: none; } }
+
+/* 账号下拉菜单 */
+.account-menu {
+    position: fixed; right: max(16px, 3vw); z-index: 9990;
+    min-width: 220px; padding: 6px;
+    background: var(--card-solid); border: 1px solid var(--border);
+    border-radius: 14px; box-shadow: var(--shadow-lg);
+    animation: amIn .18s ease;
+}
+@keyframes amIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.account-menu .am-head {
+    padding: 10px 12px 12px; border-bottom: 1px solid var(--border); margin-bottom: 6px;
+}
+.account-menu .am-head strong { display: block; font-size: 13px; font-weight: 700; }
+.account-menu .am-head small { display: block; font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.account-menu .am-item {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 10px 12px; border: none; background: transparent;
+    border-radius: 9px; font-size: 13px; font-weight: 500;
+    color: var(--text); text-align: left; cursor: pointer; transition: background .18s;
+}
+.account-menu .am-item:hover { background: rgba(128,128,128,0.10); }
+.account-menu .am-item i { width: 16px; text-align: center; color: var(--text-light); }
+.account-menu .am-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; }
+.account-menu .am-primary i { color: #fff; }
+.account-menu .am-primary:hover { filter: brightness(1.08); background: linear-gradient(135deg, var(--primary), var(--accent)); }
+.account-menu .am-danger { color: #ef4444; }
+.account-menu .am-danger i { color: #ef4444; }
+
+/* 登录 / 注册弹窗 */
+.auth-overlay {
+    position: fixed; inset: 0; z-index: 99999;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    background: rgba(15,23,42,0.55);
+    animation: authFade .2s ease;
+}
+@keyframes authFade { from { opacity: 0; } to { opacity: 1; } }
+.auth-card {
+    position: relative; width: 100%; max-width: 380px;
+    background: var(--card-solid); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px 28px 24px;
+    box-shadow: 0 24px 64px rgba(15,23,42,0.28);
+    animation: authIn .25s cubic-bezier(.34,1.4,.64,1);
+}
+@keyframes authIn { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+.auth-close {
+    position: absolute; top: 14px; right: 14px;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: rgba(128,128,128,0.10);
+    color: var(--text-light); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+}
+.auth-close:hover { background: rgba(128,128,128,0.2); color: var(--text); }
+.auth-head { text-align: center; margin-bottom: 20px; }
+.auth-logo { font-size: 34px; line-height: 1; margin-bottom: 8px; }
+.auth-head h3 { font-size: 19px; font-weight: 800; }
+.auth-head p { font-size: 12.5px; color: var(--text-light); margin-top: 4px; }
+
+.auth-tabs {
+    display: flex; gap: 4px; padding: 4px; margin-bottom: 18px;
+    background: rgba(128,128,128,0.08); border-radius: 12px;
+}
+.auth-tab {
+    flex: 1; padding: 8px 0; border: none; border-radius: 9px;
+    background: transparent; color: var(--text-light);
+    font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .2s;
+}
+.auth-tab.active { background: var(--card-solid); color: var(--text); box-shadow: var(--shadow); }
+
+.auth-field {
+    position: relative; margin-bottom: 10px;
+}
+.auth-field i {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-light); font-size: 13px; pointer-events: none;
+}
+.auth-field input {
+    width: 100%; box-sizing: border-box;
+    padding: 11px 14px 11px 38px;
+    border: 1.5px solid var(--border); border-radius: 11px;
+    background: var(--bg); color: var(--text);
+    font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.auth-field input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb),0.12);
+}
+.auth-msg { min-height: 18px; font-size: 12.5px; text-align: center; margin: 4px 0 6px; }
+.auth-msg.err { color: #ef4444; }
+.auth-msg.ok { color: #10b981; }
+.auth-submit {
+    width: 100%; padding: 11px 0; border: none; border-radius: 11px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff; font-size: 14.5px; font-weight: 700; cursor: pointer;
+    transition: filter .2s, transform .1s;
+}
+.auth-submit:hover:not(:disabled) { filter: brightness(1.08); }
+.auth-submit:active:not(:disabled) { transform: scale(.985); }
+.auth-submit:disabled { opacity: .65; cursor: default; }
+.auth-tip { font-size: 11.5px; color: var(--text-light); text-align: center; margin-top: 12px; line-height: 1.5; }

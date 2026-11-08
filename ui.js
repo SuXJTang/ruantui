@@ -114,9 +114,15 @@ function renderTools(filter) {
         filtered.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
     }
 
-    grid.innerHTML = '';
+    // 服务端是否已经把卡片渲染进 HTML（Worker 的 injectToolList）。
+    // 有的话，在「加载中」和「加载失败」两种状态下都要保留它，
+    // 否则用户会看到本来完整的列表被清空。
+    var hasSSR = grid.getAttribute('data-ssr') === '1' && grid.children.length > 0;
 
     if (App.state.loading) {
+        // 有 SSR 卡片就不显示骨架屏，直接让用户先看到内容
+        if (hasSSR) return;
+        grid.innerHTML = '';
         var sk = '';
         for (var i = 0; i < 8; i++) sk += '<div class="skeleton-card"><div class="sk-icon"></div><div class="sk-body"><div class="sk-line sk-line-1"></div><div class="sk-line sk-line-2"></div><div class="sk-line sk-line-3"></div></div></div>';
         grid.innerHTML = sk; return;
@@ -135,12 +141,22 @@ function renderTools(filter) {
 
     // 数据加载失败 / 为空 / 离线缓存 —— 必须让使用者看见，绝不静默伪装成正常
     if (!App.state.tools || !App.state.tools.length) {
+        // 有 SSR 卡片时不能清空换成错误页 ——
+        // 用户其实能看到完整工具列表，只是「刷新数据」失败。
+        // 保留内容 + 顶部轻提示，体验远好于一个空白的错误页。
+        if (hasSSR) {
+            ensureSSRBanner();
+            if (resultBar) resultBar.style.display = 'none';
+            return;
+        }
         grid.innerHTML = renderDataErrorHTML();
         var tcN = document.getElementById('totalCount'); if (tcN) tcN.textContent = '0';
         var ccN = document.getElementById('categoryCount'); if (ccN) ccN.textContent = '0';
         if (resultBar) resultBar.style.display = 'none';
         return;
     }
+
+    grid.innerHTML = '';
 
     if (!filtered.length) {
         grid.innerHTML = '<div class="grid-empty"><i class="fas fa-search"></i><p>没有找到匹配的工具</p><p style="font-size:12px;color:var(--text-light);margin-top:8px;">试试其他关键词或清除筛选条件</p></div>'; return;
@@ -287,6 +303,58 @@ function trackToolClick(toolId, toolName) {
 // 数据加载失败界面
 // 设计原则：故障必须可见。绝不能拿假数据把错误「填平」。
 // ============================================
+
+// 当页面已有 SSR 卡片、但实时数据没拿到时，在列表上方显示一条轻提示。
+// 目的是既保留可用的内容，又如实告知「这是缓存/静态版本」，
+// 不让用户以为看到的是最新数据。
+function ensureSSRBanner() {
+    var existing = document.getElementById('_ssrBanner');
+    if (existing) return existing;
+
+    var bar = document.createElement('div');
+    bar.id = '_ssrBanner';
+    bar.style.cssText = [
+        'grid-column:1/-1',
+        'display:flex', 'align-items:center', 'gap:10px',
+        'padding:10px 14px', 'margin-bottom:4px',
+        'border-radius:12px',
+        'background:rgba(var(--primary-rgb),0.08)',
+        'border:1px solid rgba(var(--primary-rgb),0.22)',
+        'font-size:12.5px', 'color:var(--text)',
+        'line-height:1.5'
+    ].join(';');
+    bar.innerHTML =
+        '<i class="fas fa-circle-info" style="color:var(--primary);flex-shrink:0"></i>' +
+        '<span style="flex:1">当前显示的是最近一次保存的工具列表，最新数据正在后台获取。</span>' +
+        '<button type="button" id="_ssrRetry" style="flex-shrink:0;padding:5px 14px;border-radius:999px;border:none;' +
+        'background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:12px;font-weight:600;cursor:pointer">' +
+        '重试</button>';
+
+    var gridEl = document.getElementById('toolGrid');
+    if (gridEl) gridEl.insertBefore(bar, gridEl.firstChild);
+
+    var retryBtn = bar.querySelector('#_ssrRetry');
+    if (retryBtn) {
+        retryBtn.onclick = function () {
+            retryBtn.disabled = true;
+            retryBtn.textContent = '获取中…';
+            if (typeof refreshTools === 'function') {
+                refreshTools().then(function () {
+                    var still = document.getElementById('_ssrBanner');
+                    if (still) {
+                        retryBtn.disabled = false;
+                        retryBtn.textContent = '重试';
+                        if (typeof showToast === 'function') showToast('仍然无法获取最新数据', 'error');
+                    }
+                });
+            } else {
+                location.reload();
+            }
+        };
+    }
+    return bar;
+}
+
 function renderDataErrorHTML() {
     var err = App.state.dataError;
     var usingCache = App.state.usingCache;

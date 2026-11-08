@@ -488,21 +488,60 @@ async function injectToolList(htmlRes, url, ctx) {
     var html = await htmlRes.text();
     var origin = url.origin;
 
-    // 生成近似静态的卡片。刻意保持简单：不含收藏按钮、点击特效等交互元素，
-    // 避免与 JS 渲染结果冲突（JS 会整体重建 #toolGrid）。
+    // 生成静态卡片。
+    // 关键设计：这里渲染的是「完整卡片」而不是简化版 —— 图标、分类、标签、下载按钮全都有。
+    //
+    // 原因：国内用户偶发连不上 Supabase 时，前端拿不到数据，
+    // #toolGrid 会保留这份 SSR 内容。如果这里只渲染「名称 + 查看详情」，
+    // 用户看到的就是一个没有图标、没有下载按钮的残缺页面（真实发生过）。
+    // 渲染成完整卡片后，即使数据接口完全不可用，用户依然能正常浏览和下载。
+    //
+    // JS 拿到数据后会整体重建 #toolGrid 覆盖掉，所以不影响正常流程。
+    // 刻意不含：收藏按钮、点击特效等强交互元素（避免与 JS 绑定冲突）。
     var cards = tools.map(function (t) {
         var icon = t.iconUrl || '';
         if (icon && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(icon)) icon = '/' + icon;
         var cat = escHTML(t.category || '');
         var name = escHTML(t.name || '');
         var comment = escHTML((t.comment || '').slice(0, 60));
+        var detailUrl = escHTML(origin + '/t/' + t.id);
+
+        // 图标：有 iconUrl 用图片，否则用色块 + 首字（与前端 renderIconHTML 的降级逻辑一致）
+        var color = t.color || '#FF7D20';
+        var iconHTML = icon
+            ? '<div class="tool-icon" style="background:' + escHTML(color) + '14">' +
+              '<img src="' + escHTML(icon) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' +
+              '</div>'
+            : '<div class="tool-icon" style="background:' + escHTML(color) + ';color:#fff;font-weight:700;font-size:22px">' +
+              escHTML((t.name || '?').charAt(0)) + '</div>';
+
+        // 置顶标记
+        var pinnedHTML = t.pinned ? '<span class="pinned-badge">推荐</span>' : '';
+
+        // 标签
+        var tags = Array.isArray(t.tags) ? t.tags : [];
+        var tagHTML = tags.length
+            ? '<div class="tool-tags">' + tags.slice(0, 4).map(function (g) {
+                return '<span class="tool-tag">' + escHTML(g) + '</span>';
+              }).join('') + '</div>'
+            : '';
+
+        // 按钮：有下载地址就显示「下载」，否则「查看详情」
+        var btnHTML = t.download
+            ? '<a class="tool-visit-btn" href="' + escHTML(origin + '/t/' + t.id) + '">⬇️ 下载</a>'
+            : '<a class="tool-visit-btn" href="' + detailUrl + '">查看详情</a>';
+
         return '<article class="tool-card ssr-card">' +
+            iconHTML +
             '<div class="tool-body">' +
-            '<h3><a href="' + escHTML(origin + '/t/' + t.id) + '">' + name + '</a></h3>' +
-            '<div class="tool-meta"><span class="tool-cat">' + cat + '</span></div>' +
-            '<p>' + comment + '</p>' +
+            '<h3>' + pinnedHTML + '<a href="' + detailUrl + '" style="color:inherit;text-decoration:none">' + name + '</a></h3>' +
+            '<div class="tool-meta"><span class="tool-cat">' + cat + '</span>' +
+            (t.rating ? '<span class="tool-views"><i class="fas fa-star"></i>' + t.rating + '</span>' : '') +
             '</div>' +
-            '<a class="tool-visit-btn" href="' + escHTML(origin + '/t/' + t.id) + '">查看详情</a>' +
+            '<p>' + comment + '</p>' +
+            tagHTML +
+            '</div>' +
+            btnHTML +
             '</article>';
     }).join('');
 

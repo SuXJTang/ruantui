@@ -476,6 +476,69 @@ async function fetchListCached(endpoint, ctx) {
     return rows;
 }
 
+// 把卡片 HTML 注入到页面的 #toolGrid，并把统计数字填上。
+// 首页和详情页共用这份逻辑 —— 两处都要有 SSR 内容，
+// 否则 JS 一旦加载失败（国内网络抖动时常见），用户看到的就是
+// 一个「0 款工具 0 个分类」的空白页。
+function injectCardsIntoHTML(html, cards, tools, catCountNum) {
+    html = html.replace('<section class="grid" id="toolGrid"></section>',
+        '<section class="grid" id="toolGrid" data-ssr="1">' + cards + '</section>');
+    html = html.replace(/(<strong[^>]*id="totalCount"[^>]*>)0(<\/strong>)/, '$1' + tools.length + '$2');
+    html = html.replace(/(<strong[^>]*id="categoryCount"[^>]*>)0(<\/strong>)/, '$1' + catCountNum + '$2');
+    return html;
+}
+
+// 生成静态卡片 HTML。
+// 渲染的是「完整卡片」—— 图标、分类、标签、下载按钮全都有。
+// 原因：国内用户偶发连不上 Supabase 或脚本加载失败时，前端拿不到数据，
+// #toolGrid 会保留这份内容。渲染成完整卡片后，即使数据接口完全不可用，
+// 用户依然能正常浏览和下载。
+// JS 拿到数据后会整体重建 #toolGrid 覆盖掉，所以不影响正常流程。
+function renderSSRCards(tools, origin) {
+    return tools.map(function (t) {
+        var icon = t.iconUrl || '';
+        if (icon && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(icon)) icon = '/' + icon;
+        var cat = escHTML(t.category || '');
+        var name = escHTML(t.name || '');
+        var comment = escHTML((t.comment || '').slice(0, 60));
+        var detailUrl = escHTML(origin + '/t/' + t.id);
+
+        var color = t.color || '#FF7D20';
+        var iconHTML = icon
+            ? '<div class="tool-icon" style="background:' + escHTML(color) + '14">' +
+              '<img src="' + escHTML(icon) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' +
+              '</div>'
+            : '<div class="tool-icon" style="background:' + escHTML(color) + ';color:#fff;font-weight:700;font-size:22px">' +
+              escHTML((t.name || '?').charAt(0)) + '</div>';
+
+        var pinnedHTML = t.pinned ? '<span class="pinned-badge">推荐</span>' : '';
+
+        var tags = Array.isArray(t.tags) ? t.tags : [];
+        var tagHTML = tags.length
+            ? '<div class="tool-tags">' + tags.slice(0, 4).map(function (g) {
+                return '<span class="tool-tag">' + escHTML(g) + '</span>';
+              }).join('') + '</div>'
+            : '';
+
+        var btnHTML = t.download
+            ? '<a class="tool-visit-btn" href="' + detailUrl + '">⬇️ 下载</a>'
+            : '<a class="tool-visit-btn" href="' + detailUrl + '">查看详情</a>';
+
+        return '<article class="tool-card ssr-card">' +
+            iconHTML +
+            '<div class="tool-body">' +
+            '<h3>' + pinnedHTML + '<a href="' + detailUrl + '" style="color:inherit;text-decoration:none">' + name + '</a></h3>' +
+            '<div class="tool-meta"><span class="tool-cat">' + cat + '</span>' +
+            (t.rating ? '<span class="tool-views"><i class="fas fa-star"></i>' + t.rating + '</span>' : '') +
+            '</div>' +
+            '<p>' + comment + '</p>' +
+            tagHTML +
+            '</div>' +
+            btnHTML +
+            '</article>';
+    }).join('');
+}
+
 // 服务端渲染首页工具列表。
 // 目标：让不执行 JS 的爬虫也能看到全部工具的名字/分类/简介/链接，
 // 而不是只看到一个空的「0 款工具」。
@@ -498,62 +561,32 @@ async function injectToolList(htmlRes, url, ctx) {
     //
     // JS 拿到数据后会整体重建 #toolGrid 覆盖掉，所以不影响正常流程。
     // 刻意不含：收藏按钮、点击特效等强交互元素（避免与 JS 绑定冲突）。
-    var cards = tools.map(function (t) {
-        var icon = t.iconUrl || '';
-        if (icon && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(icon)) icon = '/' + icon;
-        var cat = escHTML(t.category || '');
-        var name = escHTML(t.name || '');
-        var comment = escHTML((t.comment || '').slice(0, 60));
-        var detailUrl = escHTML(origin + '/t/' + t.id);
-
-        // 图标：有 iconUrl 用图片，否则用色块 + 首字（与前端 renderIconHTML 的降级逻辑一致）
-        var color = t.color || '#FF7D20';
-        var iconHTML = icon
-            ? '<div class="tool-icon" style="background:' + escHTML(color) + '14">' +
-              '<img src="' + escHTML(icon) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">' +
-              '</div>'
-            : '<div class="tool-icon" style="background:' + escHTML(color) + ';color:#fff;font-weight:700;font-size:22px">' +
-              escHTML((t.name || '?').charAt(0)) + '</div>';
-
-        // 置顶标记
-        var pinnedHTML = t.pinned ? '<span class="pinned-badge">推荐</span>' : '';
-
-        // 标签
-        var tags = Array.isArray(t.tags) ? t.tags : [];
-        var tagHTML = tags.length
-            ? '<div class="tool-tags">' + tags.slice(0, 4).map(function (g) {
-                return '<span class="tool-tag">' + escHTML(g) + '</span>';
-              }).join('') + '</div>'
-            : '';
-
-        // 按钮：有下载地址就显示「下载」，否则「查看详情」
-        var btnHTML = t.download
-            ? '<a class="tool-visit-btn" href="' + escHTML(origin + '/t/' + t.id) + '">⬇️ 下载</a>'
-            : '<a class="tool-visit-btn" href="' + detailUrl + '">查看详情</a>';
-
-        return '<article class="tool-card ssr-card">' +
-            iconHTML +
-            '<div class="tool-body">' +
-            '<h3>' + pinnedHTML + '<a href="' + detailUrl + '" style="color:inherit;text-decoration:none">' + name + '</a></h3>' +
-            '<div class="tool-meta"><span class="tool-cat">' + cat + '</span>' +
-            (t.rating ? '<span class="tool-views"><i class="fas fa-star"></i>' + t.rating + '</span>' : '') +
-            '</div>' +
-            '<p>' + comment + '</p>' +
-            tagHTML +
-            '</div>' +
-            btnHTML +
-            '</article>';
-    }).join('');
+    var cards = renderSSRCards(tools, origin);
 
     // 统计数字也补上，否则爬虫看到的是「0 款工具 0 个分类」
     // 注意 index.html 里是 <strong id="totalCount">0</strong>，不是 span
     var catCount = {};
     tools.forEach(function (t) { var c = t.category || '未分类'; catCount[c] = (catCount[c] || 0) + 1; });
 
-    html = html.replace('<section class="grid" id="toolGrid"></section>',
-        '<section class="grid" id="toolGrid" data-ssr="1">' + cards + '</section>');
-    html = html.replace(/(<strong[^>]*id="totalCount"[^>]*>)0(<\/strong>)/, '$1' + tools.length + '$2');
-    html = html.replace(/(<strong[^>]*id="categoryCount"[^>]*>)0(<\/strong>)/, '$1' + Object.keys(catCount).length + '$2');
+    html = injectCardsIntoHTML(html, cards, tools, Object.keys(catCount).length);
+
+    // 详情页同样注入 SSR 卡片。
+    // 这一步很关键：/t/{id} 之前是纯骨架页面（toolGrid 空、统计为 0），
+    // 一旦 JS 加载失败，用户看到的就是「0 款工具 0 个分类」的空白页。
+    // 注入卡片后，即使脚本挂了也能看到完整列表。
+    try {
+        var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned&order=pinned.desc,created_at.asc';
+        var allTools = await fetchListCached(listEndpoint, ctx);
+        if (allTools && allTools.length) {
+            var catSet = {};
+            allTools.forEach(function (x) { var c = x.category || '未分类'; catSet[c] = (catSet[c] || 0) + 1; });
+            // 详情页的脚本用的是绝对路径，卡片里的链接也要用 origin
+            html = injectCardsIntoHTML(html, renderSSRCards(allTools, origin), allTools, Object.keys(catSet).length);
+        }
+    } catch (e) {
+        // 注入失败不影响主流程，页面仍可依赖前端 JS 渲染
+        console.error('injectToolMeta: SSR 卡片注入失败', e && e.message);
+    }
 
     return new Response(html, { status: 200, headers: htmlRes.headers });
 }

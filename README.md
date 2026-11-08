@@ -106,14 +106,14 @@ ruantui/
 
 | 位置 | 内容 | 本次值 |
 |------|------|--------|
-| `index.html` | 所有 `style.css?v=` / `*.js?v=` | `v=45` |
-| `sw.js` | `CACHE_VERSION` | `'v53'` |
+| `index.html` | 所有 `style.css?v=` / `*.js?v=` | `v=46` |
+| `sw.js` | `CACHE_VERSION` | `'v54'` |
 
 发版流程：
 
-1. 把 `index.html` 里**全部** `?v=45` 统一改成新号（例如 `?v=45`）——新值必须全局一致，
+1. 把 `index.html` 里**全部** `?v=46` 统一改成新号（例如 `?v=46`）——新值必须全局一致，
    不要一个文件一个号（旧版本正是这样：`shared.js?v=2` … `adsense.js?v=5`，极易漂移）。
-2. 把 `sw.js` 的 `CACHE_VERSION` 同时递增（例如 `'v53'`）。
+2. 把 `sw.js` 的 `CACHE_VERSION` 同时递增（例如 `'v54'`）。
 
 两步必须成对执行。只改 `?v=` 不改 `CACHE_VERSION`，旧 SW 会继续用旧缓存；
 只改 `CACHE_VERSION` 不改 `?v=`，浏览器 HTTP 缓存仍可能吐旧文件。

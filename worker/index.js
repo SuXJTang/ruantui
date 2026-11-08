@@ -462,8 +462,59 @@ async function injectToolMeta(htmlRes, toolId, url, ctx) {
         '<script type="application/ld+json">' + ld + '</script>\n' +
         '<script>window.__RUANTUI_TOOL_ID__=' + tool.id + ';</script>\n</head>');
 
+    // 内链：爬虫进到 /t/{id} 后如果没有出链就成了死胡同，
+    // 权重传不回首页、后续抓取频率也会下降。
+    // 这里注入两块内容：
+    //   1. 面包屑（首页 > 分类 > 工具名），带 BreadcrumbList 结构化数据
+    //   2. 底部「同类工具」导航，链接到同分类的其他工具页
+    var breadcrumb = '<nav class="ssr-crumb" aria-label="面包屑导航" style="max-width:1200px;margin:16px auto 0;padding:0 max(16px,4vw);font-size:13px;color:var(--text-light);">' +
+        '<a href="' + escHTML(origin + '/') + '" style="color:var(--primary);text-decoration:none;">软推首页</a>' +
+        ' <span style="opacity:.5;">›</span> ' +
+        '<span>' + escHTML(tool.category || '工具') + '</span>' +
+        ' <span style="opacity:.5;">›</span> ' +
+        '<span style="color:var(--text);">' + n + '</span>' +
+        '</nav>';
+    html = html.replace(/<body([^>]*)>/i, '<body$1>' + breadcrumb);
+
+    // 同类工具：拉同分类的其他工具（最多 8 个）
+    var related = await fetchRelatedTools(tool, ctx);
+    if (related.length) {
+        var relItems = related.map(function (r) {
+            return '<a class="ssr-rel-item" href="' + escHTML(origin + '/t/' + r.id) + '" ' +
+                'style="display:inline-block;padding:8px 14px;margin:6px 8px 6px 0;border:1px solid var(--border);' +
+                'border-radius:999px;font-size:13px;color:var(--text);text-decoration:none;background:rgba(128,128,128,.05);">' +
+                escHTML(r.name) + '</a>';
+        }).join('');
+        var relBlock = '<section class="ssr-related" style="max-width:1200px;margin:32px auto 48px;padding:0 max(16px,4vw);">' +
+            '<h2 style="font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text);">更多' +
+            escHTML(tool.category || '') + '工具</h2>' +
+            '<div>' + relItems + '</div>' +
+            '<a href="' + escHTML(origin + '/') + '" style="display:inline-block;margin-top:16px;font-size:13px;color:var(--primary);text-decoration:none;">← 返回首页查看全部工具</a>' +
+            '</section>';
+        html = html.replace(/<\/body>/i, relBlock + '</body>');
+    }
+
+    // 面包屑结构化数据，搜索结果里会显示层级路径
+    var crumbLd = '{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[' +
+        '{"@type":"ListItem","position":1,"name":"软推","item":"' + escHTML(origin + '/') + '"},' +
+        '{"@type":"ListItem","position":2,"name":"' + escHTML(tool.category || '工具') + '"},' +
+        '{"@type":"ListItem","position":3,"name":"' + n + '","item":"' + u + '"}' +
+        ']}';
+    html = html.replace('</head>',
+        '<script type="application/ld+json">' + crumbLd + '</script>\n</head>');
+
     return new Response(html, {
         status: 200,
         headers: htmlRes.headers,
     });
+}
+
+// 取同分类的其他工具，用于详情页底的「更多 XX 工具」内链
+async function fetchRelatedTools(tool, ctx) {
+    var cat = encodeURIComponent(tool.category || '');
+    if (!cat) return [];
+    var endpoint = SB_URL + '/rest/v1/tools?select=id,name&category=eq.' + cat +
+        '&id=neq.' + tool.id + '&order=pinned.desc,id.asc&limit=8';
+    var rows = await fetchListCached(endpoint, ctx);
+    return Array.isArray(rows) ? rows : [];
 }

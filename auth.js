@@ -188,10 +188,16 @@
             return res.json().catch(function() { return {}; }).then(function(d) {
                 if (!res.ok) {
                     var msg = d.error_description || d.msg || d.error || ('HTTP ' + res.status);
+                    var code = d.error_code || '';
                     if (/already registered|already been registered|User already/i.test(msg)) msg = '该邮箱已注册，请直接登录';
                     else if (/Password should be at least/i.test(msg)) msg = '密码太短，至少 6 位';
                     else if (/Invalid email/i.test(msg)) msg = '邮箱格式不正确';
-                    else if (/too many requests|rate limit/i.test(msg)) msg = '操作过于频繁，请稍后再试';
+                    // 邮件发送配额用尽（Supabase 默认 SMTP 限制很严）：
+                    // 这不是「你操作太快」，而是站点的发信额度用完了，要说清楚
+                    else if (code === 'over_email_send_rate_limit' || /email rate limit|email_send_rate/i.test(msg)) {
+                        msg = '验证邮件发送额度已用完（临时限制），请过 1 小时后再注册。如果急需，请联系站长。';
+                    }
+                    else if (res.status === 429 || /too many requests|rate limit/i.test(msg)) msg = '操作过于频繁，请稍后再试';
                     else if (/signups not allowed|Email signups are disabled/i.test(msg)) msg = '站点已关闭注册';
                     return { ok: false, error: msg };
                 }
@@ -224,6 +230,10 @@
             return res.json().catch(function() { return {}; }).then(function(d) {
                 if (!res.ok) {
                     var msg = d.error_description || d.msg || d.error || ('HTTP ' + res.status);
+                    var rcode = d.error_code || '';
+                    if (rcode === 'over_email_send_rate_limit' || /email rate limit|email_send_rate/i.test(msg)) {
+                        return { ok: false, error: '邮箱发送额度已用完，请过 1 小时后再试' };
+                    }
                     if (res.status === 429 || /too many|rate limit|seconds/i.test(msg)) {
                         return { ok: false, error: '发送太频繁，请等 1 分钟后再试' };
                     }

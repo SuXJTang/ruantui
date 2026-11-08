@@ -38,16 +38,16 @@
 :root {
     --primary: #FF7D20; --primary-rgb: 255,125,32;
     --accent: #3498db; --accent-rgb: 52,152,219;
-    --bg: #eef1f6; --card: rgba(255,255,255,0.92);
-    --card-solid: #ffffff; --glass-bg: rgba(255,255,255,0.78);
+    --bg: #e2e7ef; --card: rgba(249,250,253,0.86);
+    --card-solid: #f7f9fc; --glass-bg: rgba(247,249,252,0.72);
     /* 妞よ埖鐖懗灞炬珯閿涙俺绻庢稉宥夆偓蹇旀鐎圭偠澹婇敍灞炬禌娴?backdrop-filter閿涘牐顫?.topbar 濞夈劑鍣撮敍?*/
-    --topbar-bg: rgba(238,241,246,0.95);
+    --topbar-bg: rgba(226,231,239,0.96);
     --text: #1a1a2e; --text-light: #6B7280;
     --border: rgba(15,23,42,0.09); --border-glow: rgba(var(--primary-rgb),0.18);
     --radius: 16px; --radius-sm: 10px; --radius-xs: 6px;
-    --shadow: 0 1px 3px rgba(15,23,42,0.06);
-    --shadow-md: 0 4px 16px rgba(15,23,42,0.08);
-    --shadow-lg: 0 12px 32px rgba(15,23,42,0.12);
+    --shadow: 0 1px 3px rgba(15,23,42,0.07);
+    --shadow-md: 0 4px 16px rgba(15,23,42,0.10);
+    --shadow-lg: 0 12px 32px rgba(15,23,42,0.14);
     --shadow-glow: 0 0 20px rgba(var(--primary-rgb),0.15);
     --transition: all .3s cubic-bezier(.25,.46,.45,.94);
     --glass-blur: saturate(180%) blur(20px);
@@ -110,7 +110,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     position: sticky; top: 0; z-index: 100;
     background: var(--topbar-bg);
     border-bottom: 1px solid var(--border);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.10) inset;
 }
 [data-mode="dark"] .topbar { box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset; }
 .topbar-inner {
@@ -366,9 +366,9 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-card::before {
     content: ''; position: absolute; inset: 0; border-radius: inherit;
     background: linear-gradient(135deg,
-        rgba(255,255,255,0.4) 0%,
-        rgba(255,255,255,0.05) 30%,
-        transparent 60%);
+        rgba(255,255,255,0.18) 0%,
+        rgba(255,255,255,0.02) 28%,
+        transparent 55%);
     pointer-events: none; z-index: 5;
 }
 [data-mode="dark"] .tool-card::before {

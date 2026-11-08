@@ -10,19 +10,169 @@
     var MAX_HISTORY = 12;
 
     // ---------- 收藏管理 ----------
+    // 设计原则：本地优先，登录后自动上云
+    //   · 未登录 / 云端不可用 → 完全走 localStorage（行为跟以前一模一样，不会因为
+    //     数据库没建好就坏掉）
+    //   · 已登录 → 收藏写入数据库，并同步一份到本地作为离线缓存
+    //   · 首次登录 → 把本地已有的收藏合并上传，用户换设备不会丢之前的收藏
     function getFavorites() {
         try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) { return []; }
     }
     function isFavorited(id) {
         return getFavorites().indexOf(id) >= 0;
     }
+
+    // 云端可用性标记：探测一次失败就不再反复尝试，避免拖慢页面
+    var cloudState = 'unknown'; // unknown | ok | unavailable
+    var cloudPending = null;    // 合并中的 Promise，避免重复触发
+
+    function authToken() {
+        return (window.Auth && window.Auth.getAccessToken) ? window.Auth.getAccessToken() : Promise.resolve(null);
+    }
+    function loggedIn() {
+        return !!(window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn());
+    }
+
+    // 直接打 Supabase REST；失败返回 null，不抛异常
+    // 复用 supabase.js 暴露的配置，避免重复硬编码 URL/KEY
+    function cloudFetch(path, opts) {
+        return authToken().then(function(token) {
+            if (!token) return null;
+            var cfg = window.RuantuiSupabase || {};
+            var base = cfg.url;
+            var key = cfg.key;
+            if (!base || !key) return null;
+            var o = opts || {};
+            var headers = {
+                'apikey': key,
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            };
+            if (o.prefer) headers['Prefer'] = o.prefer;
+            return fetch(base + '/rest/v1' + path, {
+                method: o.method || 'GET',
+                headers: headers,
+                body: o.body ? JSON.stringify(o.body) : undefined
+            }).then(function(res) {
+                if (res.status === 404 || res.status === 400) {
+                    // 表不存在或字段不匹配 → 云端功能不可用，安静降级到本地
+                    cloudState = 'unavailable';
+                    return null;
+                }
+                if (!res.ok) return null;
+                var ct = res.headers.get('content-type') || '';
+                if (ct.indexOf('json') < 0) return null;
+                return res.json();
+            }).catch(function() { return null; });
+        });
+    }
+
+    // 拉取云端收藏 id 列表
+    function fetchCloudFavorites() {
+        return cloudFetch('/favorites?select=tool_id&order=created_at.desc').then(function(rows) {
+            if (!Array.isArray(rows)) return null;
+            cloudState = 'ok';
+            return rows.map(function(r) { return r.tool_id; });
+        });
+    }
+
+    // 把本地收藏合并到云端（只在首次登录时做一次）
+    function mergeLocalToCloud(cloudIds) {
+        var local = getFavorites();
+        var merged = cloudIds.slice();
+        var toUpload = [];
+        local.forEach(function(id) {
+            if (merged.indexOf(id) < 0) { merged.push(id); toUpload.push(id); }
+        });
+        if (!toUpload.length) return Promise.resolve(merged);
+
+        // 逐条 upsert，忽略唯一约束冲突
+        var chain = Promise.resolve();
+        toUpload.forEach(function(id) {
+            chain = chain.then(function() {
+                return cloudFetch('/favorites?on_conflict=user_id,tool_id', {
+                    method: 'POST',
+                    prefer: 'resolution=ignore-duplicates,return=minimal',
+                    body: { tool_id: id }
+                });
+            });
+        });
+        return chain.then(function() {
+            // 合并结果写回本地，保证两边一致
+            try { localStorage.setItem(FAV_KEY, JSON.stringify(merged)); } catch(e) {}
+            return merged;
+        });
+    }
+
+    // 登录后调用：拉云端 + 合并本地
+    function syncFavorites() {
+        if (!loggedIn()) return Promise.resolve(null);
+        if (cloudState === 'unavailable') return Promise.resolve(null);
+        if (cloudPending) return cloudPending;
+
+        cloudPending = fetchCloudFavorites().then(function(cloudIds) {
+            if (!cloudIds) return null;
+            return mergeLocalToCloud(cloudIds);
+        }).then(function(result) {
+            cloudPending = null;
+            if (result) refreshFavUI();
+            return result;
+        }).catch(function() {
+            cloudPending = null;
+            return null;
+        });
+        return cloudPending;
+    }
+    window.syncFavorites = syncFavorites;
+
+    // 统一的收藏/取消入口
     function toggleFavorite(id) {
         var favs = getFavorites();
         var idx = favs.indexOf(id);
-        if (idx >= 0) { favs.splice(idx, 1); showToast('已取消收藏', 'info'); }
-        else { favs.push(id); showToast('已收藏 ❤', 'success'); }
+        var adding = idx < 0;
+        if (adding) favs.push(id); else favs.splice(idx, 1);
         try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch(e) {}
-        return idx < 0;
+
+        // 已登录则同步到云端；失败不影响本地状态
+        if (loggedIn() && cloudState !== 'unavailable') {
+            if (adding) {
+                cloudFetch('/favorites?on_conflict=user_id,tool_id', {
+                    method: 'POST',
+                    prefer: 'resolution=ignore-duplicates,return=minimal',
+                    body: { tool_id: id }
+                }).then(function(r) { if (r !== null) cloudState = 'ok'; });
+            } else {
+                cloudFetch('/favorites?tool_id=eq.' + id, { method: 'DELETE', prefer: 'return=minimal' });
+            }
+        }
+
+        showToast(adding ? '已收藏 ❤' : '已取消收藏', adding ? 'success' : 'info');
+        return adding;
+    }
+
+    // 云同步后刷新界面上的收藏状态（角标、筛选、卡片心形）
+    function refreshFavUI() {
+        var favs = getFavorites();
+        document.querySelectorAll('.card-fav-btn').forEach(function(btn) {
+            var id = parseInt(btn.dataset.favId);
+            var on = favs.indexOf(id) >= 0;
+            btn.classList.toggle('active', on);
+            var icon = btn.querySelector('i');
+            if (icon) icon.className = (on ? 'fas' : 'far') + ' fa-heart';
+            btn.setAttribute('aria-label', on ? '取消收藏' : '收藏');
+        });
+        document.querySelectorAll('[data-fav-id]').forEach(function(btn) {
+            var id = parseInt(btn.dataset.favId);
+            var on = favs.indexOf(id) >= 0;
+            btn.classList.toggle('active', on);
+            var icon = btn.querySelector('i');
+            if (icon) icon.className = (on ? 'fas' : 'far') + ' fa-heart';
+        });
+        if (typeof window.updateFavCount === 'function') window.updateFavCount(favs.length);
+        if (typeof window.renderTools === 'function' && document.querySelector('.filter-tag.active[data-fav]')) {
+            // 正在看「收藏」筛选时，列表要跟着变
+            window.renderTools();
+        }
     }
 
     // ---------- 浏览历史 ----------
@@ -47,6 +197,19 @@
         var ratings = getRatings();
         ratings[id] = rating;
         try { localStorage.setItem(RATING_KEY, JSON.stringify(ratings)); } catch(e) {}
+    }
+
+    // ---------- 页面加载时：已登录则自动同步 ----------
+    // 放在末尾统一触发一次，避免与其他模块初始化争抢。
+    function autoSyncOnLoad() {
+        if (!loggedIn()) return;
+        // 稍等片刻，等 supabase.js 拉完工具列表、卡片渲染出来再刷新 UI
+        setTimeout(function() { syncFavorites(); }, 1200);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoSyncOnLoad);
+    } else {
+        autoSyncOnLoad();
     }
 
     // ---------- 渲染收藏按钮 ----------

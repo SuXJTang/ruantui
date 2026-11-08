@@ -80,6 +80,8 @@
                 var s = toSession(d, email);
                 if (!s) return { ok: false, error: '登录响应异常' };
                 writeSession(s);
+                // 登录后把本地收藏合并上云（engagement.js 提供；缺失时静默跳过）
+                if (window.syncFavorites) { try { window.syncFavorites(); } catch(e) {} }
                 return { ok: true, session: s };
             });
         }).catch(function(e) {

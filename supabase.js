@@ -12,6 +12,9 @@
 var SUPABASE_URL = 'https://gxlykcseepskxccdxmxc.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4bHlrY3NlZXBza3hjY2R4bXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDA2MjksImV4cCI6MjA5NTE3NjYyOX0.oc8MKQ56zk585KgKPXXah_fsLzC5VZqHihOsCWH_zhE';
 
+// 暴露给 engagement.js 做收藏云同步（复用同一份配置，避免重复硬编码）
+window.RuantuiSupabase = { url: SUPABASE_URL, key: SUPABASE_KEY };
+
 // ---------- 读操作：直连 Supabase（公开可读） ----------
 
 function supabaseFetch(method, path, body) {

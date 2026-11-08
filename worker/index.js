@@ -374,7 +374,10 @@ export default {
             }
             // 取不到数据时退回普通首页，不要给用户 404
             var fb = new Request(new URL('/index.html', url), request);
-            return applyCacheHeaders(request, await env.ASSETS.fetch(fb));
+            var fbRes = await env.ASSETS.fetch(fb);
+            var fbHeaders = new Headers(fbRes.headers);
+            fbHeaders.set('X-SSR-Debug', 'FALLBACK-no-tool');
+            return applyCacheHeaders(request, new Response(fbRes.body, { status: 200, headers: fbHeaders }));
         }
 
         // 非 API 请求由静态资源处理
@@ -601,8 +604,17 @@ async function injectToolList(htmlRes, url, ctx) {
 
 // 把首页 HTML 里的 title / description / og / canonical / JSON-LD 换成具体工具的信息
 async function injectToolMeta(htmlRes, toolId, url, ctx) {
-    var tool = await fetchTool(toolId, ctx);
-    if (!tool) return null;
+    var tool;
+    try {
+        tool = await fetchTool(toolId, ctx);
+    } catch (e) {
+        console.error('fetchTool 抛错', toolId, e && e.message);
+        return null;
+    }
+    if (!tool) {
+        console.error('fetchTool 返回空, id=' + toolId);
+        return null;
+    }
 
     var html = await htmlRes.text();
     var origin = url.origin;

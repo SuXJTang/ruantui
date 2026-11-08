@@ -481,7 +481,7 @@ async function fetchListCached(endpoint, ctx) {
 // 而不是只看到一个空的「0 款工具」。
 // 渲染出来的卡片与前端 renderTools() 的结构一致，JS 接管时直接覆盖，不会闪烁错乱。
 async function injectToolList(htmlRes, url, ctx) {
-    var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download&order=pinned.desc,created_at.asc';
+    var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned&order=pinned.desc,created_at.asc';
     var tools = await fetchListCached(endpoint, ctx);
     if (!tools || !tools.length) return null;
 

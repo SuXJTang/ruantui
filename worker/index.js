@@ -357,7 +357,12 @@ export default {
             var homeRes = await env.ASSETS.fetch(homeReq);
             if (homeRes.status === 200) {
                 var rendered = await injectToolList(homeRes, url, ctx);
-                if (rendered) return applyCacheHeaders(request, rendered);
+                if (rendered) {
+                    // 防止边缘缓存把旧版 SSR 内容一直返回
+                    var rHeaders = new Headers(rendered.headers);
+                    rHeaders.set('Cache-Control', 'no-store, must-revalidate');
+                    return new Response(rendered.body, { status: 200, headers: rHeaders });
+                }
             }
             return applyCacheHeaders(request, homeRes);
         }
@@ -376,8 +381,8 @@ export default {
             var fb = new Request(new URL('/index.html', url), request);
             var fbRes = await env.ASSETS.fetch(fb);
             var fbHeaders = new Headers(fbRes.headers);
-            fbHeaders.set('X-SSR-Debug', 'FALLBACK-no-tool');
-            return applyCacheHeaders(request, new Response(fbRes.body, { status: 200, headers: fbHeaders }));
+            fbHeaders.set('Cache-Control', 'no-store, must-revalidate');
+            return new Response(fbRes.body, { status: 200, headers: fbHeaders });
         }
 
         // 非 API 请求由静态资源处理
@@ -523,9 +528,14 @@ function renderSSRCards(tools, origin) {
               }).join('') + '</div>'
             : '';
 
-        var btnHTML = t.download
-            ? '<a class="tool-visit-btn" href="' + detailUrl + '">⬇️ 下载</a>'
-            : '<a class="tool-visit-btn" href="' + detailUrl + '">查看详情</a>';
+        // 按钮指向的地址要和前端 renderTools() 一致：
+        //   · 有 download → 直接指向下载地址（用户点「下载」就该下载，不该绕到详情页）
+        //   · 有 url（官网）→ 指向官网
+        //   · 都没有 → 指向详情页
+        // 之前这里一律指向 detailUrl，导致用户点「⬇️ 下载」跳到 /t/{id} 详情页 —— 明显不对。
+        var primaryLink = t.download || t.url || (origin + '/t/' + t.id);
+        var btnLabel = t.download ? '⬇️ 下载' : (t.url ? '🌐 去官网' : '查看详情');
+        var btnHTML = '<a class="tool-visit-btn" href="' + escHTML(primaryLink) + '" target="_blank" rel="noopener">' + btnLabel + '</a>';
 
         return '<article class="tool-card ssr-card">' +
             iconHTML +
@@ -577,29 +587,24 @@ async function injectToolList(htmlRes, url, ctx) {
     // 这一步很关键：/t/{id} 之前是纯骨架页面（toolGrid 空、统计为 0），
     // 一旦 JS 加载失败，用户看到的就是「0 款工具 0 个分类」的空白页。
     // 注入卡片后，即使脚本挂了也能看到完整列表。
-    var __ssrDbg = 'start';
     try {
         var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned&order=pinned.desc,created_at.asc';
         var allTools = await fetchListCached(listEndpoint, ctx);
-        __ssrDbg = 'fetched:' + (allTools ? allTools.length : 'null');
         if (allTools && allTools.length) {
             var catSet = {};
             allTools.forEach(function (x) { var c = x.category || '未分类'; catSet[c] = (catSet[c] || 0) + 1; });
-            var cardsHtml = renderSSRCards(allTools, origin);
-            __ssrDbg += '|cards:' + cardsHtml.length;
-            var beforeLen = html.length;
-            html = injectCardsIntoHTML(html, cardsHtml, allTools, Object.keys(catSet).length);
-            __ssrDbg += '|htmlDelta:' + (html.length - beforeLen);
-            __ssrDbg += '|hasSSR:' + (html.indexOf('data-ssr') >= 0);
+            html = injectCardsIntoHTML(html, renderSSRCards(allTools, origin), allTools, Object.keys(catSet).length);
         }
     } catch (e) {
-        __ssrDbg += '|ERR:' + (e && e.message);
         console.error('injectToolMeta: SSR 卡片注入失败', e && e.message);
     }
 
-    var dbgHeaders = new Headers(htmlRes.headers);
-    dbgHeaders.set('X-SSR-Debug', __ssrDbg);
-    return new Response(html, { status: 200, headers: dbgHeaders });
+    // 详情页内容随工具数据变化，且依赖 SSR 注入逻辑，
+    // 必须禁掉 Cloudflare 边缘缓存 —— 否则改了注入逻辑后，
+    // 已有缓存的 /t/{id} 会一直返回旧版本（实测踩过）。
+    var metaHeaders = new Headers(htmlRes.headers);
+    metaHeaders.set('Cache-Control', 'no-store, must-revalidate');
+    return new Response(html, { status: 200, headers: metaHeaders });
 }
 
 // 把首页 HTML 里的 title / description / og / canonical / JSON-LD 换成具体工具的信息

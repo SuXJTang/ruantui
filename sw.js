@@ -7,12 +7,12 @@
 //   2. 静态资源走 stale-while-revalidate —— 先给缓存保证秒开，同时后台
 //      拉新写回缓存，下次访问即最新；之前 `return cached || fetchPromise`
 //      既拿不到后台更新的结果，又让后台那次写缓存毫无意义。
-//   3. 匹配统一带 ignoreSearch —— 页面请求 style.css?v=27 而预缓存的是
+//   3. 匹配统一带 ignoreSearch —— 页面请求 style.css?v=28 而预缓存的是
 //      ./style.css，query 不同会导致双份缓存；现在一律按路径匹配。
 //   4. 预缓存清单改为页面真实依赖的前端资源；去掉 sitemap.xml / robots.txt
 //      （搜索引擎抓取用，不是页面依赖，首次安装时多两次无谓请求）。
 var CACHE_PREFIX = 'ruantui';
-var CACHE_VERSION = 'v35';  // 与 index.html 的 ?v=27 同属一次发布，详见 README「缓存版本号」
+var CACHE_VERSION = 'v36';  // 与 index.html 的 ?v=28 同属一次发布，详见 README「缓存版本号」
 var CACHE = CACHE_PREFIX + '-' + CACHE_VERSION;
 // 离线回退页：优先 ./，再退到 ./index.html（GitHub Pages 目录会自动解析到 index.html）
 var OFFLINE_URLS = ['./', './index.html'];
@@ -62,8 +62,8 @@ function isCacheable(res) {
     return res && res.ok && res.type === 'basic';
 }
 
-// 缓存 key 统一剥掉 query（?v=27 只是防 HTTP 缓存的版本戳，不是独立资源），
-// 否则页面里的 style.css?v=27 会和预缓存的 ./style.css 各存一份。
+// 缓存 key 统一剥掉 query（?v=28 只是防 HTTP 缓存的版本戳，不是独立资源），
+// 否则页面里的 style.css?v=28 会和预缓存的 ./style.css 各存一份。
 // 不依赖 caches.match 的 ignoreSearch，因为 put 阶段同样需要归一化。
 function cacheKey(request) {
     var u = new URL(typeof request === 'string' ? request : request.url);

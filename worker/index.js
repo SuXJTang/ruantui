@@ -236,6 +236,21 @@ export default {
             return handleRequest(request, env);
         }
 
+        // 首页：把工具列表以纯静态 HTML 塞进 #toolGrid。
+        // 现状是 #toolGrid 为空、全靠 JS 渲染，而搜索引擎不执行 JS，
+        // 抓到的首页只有「0 款工具 0 个分类」，收录质量很差。
+        // 这里在服务端渲染一份卡片，JS 加载后再接管（用户看到的效果不变）。
+        var isHome = url.pathname === '/' || url.pathname === '' || url.pathname === '/index.html';
+        if (isHome) {
+            var homeReq = new Request(new URL('/index.html', url), request);
+            var homeRes = await env.ASSETS.fetch(homeReq);
+            if (homeRes.status === 200) {
+                var rendered = await injectToolList(homeRes, url, ctx);
+                if (rendered) return applyCacheHeaders(request, rendered);
+            }
+            return applyCacheHeaders(request, homeRes);
+        }
+
         // 工具详情页 /t/{id}：服务 index.html，但把 <title>/<meta> 替换成该工具的信息。
         // 这样每种工具都有独立可被搜索引擎抓取的标题与描述，而不必静态生成 18 个 HTML。
         var toolId = matchToolPath(url.pathname);
@@ -319,12 +334,17 @@ function absolutizeAssets(html, origin) {
 async function fetchTool(id, ctx) {
     var endpoint = SB_URL + '/rest/v1/tools?id=eq.' + id +
         '&select=id,name,category,comment,detail,rating,iconUrl,color,tags&limit=1';
+    var rows = await fetchListCached(endpoint, ctx);
+    return rows && rows[0] ? rows[0] : null;
+}
+
+// 带缓存地拉 Supabase 列表，返回数组或 null
+async function fetchListCached(endpoint, ctx) {
     var cacheKey = new Request(endpoint, { method: 'GET' });
     var cache = caches.default;
     var hit = await cache.match(cacheKey);
     if (hit) {
-        var cached = await hit.json();
-        return cached && cached[0] ? cached[0] : null;
+        try { return await hit.json(); } catch (e) { return null; }
     }
     var res = await fetch(endpoint, {
         headers: {
@@ -334,15 +354,58 @@ async function fetchTool(id, ctx) {
     });
     if (!res.ok) return null;
     var rows = await res.json();
-    if (!Array.isArray(rows) || !rows.length) return null;
-    // 缓存 10 分钟：工具信息改动不频繁，且管理员编辑后最多 10 分钟生效
+    if (!Array.isArray(rows)) return null;
+    // 缓存 10 分钟：工具信息改动不频繁，管理员编辑后最多 10 分钟生效
     if (ctx && ctx.waitUntil) {
         var toCache = new Response(JSON.stringify(rows), {
             headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
         });
         ctx.waitUntil(cache.put(cacheKey, toCache));
     }
-    return rows[0];
+    return rows;
+}
+
+// 服务端渲染首页工具列表。
+// 目标：让不执行 JS 的爬虫也能看到全部工具的名字/分类/简介/链接，
+// 而不是只看到一个空的「0 款工具」。
+// 渲染出来的卡片与前端 renderTools() 的结构一致，JS 接管时直接覆盖，不会闪烁错乱。
+async function injectToolList(htmlRes, url, ctx) {
+    var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download&order=pinned.desc,created_at.asc';
+    var tools = await fetchListCached(endpoint, ctx);
+    if (!tools || !tools.length) return null;
+
+    var html = await htmlRes.text();
+    var origin = url.origin;
+
+    // 生成近似静态的卡片。刻意保持简单：不含收藏按钮、点击特效等交互元素，
+    // 避免与 JS 渲染结果冲突（JS 会整体重建 #toolGrid）。
+    var cards = tools.map(function (t) {
+        var icon = t.iconUrl || '';
+        if (icon && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(icon)) icon = '/' + icon;
+        var cat = escHTML(t.category || '');
+        var name = escHTML(t.name || '');
+        var comment = escHTML((t.comment || '').slice(0, 60));
+        return '<article class="tool-card ssr-card">' +
+            '<div class="tool-body">' +
+            '<h3><a href="' + escHTML(origin + '/t/' + t.id) + '">' + name + '</a></h3>' +
+            '<div class="tool-meta"><span class="tool-cat">' + cat + '</span></div>' +
+            '<p>' + comment + '</p>' +
+            '</div>' +
+            '<a class="tool-visit-btn" href="' + escHTML(origin + '/t/' + t.id) + '">查看详情</a>' +
+            '</article>';
+    }).join('');
+
+    // 统计数字也补上，否则爬虫看到的是「0 款工具 0 个分类」
+    // 注意 index.html 里是 <strong id="totalCount">0</strong>，不是 span
+    var catCount = {};
+    tools.forEach(function (t) { var c = t.category || '未分类'; catCount[c] = (catCount[c] || 0) + 1; });
+
+    html = html.replace('<section class="grid" id="toolGrid"></section>',
+        '<section class="grid" id="toolGrid" data-ssr="1">' + cards + '</section>');
+    html = html.replace(/(<strong[^>]*id="totalCount"[^>]*>)0(<\/strong>)/, '$1' + tools.length + '$2');
+    html = html.replace(/(<strong[^>]*id="categoryCount"[^>]*>)0(<\/strong>)/, '$1' + Object.keys(catCount).length + '$2');
+
+    return new Response(html, { status: 200, headers: htmlRes.headers });
 }
 
 // 把首页 HTML 里的 title / description / og / canonical / JSON-LD 换成具体工具的信息

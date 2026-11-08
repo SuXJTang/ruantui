@@ -137,7 +137,21 @@ function showAccountMenu() {
     var menu = document.createElement('div');
     menu.id = '_accountMenu';
     menu.className = 'account-menu';
+    // 定位：菜单右边缘对齐账号按钮右边缘，垂直方向贴在按钮下方 8px。
+    // 不能用 CSS 里的 right:16px 写死 —— 按钮在 topbar-right 末尾，
+    // 它的实际位置随顶栏内边距变化，写死的值会和按钮错开。
     menu.style.top = (r.bottom + 8) + 'px';
+    // 先挂到 body 再量宽度（未插入 DOM 时 offsetWidth 为 0）
+    menu.style.visibility = 'hidden';
+    document.body.appendChild(menu);
+    var mw = menu.offsetWidth || 220;
+    var left = r.right - mw;                       // 右对齐
+    var minLeft = 8;                                // 至少离左边 8px
+    var maxLeft = window.innerWidth - mw - 8;       // 至少离右边 8px
+    if (left < minLeft) left = minLeft;
+    if (left > maxLeft) left = maxLeft;
+    menu.style.left = left + 'px';
+    menu.style.visibility = '';
 
     var html = '';
     if (!loggedIn) {
@@ -151,7 +165,13 @@ function showAccountMenu() {
         html += '<button class="am-item am-danger" data-act="logout"><i class="fas fa-right-from-bracket"></i> 退出登录</button>';
     }
     menu.innerHTML = html;
-    document.body.appendChild(menu);
+    // 内容填好后再重新定位一次：此时菜单宽度才是最终宽度（例如「管理员」
+    // 比「登录」多一个菜单项时宽度不同），右对齐才准确。
+    var mw2 = menu.offsetWidth || mw;
+    var left2 = r.right - mw2;
+    if (left2 < 8) left2 = 8;
+    if (left2 > window.innerWidth - mw2 - 8) left2 = window.innerWidth - mw2 - 8;
+    menu.style.left = left2 + 'px';
 
     menu.querySelectorAll('[data-act]').forEach(function(el) {
         el.onclick = function() {
@@ -370,6 +390,9 @@ if (accountBtn) accountBtn.onclick = function(e) {
     if (window.Auth && window.Auth.isLoggedIn()) showAccountMenu();
     else showAuthBox('login');
 };
+
+// 暴露给调试与自动化测试使用（不参与业务逻辑）
+window.showAccountMenu = showAccountMenu;
 
 // 弹出登录框
 function showLoginBox() {

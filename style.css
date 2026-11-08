@@ -1258,10 +1258,10 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
 /* 账号下拉菜单 */
 .account-menu {
-    position: fixed; right: max(16px, 3vw); z-index: 9990;
+    position: fixed; z-index: 9990;
+    /* 位置由 JS 根据账号按钮动态计算（见 features.js showAccountMenu），
+       保证菜单右边缘与按钮右边缘对齐。这里只给 z-index / 尺寸 / 外观。 */
     min-width: 220px; padding: 6px;
-    background: var(--card-solid); border: 1px solid var(--border);
-    border-radius: 14px; box-shadow: var(--shadow-lg);
     animation: amIn .18s ease;
 }
 @keyframes amIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }

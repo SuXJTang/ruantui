@@ -1,4 +1,4 @@
-﻿/* ================================================================
+/* ================================================================
    鏉烆垱甯?v3 閳?鐠ф稑宕ラ悳鑽ゆ嫅閹?璺?缁夋垶濡ф搴ゎ啎鐠侊紕閮寸紒?
    ================================================================ */
 
@@ -40,6 +40,8 @@
     --accent: #3498db; --accent-rgb: 52,152,219;
     --bg: #e2e7ef; --card: rgba(249,250,253,0.86);
     --card-solid: #f7f9fc; --glass-bg: rgba(247,249,252,0.72);
+    /* 弹出层背景：必须完全不透明，浮在内容上时要能看清 */
+    --menu-bg: #ffffff;
     /* 妞よ埖鐖懗灞炬珯閿涙俺绻庢稉宥夆偓蹇旀鐎圭偠澹婇敍灞炬禌娴?backdrop-filter閿涘牐顫?.topbar 濞夈劑鍣撮敍?*/
     --topbar-bg: rgba(226,231,239,0.96);
     --text: #1a1a2e; --text-light: #6B7280;
@@ -66,6 +68,8 @@
        璁╁崱鐗囦粠鑳屾櫙閲屾诞璧锋潵锛屽悓鏃跺噺灏戠櫧瀛楃殑鐪╁厜銆?*/
     --bg: #14161d; --card: rgba(38,41,54,0.92); --card-solid: #232733;
     --glass-bg: rgba(30,33,44,0.7); --text: #dfe3ec;
+    /* 弹出层背景：暗色下用比卡片更亮一档的实色，保证与页面有层次且不透明 */
+    --menu-bg: #2b3040;
     --topbar-bg: rgba(20,22,29,0.94);
     --text-light: #9aa0b0; --border: rgba(255,255,255,0.10);
     --border-glow: rgba(var(--primary-rgb),0.30);
@@ -147,7 +151,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: rgba(128,128,128,0.08);
 }
 
-.topbar-right { display: flex; align-items: center; gap: 6px; }
+.topbar-right { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
 
 .theme-palette {
     display: flex; gap: 4px; padding: 3px 6px;
@@ -1260,8 +1264,14 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .account-menu {
     position: fixed; z-index: 9990;
     /* 位置由 JS 根据账号按钮动态计算（见 features.js showAccountMenu），
-       保证菜单右边缘与按钮右边缘对齐。这里只给 z-index / 尺寸 / 外观。 */
+       保证菜单右边缘与按钮右边缘对齐。 */
     min-width: 220px; padding: 6px;
+    /* 背景必须不透明：菜单浮在工具卡片之上，
+       用半透明会让下面的卡片文字透出来，完全看不清菜单内容。 */
+    background: var(--menu-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
     animation: amIn .18s ease;
 }
 @keyframes amIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }

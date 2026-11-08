@@ -61,15 +61,15 @@
                 '<span class="dash-hist-name">' + escHTML(t.name) + '</span></div>';
         }).join('') : '<div class="dash-empty">暂无浏览记录</div>';
 
-        // 收藏列表
+        // 收藏列表 —— 用户最关心的内容，放在最前面且不截断
         var favTools = favs.map(function(id) {
             return (App.state.tools || []).find(function(t) { return t.id === id; });
         }).filter(Boolean);
-        var favHTML = favTools.length > 0 ? favTools.slice(0, 6).map(function(t) {
+        var favHTML = favTools.length > 0 ? favTools.map(function(t) {
             return '<div class="dash-fav-item" data-tool-id="' + t.id + '">' +
                 '<div class="dash-fav-icon" style="background:' + safeColor(t.color) + '">' + renderIconHTML(t) + '</div>' +
                 '<span class="dash-fav-name">' + escHTML(t.name) + '</span></div>';
-        }).join('') : '<div class="dash-empty">还没有收藏工具</div>';
+        }).join('') : '<div class="dash-empty">还没有收藏工具<br><span style="font-size:12px;opacity:.7">在工具卡片右上角点心形即可收藏</span></div>';
 
         // 访问统计
         var visitDays = Object.keys(visits).sort().reverse().slice(0, 7);
@@ -86,21 +86,21 @@
         var totalVisits = Object.values(visits).reduce(function(a, b) { return a + b; }, 0);
 
         return '<div class="dash-grid">' +
-            // 统计卡片
+            // 1. 我的收藏 —— 放最前，用户一眼看到
+            '<div class="dash-card dash-fav-card"><h4>❤ 我的收藏' + (favTools.length ? ' (' + favTools.length + ')' : '') + '</h4><div class="dash-fav-list">' + favHTML + '</div></div>' +
+            // 2. 统计卡片
             '<div class="dash-card dash-stats">' +
             '<div class="dash-stat-item"><i class="fas fa-eye"></i><div><strong>' + totalVisits + '</strong><span>总访问</span></div></div>' +
             '<div class="dash-stat-item"><i class="fas fa-mouse-pointer"></i><div><strong>' + totalClicks + '</strong><span>总点击</span></div></div>' +
             '<div class="dash-stat-item"><i class="fas fa-heart"></i><div><strong>' + favs.length + '</strong><span>收藏数</span></div></div>' +
             '<div class="dash-stat-item"><i class="fas fa-clock"></i><div><strong>' + history.length + '</strong><span>浏览记录</span></div></div>' +
             '</div>' +
-            // 热门排行
-            '<div class="dash-card"><h4>🔥 热门工具 Top 5</h4><div class="dash-hot-list">' + hotHTML + '</div></div>' +
-            // 访问趋势
-            '<div class="dash-card"><h4>📊 近 7 天访问</h4><div class="dash-visit-chart">' + visitHTML + '</div></div>' +
-            // 最近浏览
+            // 3. 最近浏览
             '<div class="dash-card"><h4>🕘 最近浏览</h4><div class="dash-hist-list">' + histHTML + '</div></div>' +
-            // 收藏列表
-            '<div class="dash-card"><h4>❤ 我的收藏</h4><div class="dash-fav-list">' + favHTML + '</div></div>' +
+            // 4. 热门排行
+            '<div class="dash-card"><h4>🔥 热门工具 Top 5</h4><div class="dash-hot-list">' + hotHTML + '</div></div>' +
+            // 5. 访问趋势（最不关键，放最后）
+            '<div class="dash-card"><h4>📊 近 7 天访问</h4><div class="dash-visit-chart">' + visitHTML + '</div></div>' +
             '</div>';
     }
 
@@ -112,7 +112,7 @@
             dashOverlay.className = 'overlay dash-overlay';
             dashOverlay.innerHTML = '<div class="modal modal-lg" role="dialog">' +
                 '<button class="modal-close dash-close"><i class="fas fa-times"></i></button>' +
-                '<div class="modal-body"><div class="dash-header"><h2>📊 数据中心</h2><p class="dash-subtitle">你的使用数据和偏好分析</p></div>' +
+                '<div class="modal-body"><div class="dash-header"><h2>❤ 我的</h2><p class="dash-subtitle">收藏、浏览记录与使用数据</p></div>' +
                 '<div id="dashContent"></div></div></div>';
             document.body.appendChild(dashOverlay);
             dashOverlay.querySelector('.dash-close').onclick = closeDashboard;
@@ -156,7 +156,13 @@
         '.dash-header{text-align:center;margin-bottom:20px;}',
         '.dash-header h2{font-size:20px;font-weight:800;}',
         '.dash-subtitle{font-size:12px;color:var(--text-light);margin-top:4px;}',
+        // 弹窗内容多时要能滚动，否则「我的收藏」会被挤出可视区
+        '.dash-overlay .modal-body{max-height:78vh;overflow-y:auto;overscroll-behavior:contain;}',
         '.dash-grid{display:grid;grid-template-columns:1fr;gap:16px;}',
+        // 收藏卡片置顶并做视觉强调
+        '.dash-fav-card{border-color:rgba(239,68,68,0.28);background:rgba(239,68,68,0.04);}',
+        '.dash-fav-card h4{color:#ef4444;}',
+        '.dash-fav-card .dash-fav-list{max-height:none;}',
         '.dash-card{background:rgba(128,128,128,0.03);border:1px solid var(--border);border-radius:12px;padding:16px;}',
         '.dash-card h4{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text);}',
         '.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}',

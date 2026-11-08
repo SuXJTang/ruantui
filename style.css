@@ -1372,37 +1372,13 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .auth-resend:disabled { opacity: .6; cursor: default; }
 
 /* ================================================================
-   卡片内容对齐
+   卡片对齐（保守方案）
    ----------------------------------------------------------------
-   问题：同一行的卡片高度一致（grid 拉伸），但内容长短不同，
-   导致「工具名 / 分类 / 描述 / 标签」在各卡片里的垂直位置对不齐，
-   看起来参差不齐。
-   处理：
-     1. 卡片本身 flex 纵向布局，让按钮始终贴底
-     2. .tool-body 占满剩余空间，内部按「标题→元信息→描述→标签」
-        的顺序排列，描述区固定 3 行高度，保证标签起始位置一致
-     3. 图标区固定高度，不受标题长短影响
+   目标：同一行卡片的「工具名 / 分类 / 描述 / 标签」起始位置对齐。
+   约束：不能动原有的 flex 结构。
+
+   做法：只给描述区一个最小高度，让 1 行和 3 行的文案占同样高度，
+   下方的标签自然就对齐了。描述本身已有 -webkit-line-clamp: 3，
+   最多 3 行，所以 min-height 取 3 行高度即可。
    ================================================================ */
-.tool-card {
-    justify-content: flex-start;
-    min-height: 100%;   /* grid 单元格内高度一致 */
-}
-.tool-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-}
-/* 描述固定 3 行高度：不足 3 行也占 3 行位置，让下方标签横向对齐 */
-.tool-body p {
-    min-height: calc(1.55em * 3);
-}
-/* 标签区推到底部，配合按钮形成稳定的下沿 */
-.tool-tags { margin-top: auto; }
-
-/* 行动按钮区（单/双按钮）也贴底 */
-.tool-card > .tool-visit-btn,
-.tool-card > .tool-actions { margin-top: 8px; }
-
-/* 图标固定尺寸，避免不同比例的图标把标题位置顶偏 */
-.tool-icon { height: 56px; flex-shrink: 0; }
+.tool-body p { min-height: calc(1.6em * 3); }

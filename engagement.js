@@ -33,6 +33,16 @@
         return !!(window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn());
     }
 
+    // 取当前登录用户的 id（auth.js 的 session 里存的是 user_id）
+    function currentUserId() {
+        try {
+            var raw = localStorage.getItem('ruantui_admin_session');
+            if (!raw) return null;
+            var s = JSON.parse(raw);
+            return (s && (s.user_id || s.userId)) || null;
+        } catch(e) { return null; }
+    }
+
     // 直接打 Supabase REST；失败返回 null，不抛异常
     // 复用 supabase.js 暴露的配置，避免重复硬编码 URL/KEY
     function cloudFetch(path, opts) {
@@ -49,13 +59,30 @@
                 'Content-Type': 'application/json'
             };
             if (o.prefer) headers['Prefer'] = o.prefer;
+
+            // 写 favorites 时补上 user_id。
+            // 数据库侧已给 user_id 设了 default auth.uid()，这里再显式传一次是双保险，
+            // 避免个别环境下默认值没生效导致 403。
+            var body = o.body;
+            if (body && typeof body === 'object' && !Array.isArray(body) && path.indexOf('/favorites') === 0) {
+                if (!body.user_id) {
+                    var uid = currentUserId();
+                    if (uid) body = Object.assign({}, body, { user_id: uid });
+                }
+            }
+
             return fetch(base + '/rest/v1' + path, {
                 method: o.method || 'GET',
                 headers: headers,
-                body: o.body ? JSON.stringify(o.body) : undefined
+                body: body ? JSON.stringify(body) : undefined
             }).then(function(res) {
                 if (res.status === 404 || res.status === 400) {
                     // 表不存在或字段不匹配 → 云端功能不可用，安静降级到本地
+                    cloudState = 'unavailable';
+                    return null;
+                }
+                if (res.status === 401 || res.status === 403) {
+                    // 权限问题（多为 RLS 未配置好）→ 降级到本地，不影响使用
                     cloudState = 'unavailable';
                     return null;
                 }

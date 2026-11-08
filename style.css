@@ -1,8 +1,8 @@
 ﻿/* ================================================================
-   杞帹 v3 鈥?璧涘崥鐜荤拑鎬?路 绉戞妧椋庤璁＄郴缁?
+   鏉烆垱甯?v3 閳?鐠ф稑宕ラ悳鑽ゆ嫅閹?璺?缁夋垶濡ф搴ゎ啎鐠侊紕閮寸紒?
    ================================================================ */
 
-/* ---------- 椤甸潰鍔犺浇鍔ㄧ敾 ---------- */
+/* ---------- 妞ょ敻娼伴崝鐘烘祰閸斻劎鏁?---------- */
 #pageLoader {
     position: fixed; inset: 0; z-index: 99999;
     background: var(--bg);
@@ -18,29 +18,29 @@
 }
 @keyframes loaderSpin { to { transform: rotate(360deg); } }
 
-/* ---------- 鎵撳瓧鏈哄厜鏍?---------- */
+/* ---------- 閹垫挸鐡ч張鍝勫帨閺?---------- */
 .typing-cursor::after {
     content: '|'; animation: blink 1s step-end infinite;
     color: var(--primary); font-weight: 300; margin-left: 2px;
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* ---------- 瑙嗗樊婊氬姩瀹瑰櫒 ---------- */
+/* ---------- 鐟欏棗妯婂姘З鐎圭懓娅?---------- */
 [data-parallax] { will-change: transform; transition: transform .1s linear; }
 
-/* ---------- 鍗＄墖鍏ュ満澧炲己 ---------- */
+/* ---------- 閸楋紕澧栭崗銉ユ簚婢х偛宸?---------- */
 @keyframes cardInEnhanced {
     from { opacity: 0; transform: translateY(30px) scale(0.94); filter: blur(4px); }
     to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
-/* ---------- 涓婚鍙橀噺 ---------- */
+/* ---------- 娑撳顣介崣姗€鍣?---------- */
 :root {
     --primary: #FF7D20; --primary-rgb: 255,125,32;
     --accent: #3498db; --accent-rgb: 52,152,219;
     --bg: #f8f9fb; --card: rgba(255,255,255,0.72);
     --card-solid: #fff; --glass-bg: rgba(255,255,255,0.55);
-    /* 椤舵爮鑳屾櫙锛氳繎涓嶉€忔槑瀹炶壊锛屾浛浠?backdrop-filter锛堣 .topbar 娉ㄩ噴锛?*/
+    /* 妞よ埖鐖懗灞炬珯閿涙俺绻庢稉宥夆偓蹇旀鐎圭偠澹婇敍灞炬禌娴?backdrop-filter閿涘牐顫?.topbar 濞夈劑鍣撮敍?*/
     --topbar-bg: rgba(248,249,251,0.92);
     --text: #1a1a2e; --text-light: #6B7280;
     --border: rgba(0,0,0,0.06); --border-glow: rgba(var(--primary-rgb),0.18);
@@ -59,18 +59,23 @@
 [data-theme="crimson"] { --primary: #E91E63; --primary-rgb: 233,30,99; --accent: #FF5722; --accent-rgb: 255,87,34; --bg: #faf0f3; }
 
 [data-mode="dark"] {
-    --bg: #0a0a14; --card: rgba(20,20,40,0.7); --card-solid: #141428;
-    --glass-bg: rgba(20,20,40,0.5); --text: #e8e8f0;
-    --topbar-bg: rgba(10,10,20,0.92);
-    --text-light: #8888a0; --border: rgba(255,255,255,0.06);
-    --border-glow: rgba(var(--primary-rgb),0.25);
-    --shadow: 0 2px 8px rgba(0,0,0,0.5);
-    --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
-    --shadow-lg: 0 16px 48px rgba(0,0,0,0.7);
-    --shadow-glow: 0 0 28px rgba(var(--primary-rgb),0.2);
+    /* 鏆楄壊瀵规瘮搴﹁皟鏁达細
+       鍘熼厤鑹?--bg #0a0a14 鍑犱箮绾粦銆?-card rgba(20,20,40,.7) 涔熷お鏆楋紝
+       鍗＄墖鍜岃儗鏅硦鍦ㄤ竴璧风湅涓嶅嚭灞傛锛涜€屾枃瀛?#e8e8f0 鍙堝亸浜紝鍒虹溂銆?
+       鏀逛负銆屾繁鐏拌摑搴?+ 鏄庢樉鏇翠寒涓€妗ｇ殑鍗＄墖 + 鐣ラ檷閫忔槑搴︾殑鏂囧瓧銆嶏紝
+       璁╁崱鐗囦粠鑳屾櫙閲屾诞璧锋潵锛屽悓鏃跺噺灏戠櫧瀛楃殑鐪╁厜銆?*/
+    --bg: #14161d; --card: rgba(38,41,54,0.92); --card-solid: #232733;
+    --glass-bg: rgba(30,33,44,0.7); --text: #dfe3ec;
+    --topbar-bg: rgba(20,22,29,0.94);
+    --text-light: #9aa0b0; --border: rgba(255,255,255,0.10);
+    --border-glow: rgba(var(--primary-rgb),0.30);
+    --shadow: 0 2px 8px rgba(0,0,0,0.35);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.42);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.55);
+    --shadow-glow: 0 0 28px rgba(var(--primary-rgb),0.22);
 }
 
-/* ---------- 鍏ㄥ眬閲嶇疆 ---------- */
+/* ---------- 閸忋劌鐪柌宥囩枂 ---------- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
@@ -80,7 +85,7 @@ body {
     display: flex; flex-direction: column; min-height: 100vh;
     position: relative;
 }
-/* 鍏ㄥ眬鍔ㄦ€佹笎鍙樿儗鏅?*/
+/* 閸忋劌鐪崝銊︹偓浣圭瑤閸欐鍎楅弲?*/
 body::before {
     content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
     background:
@@ -96,11 +101,11 @@ body::before {
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
-/* ---------- 椤舵爮 ---------- */
-/* 椤舵爮鏄?position: sticky锛屾粴鍔ㄦ椂涓€鐩磋创鍦ㄨ鍙ｉ《閮ㄣ€?
-   濡傛灉鍚屾椂寮€ backdrop-filter锛屾祻瑙堝櫒姣忔粴鍔ㄤ竴甯ч兘瑕侀噸鏂版ā绯婇《鏍忎笅闈㈢殑鏁村潡鍐呭锛?
-   杩欐槸绉诲姩绔粴鍔ㄥ崱椤挎渶涓昏鐨勬潵婧愪箣涓€銆?
-   鏀逛负杩戜笉閫忔槑鐨勫疄鑹茶儗鏅紙瑙嗚涓婂嚑涔庢棤宸埆锛屼絾婊氬姩鏃朵笉鍐嶈Е鍙戞ā绯婇噸绠楋級銆?*/
+/* ---------- 妞よ埖鐖?---------- */
+/* 妞よ埖鐖弰?position: sticky閿涘本绮撮崝銊︽娑撯偓閻╃鍒涢崷銊潒閸欙綁銆婇柈銊ｂ偓?
+   婵″倹鐏夐崥灞炬瀵偓 backdrop-filter閿涘本绁荤憴鍫濇珤濮ｅ繑绮撮崝銊ょ鐢囧厴鐟曚線鍣搁弬鐗埬佺化濠囥€婇弽蹇庣瑓闂堛垻娈戦弫鏉戞健閸愬懎顔愰敍?
+   鏉╂瑦妲哥粔璇插З缁旑垱绮撮崝銊ュ幢妞ゆ寧娓舵稉鏄忣洣閻ㄥ嫭娼靛┃鎰娑撯偓閵?
+   閺€閫涜礋鏉╂垳绗夐柅蹇旀閻ㄥ嫬鐤勯懝鑼跺剹閺咁垽绱欑憴鍡氼潕娑撳﹤鍤戞稊搴㈡￥瀹割喖鍩嗛敍灞肩稻濠婃艾濮╅弮鏈电瑝閸愬秷袝閸欐垶膩缁﹪鍣哥粻妤嬬礆閵?*/
 .topbar {
     position: sticky; top: 0; z-index: 100;
     background: var(--topbar-bg);
@@ -179,7 +184,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .theme-toggle i { transition: transform .4s ease; }
 .theme-toggle:hover i { transform: rotate(30deg); }
 
-/* ---------- 鍒嗕韩闈㈡澘 鈥?鐜荤拑鎬?---------- */
+/* ---------- 閸掑棔闊╅棃銏℃緲 閳?閻滆崵鎷戦幀?---------- */
 .share-panel {
     position: absolute; top: 56px; right: 12px; z-index: 200;
     background: var(--card); border: 1px solid var(--border);
@@ -218,11 +223,15 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .share-url-row input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: rgba(128,128,128,0.03); color: var(--text); font-size: 12px; }
 .share-copy-btn { width: 32px; height: 32px; border-radius: var(--radius-xs); background: linear-gradient(135deg, rgba(var(--primary-rgb),0.12), rgba(var(--accent-rgb),0.12)); color: var(--primary); display: flex; align-items: center; justify-content: center; }
 
-/* ---------- 瀹瑰櫒 ---------- */
-.container { max-width: 1200px; margin: 0 auto; padding: 0 max(16px,3vw); flex: 1; width: 100%; }
+/* ---------- 鐎圭懓娅?---------- */
+/* 瀹瑰櫒瀹藉害锛?
+   鍘熸潵鏄浐瀹?max-width:1200px锛屽湪 1920 瀹界殑灞忎笂鍙敤浜?63% 瀹藉害锛?
+   涓や晶澶х墖绌虹櫧銆佸崱鐗囨尋鎴?4 鍒椼€傛敼涓鸿嚜閫傚簲锛?
+   灏忓睆閾烘弧锛屽ぇ灞忛€愭鏀惧鍒?1560px锛岃姣忚鑳芥斁 5-6 寮犲崱鐗囥€?*/
+.container { max-width: 1560px; margin: 0 auto; padding: 0 max(16px,3vw); flex: 1; width: 100%; }
 
-/* ---------- 涓汉绠€浠?鈥?娓愬彉鍏夋晥 ---------- */
-.profile { padding: 40px 0 28px; position: relative; }
+/* ---------- 娑擃亙姹夌粻鈧禒?閳?濞撴劕褰夐崗澶嬫櫏 ---------- */
+.profile { padding: 28px 0 18px; position: relative; }
 .profile-inner { display: flex; align-items: center; gap: 20px; }
 .profile-avatar {
     width: 68px; height: 68px; border-radius: 50%; position: relative;
@@ -256,7 +265,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .mgmt-btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 12px rgba(var(--primary-rgb),0.1); }
 
-/* ---------- 骞垮憡浣?v2 鈥?鏅鸿兘鎻掔墖寮?---------- */
+/* ---------- 楠炲灝鎲℃担?v2 閳?閺呴缚鍏橀幓鎺斿瀵?---------- */
 .ad-container {
     width: 100%; min-height: 90px; margin: 0 0 16px;
     display: flex; align-items: center; justify-content: center;
@@ -268,7 +277,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     overflow: hidden;
 }
 .ad-container::before {
-    content: '璧炲姪'; opacity: .25; letter-spacing: 3px;
+    content: '鐠х偛濮?; opacity: .25; letter-spacing: 3px;
     position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
     font-size: 13px; font-weight: 500;
 }
@@ -277,7 +286,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .ad-container .adsbygoogle { width: 100%; min-height: 90px; }
 .ad-top { margin-bottom: 20px; }
 .ad-bottom { margin-top: 8px; }
-/* 鍐呭祵骞垮憡浣?鈥?鍗＄墖鏍峰紡 */
+/* 閸愬懎绁甸獮鍨啞娴?閳?閸楋紕澧栭弽宄扮础 */
 .ad-inline {
     grid-column: span 2; margin: 0;
     border: 1px dashed rgba(var(--primary-rgb),0.3);
@@ -285,7 +294,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     min-height: 200px;
 }
 
-/* ---------- 鍒嗙被 + 鎺掑簭 鈥?鍙戝厜鏍囩 ---------- */
+/* ---------- 閸掑棛琚?+ 閹烘帒绨?閳?閸欐垵鍘滈弽鍥╊劮 ---------- */
 .filter-row {
     display: flex; gap: 12px; align-items: flex-start;
     padding: 0 0 16px; flex-wrap: wrap;
@@ -327,31 +336,33 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-size: 12px; color: var(--text-light); padding: 0 0 8px;
     animation: cardIn .3s ease;
 }
-.result-count::before { content: '馃攳 '; }
+.result-count::before { content: '棣冩敵 '; }
 
-/* ---------- 鍗＄墖缃戞牸 v2 鈥?鐜荤拑鎬佹祦鍏?---------- */
+/* ---------- 閸楋紕澧栫純鎴炵壐 v2 閳?閻滆崵鎷戦幀浣圭ウ閸?---------- */
 .grid {
     padding: 0 0 40px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: clamp(14px, 2vw, 22px);
+    /* 姣忓垪鏈€灏?220px锛堝師 240px锛夛細瀹藉睆涓€琛岃兘鏀句笅 6 寮犺€屼笉鏄?4 寮狅紝
+       椤甸潰楂樺害浠?5 琛屽帇鍒?3 琛岋紝瑙嗚鏇寸揣鍑戙€佺┖鐧芥洿灏戙€?*/
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: clamp(14px, 1.6vw, 20px);
 }
 .grid > * { min-width: 0; }
 
 .tool-card {
     background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 24px 18px 18px;
-    display: flex; flex-direction: column; gap: 10px;
+    border-radius: var(--radius); padding: 18px 16px 14px;
+    display: flex; flex-direction: column; gap: 8px;
     transition: transform .25s ease-out, box-shadow .4s, border-color .4s;
     animation: cardIn .5s ease backwards;
     position: relative; cursor: pointer;
-    /* 娉ㄦ剰锛氳繖閲?*涓嶈**鍔?backdrop-filter銆?
-       鍗＄墖鏄粴鍔ㄥ尯鍩熼噷鐨勪富瑕佸厓绱狅紝14 寮犲悓鏃跺仛鑳屾櫙妯＄硦浼氳绉诲姩绔粴鍔ㄦ槑鏄炬帀甯с€?
-       鍗＄墖鑳屾櫙 --card 鏈韩宸叉槸涓嶉€忔槑搴﹁冻澶熼珮鐨勫崐閫忔槑鑹诧紝鍘绘帀妯＄硦瑙嗚宸紓寰堝皬銆?*/
+    /* 濞夈劍鍓伴敍姘崇箹闁?*娑撳秷顩?*閸?backdrop-filter閵?
+       閸楋紕澧栭弰顖涚泊閸斻劌灏崺鐔煎櫡閻ㄥ嫪瀵岀憰浣稿帗缁辩媴绱?4 瀵姴鎮撻弮璺轰粵閼冲本娅欏Ο锛勭ˇ娴兼俺顔€缁夎濮╃粩顖涚泊閸斻劍妲戦弰鐐竴鐢佲偓?
+       閸楋紕澧栭懗灞炬珯 --card 閺堫剝闊╁鍙夋Ц娑撳秹鈧繑妲戞惔锕佸喕婢剁喖鐝惃鍕磹闁繑妲戦懝璇х礉閸樼粯甯€濡紕纭︾憴鍡氼潕瀹割喖绱撳鍫濈毈閵?*/
     transform-style: preserve-3d; perspective: 800px;
     overflow: hidden;
 }
-/* 鐜荤拑鎬佸厜娉?*/
+/* 閻滆崵鎷戦幀浣稿帨濞?*/
 .tool-card::before {
     content: ''; position: absolute; inset: 0; border-radius: inherit;
     background: linear-gradient(135deg,
@@ -364,7 +375,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: linear-gradient(135deg,
         rgba(255,255,255,0.06) 0%, transparent 40%);
 }
-/* 娴佸厜杈规 */
+/* 濞翠礁鍘滄潏瑙勵攱 */
 .tool-card::after {
     content: ''; position: absolute; inset: -1px; border-radius: inherit;
     background: linear-gradient(135deg, transparent 30%, rgba(var(--primary-rgb),0.25), transparent 70%);
@@ -435,11 +446,11 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-views { font-size: 11px; color: var(--text-light); margin-left: auto; white-space: nowrap; }
 
 .tool-body p {
-    font-size: 13px; color: var(--text-light); line-height: 1.6;
-    margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2;
+    font-size: 12.5px; color: var(--text-light); line-height: 1.6;
+    margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 3;
     -webkit-box-orient: vertical; overflow: hidden;
 }
-.tool-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.tool-tags { display: flex; gap: 4px; flex-wrap: wrap; }
 .tool-tag {
     font-size: 10px; padding: 3px 10px; border-radius: 999px;
     background: rgba(var(--primary-rgb),0.07); color: var(--primary);
@@ -451,12 +462,12 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     line-height: 1.4; white-space: nowrap; overflow: hidden;
     text-overflow: ellipsis; opacity: .7;
 }
-.tool-extra::before { content: '馃摉 '; }
+.tool-extra::before { content: '棣冩憠 '; }
 
-/* 鍘讳娇鐢ㄦ寜閽?*/
+/* 閸樿濞囬悽銊﹀瘻闁?*/
 .tool-visit-btn {
     display: flex; align-items: center; justify-content: center; gap: 5px;
-    margin-top: auto; padding: 7px 0;
+    margin-top: 6px; padding: 7px 0;
     font-size: 12px; font-weight: 600;
     border-radius: 999px;
     background: linear-gradient(135deg, var(--primary), var(--accent));
@@ -467,10 +478,10 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-card:hover .tool-visit-btn { opacity: 1; transform: translateY(0); }
 .tool-visit-btn:hover { filter: brightness(1.1); box-shadow: var(--shadow-glow); }
 
-/* ---------- 鍙屾寜閽竷灞€ ---------- */
-/* 宸ュ叿鍚屾椂鏈夈€屽畼缃戙€嶅拰銆屼笅杞姐€嶆椂骞舵帓鏄剧ず涓や釜鎸夐挳銆?
-   娉ㄦ剰锛?tool-visit-btn 鑷甫 margin-top:auto 鍜屾笎鍙樿儗鏅紝
-   鐩存帴骞跺垪浼氫笂涓嬪爢鍙狅紝鎵€浠ョ敤瀹瑰櫒鎺ョ margin锛屽苟缁欐瑕佹寜閽崟鐙弿杈规牱寮忋€?*/
+/* ---------- 閸欏本瀵滈柦顔肩鐏炩偓 ---------- */
+/* 瀹搞儱鍙块崥灞炬閺堝鈧苯鐣肩純鎴欌偓宥呮嫲閵嗗奔绗呮潪濮愨偓宥嗘楠炶埖甯撻弰鍓с仛娑撱倓閲滈幐澶愭尦閵?
+   濞夈劍鍓伴敍?tool-visit-btn 閼奉亜鐢?margin-top:auto 閸滃本绗庨崣妯垮剹閺咁垽绱?
+   閻╁瓨甯撮獮璺哄灙娴兼矮绗傛稉瀣垻閸欑媴绱濋幍鈧禒銉ф暏鐎圭懓娅掗幒銉ь吀 margin閿涘苯鑻熺紒娆愵偧鐟曚焦瀵滈柦顔煎礋閻欘剚寮挎潏瑙勭壉瀵繈鈧?*/
 .tool-actions {
     display: flex;
     gap: 8px;
@@ -485,7 +496,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* 娆¤鎸夐挳锛氭弿杈规牱寮忥紝瑙嗚涓婂急浜庝富鎸夐挳 */
+/* 濞喡ゎ洣閹稿鎸抽敍姘伎鏉堣鐗卞蹇ョ礉鐟欏棜顫庢稉濠傛€ユ禍搴濆瘜閹稿鎸?*/
 .tool-visit-btn.tool-visit-alt {
     background: transparent;
     border: 1px solid var(--border);
@@ -506,8 +517,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .grid-empty i { font-size: 56px; opacity: .2; margin-bottom: 12px; display: block; }
 .grid-empty p { font-size: 15px; }
 
-/* ---------- 鏁版嵁鍔犺浇澶辫触 / 绂荤嚎鎻愮ず ---------- */
-/* 璁捐鍘熷垯锛氭晠闅滃繀椤诲彲瑙侊紝涓嶈兘鎷垮亣鏁版嵁濉钩 */
+/* ---------- 閺佺増宓侀崝鐘烘祰婢惰精瑙?/ 缁傝崵鍤庨幓鎰仛 ---------- */
+/* 鐠佹崘顓搁崢鐔峰灟閿涙碍鏅犻梾婊冪箑妞よ褰茬憴渚婄礉娑撳秷鍏橀幏鍨海閺佺増宓佹繅顐㈤挬 */
 .data-error {
     grid-column: 1 / -1;
     text-align: center;
@@ -549,10 +560,10 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .data-retry-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(var(--primary-rgb), .35); }
 
-/* ---------- 楠ㄦ灦灞?---------- */
+/* ---------- 妤犮劍鐏︾仦?---------- */
 .skeleton-card {
     background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 24px 18px 18px;
+    border-radius: var(--radius); padding: 18px 16px 14px;
     display: flex; flex-direction: column; align-items: center; gap: 14px;
     animation: skPulse 1.5s ease-in-out infinite;
 }
@@ -566,7 +577,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
 @keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-/* ---------- 椤佃剼 v2 鈥?娓愬彉 ---------- */
+/* ---------- 妞や絻鍓?v2 閳?濞撴劕褰?---------- */
 .footer {
     text-align: center; padding: 32px 24px;
     border-top: 1px solid var(--border);
@@ -597,7 +608,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .install-btn:hover { box-shadow: var(--shadow-glow); }
 
-/* ---------- 寮圭獥 v2 鈥?鐜荤拑鎬?---------- */
+/* ---------- 瀵湱鐛?v2 閳?閻滆崵鎷戦幀?---------- */
 .overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
     backdrop-filter: blur(6px); z-index: 1000;
@@ -632,7 +643,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .modal-close:hover { background: rgba(128,128,128,0.18); transform: rotate(90deg); }
 .modal-body { padding: 28px; }
 
-/* ---------- 璇︽儏寮圭獥 ---------- */
+/* ---------- 鐠囷附鍎忓鍦崶 ---------- */
 .modal-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; padding-right: 28px; }
 .modal-icon {
     width: 56px; height: 56px; border-radius: 14px;
@@ -653,7 +664,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .modal-section p { font-size: 14px; line-height: 1.75; }
 .modal-text { font-size: 14px; line-height: 1.75; }
-/* 折叠：3 行 + 渐变遮罩，避免"断崖式"截断 */
+/* 鎶樺彔锛? 琛?+ 娓愬彉閬僵锛岄伩鍏?鏂礀寮?鎴柇 */
 .modal-text.collapsed {
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -707,7 +718,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .share-act-btn i { width: 16px; color: var(--primary); }
 .share-act-btn:hover { background: rgba(var(--primary-rgb),0.08); }
 
-/* ---------- 绠＄悊闈㈡澘 ---------- */
+/* ---------- 缁狅紕鎮婇棃銏℃緲 ---------- */
 .mgmt-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
 .mgmt-header h2 { font-size: 18px; font-weight: 700; white-space: nowrap; }
 .mgmt-header-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
@@ -750,7 +761,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .mgmt-tab-content { display: none; }
 .mgmt-tab-content.active { display: block; }
 
-/* ---------- QQ / 鍙嶉 / 璧炶祻 ---------- */
+/* ---------- QQ / 閸欏秹顩?/ 鐠х偠绁?---------- */
 .qq-box { display: inline-flex; align-items: center; gap: 12px; padding: 14px 28px; border: 2px dashed var(--border); border-radius: var(--radius-xs); }
 .qq-box span { font-size: 12px; color: var(--text-light); }
 .qq-box strong { font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: 2px; }
@@ -768,7 +779,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .donate-qr { width: 150px; height: 150px; display: block; border-radius: var(--radius-xs); box-shadow: var(--shadow); object-fit: contain; }
 .donate-qr-item img { background: #fff; padding: 8px; }
 
-/* ---------- 缂栬緫琛ㄥ崟 ---------- */
+/* ---------- 缂傛牞绶悰銊ュ礋 ---------- */
 .form-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 .form-section { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
 .form-section:first-of-type { margin-top: 0; }
@@ -806,7 +817,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .form-submit { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 2px 8px rgba(var(--primary-rgb),0.2); }
 .form-submit:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
-/* ---------- 鍥炲埌椤堕儴 ---------- */
+/* ---------- 閸ョ偛鍩屾い鍫曞劥 ---------- */
 #backTop {
     position: fixed; bottom: 24px; right: 24px; z-index: 9990;
     width: 44px; height: 44px; border-radius: 50%;
@@ -831,7 +842,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb),0); }
 }
 
-/* ---------- 鍏憡娴獥 ---------- */
+/* ---------- 閸忣剙鎲″ù顔剧崶 ---------- */
 .ann-float {
     position: fixed; bottom: 80px; right: 24px; z-index: 9989;
     width: 44px; height: 44px; border-radius: 50%;
@@ -890,7 +901,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .ann-empty { text-align: center; padding: 40px 20px; color: var(--text-light); font-size: 13px; }
 .ann-loading { text-align: center; padding: 30px; color: var(--text-light); font-size: 13px; }
 
-/* ---------- 榧犳爣鍏夋枒 ---------- */
+/* ---------- 姒х姵鐖ｉ崗澶嬫瀿 ---------- */
 #cursorGlow {
     position: fixed; left: 0; top: 0; width: 200px; height: 200px;
     margin: -100px 0 0 -100px; border-radius: 50%;
@@ -901,7 +912,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 #cursorGlow.on { opacity: 1; }
 
-/* ---------- 婊氬姩杩涘害鏉?---------- */
+/* ---------- 濠婃艾濮╂潻娑樺閺?---------- */
 #scrollProgress {
     position: fixed; top: 0; left: 0; height: 3px; width: 100%;
     background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
@@ -913,7 +924,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 @keyframes progressShimmer { from { background-position: 0% 0; } to { background-position: 200% 0; } }
 
-/* ---------- 鐐瑰嚮杩告簠 ---------- */
+/* ---------- 閻愮懓鍤潻鍛婄盃 ---------- */
 .burst-dot {
     position: fixed; border-radius: 50%;
     transform: translate(-50%, -50%);
@@ -938,7 +949,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 /* ---------- Toast ---------- */
 @keyframes toastIn { 0% { opacity: 0; transform: translateX(40px); } 100% { opacity: 1; transform: translateX(0); } }
 
-/* ---------- 鍏ㄥ眬婊氬姩鏉?---------- */
+/* ---------- 閸忋劌鐪姘З閺?---------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -947,7 +958,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(var(--primary-rgb),0.45); }
 
-/* ---------- 灏婇噸鍑忓急鍔ㄦ€佹晥鏋?---------- */
+/* ---------- 鐏忓﹪鍣搁崙蹇撴€ラ崝銊︹偓浣规櫏閺?---------- */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: .01ms !important;
@@ -957,7 +968,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 
 /* ================================================================
-   鍝嶅簲寮?
+   閸濆秴绨插?
    ================================================================ */
 @media (max-width: 768px) {
     .topbar-inner { gap: 8px; }
@@ -1063,16 +1074,16 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 
 /* ================================================================
-   绉诲姩绔粴鍔ㄦ€ц兘浼樺寲
+   缁夎濮╃粩顖涚泊閸斻劍鈧嗗厴娴兼ê瀵?
    ----------------------------------------------------------------
-   鎵嬫満涓婃粴鍔ㄥ崱椤跨殑涓昏鏉ユ簮锛屾寜褰卞搷浠庡ぇ鍒板皬锛?     1. backdrop-filter 鈥斺€?姣忓抚閲嶆柊妯＄硦鑳屾櫙鍍忕礌锛屼唬浠锋瀬楂?     2. 鍏ㄥ睆鍏冪礌涓婄殑 background-position 鍔ㄧ敾 鈥斺€?姣忓抚閲嶇粯鏁翠釜瑙嗗彛
-     3. filter: blur 鈥斺€?寮哄埗鍗曠嫭鍚堟垚灞傦紝涓旀棤娉曡 GPU 寤変环澶勭悊
-     4. 澶ц寖鍥?box-shadow 鈥斺€?闃村奖鎵╂暎鍗婂緞澶ф椂缁樺埗鎴愭湰楂?
-   妗岄潰绔繖浜涙晥鏋滃奖鍝嶄笉澶э紙榧犳爣浜や簰涓轰富銆佹粴鍔ㄩ噺灏忥級锛?   浣嗘墜鏈轰笂杈规粦杈归噸缁樹細鏄庢樉鎺夊抚銆備互涓嬪湪瑙﹀睆璁惧涓婂叧闂垨闄嶇骇銆?   ================================================================ */
+   閹靛婧€娑撳﹥绮撮崝銊ュ幢妞よ法娈戞稉鏄忣洣閺夈儲绨敍灞惧瘻瑜板崬鎼锋禒搴°亣閸掓澘鐨敍?     1. backdrop-filter 閳ユ柡鈧?濮ｅ繐鎶氶柌宥嗘煀濡紕纭﹂懗灞炬珯閸嶅繒绀岄敍灞煎敩娴犻攱鐎?     2. 閸忋劌鐫嗛崗鍐娑撳﹦娈?background-position 閸斻劎鏁?閳ユ柡鈧?濮ｅ繐鎶氶柌宥囩帛閺佺繝閲滅憴鍡楀經
+     3. filter: blur 閳ユ柡鈧?瀵搫鍩楅崡鏇犲閸氬牊鍨氱仦鍌︾礉娑撴梹妫ゅ▔鏇☆潶 GPU 瀵ゅ鐜径鍕倞
+     4. 婢堆嗗瘱閸?box-shadow 閳ユ柡鈧?闂冩潙濂栭幍鈺傛殠閸楀﹤绶炴径褎妞傜紒妯哄煑閹存劖婀版?
+   濡楀矂娼扮粩顖濈箹娴滄稒鏅ラ弸婊冨閸濆秳绗夋径褝绱欐Η鐘崇垼娴溿倓绨版稉杞板瘜閵嗕焦绮撮崝銊╁櫤鐏忓骏绱氶敍?   娴ｅ棙澧滈張杞扮瑐鏉堣绮︽潏褰掑櫢缂佹ü绱伴弰搴㈡▔閹哄鎶氶妴鍌欎簰娑撳婀憴锕€鐫嗙拋鎯ь槵娑撳﹤鍙ч梻顓熷灗闂勫秶楠囬妴?   ================================================================ */
 @media (max-width: 768px), (pointer: coarse) {
-    /* 1. 鍏抽棴鎵€鏈?backdrop-filter锛屾敼鐢ㄥ疄鑹?鍗婇€忔槑鑳屾櫙 */
-    /* 注意 .overlay 是弹窗背后的全屏遮罩、.ann-panel 与 .dash-fab 是浮层，
-       它们同样带 backdrop-filter，一并关掉以彻底消除移动端的模糊重算。 */
+    /* 1. 閸忔娊妫撮幍鈧張?backdrop-filter閿涘本鏁奸悽銊ョ杽閼?閸楀﹪鈧繑妲戦懗灞炬珯 */
+    /* 娉ㄦ剰 .overlay 鏄脊绐楄儗鍚庣殑鍏ㄥ睆閬僵銆?ann-panel 涓?.dash-fab 鏄诞灞傦紝
+       瀹冧滑鍚屾牱甯?backdrop-filter锛屼竴骞跺叧鎺変互褰诲簳娑堥櫎绉诲姩绔殑妯＄硦閲嶇畻銆?*/
     .topbar,
     .share-panel,
     .theme-palette,
@@ -1088,48 +1099,48 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     }
     .share-panel { background: var(--card-solid); }
 
-    /* 2. 鍋滄鍏ㄥ睆鑳屾櫙鐨勪綅缃姩鐢伙紝鏀逛负闈欐€佹笎鍙橈紙瑙嗚鍑犱箮鏃犲樊鍒級 */
+    /* 2. 閸嬫粍顒涢崗銊ョ潌閼冲本娅欓惃鍕秴缂冾喖濮╅悽浼欑礉閺€閫涜礋闂堟瑦鈧焦绗庨崣姗堢礄鐟欏棜顫庨崙鐘辩閺冪姴妯婇崚顐礆 */
     body::before {
         animation: none !important;
     }
 
-    /* 3. 绉婚櫎澶村儚鐨勬ā绯婂厜鏅曪紝鏀圭敤涓嶆ā绯婄殑鏌斿拰闃村奖 */
+    /* 3. 缁夊娅庢径鏉戝剼閻ㄥ嫭膩缁﹤鍘滈弲鏇礉閺€鍦暏娑撳秵膩缁﹦娈戦弻鏂挎嫲闂冩潙濂?*/
     .profile-avatar::after {
         filter: none !important;
         opacity: .18 !important;
     }
 
-    /* 4. 鍗＄墖鍏ュ満鍔ㄧ敾鍘绘帀 filter:blur锛屽彧淇濈暀浣嶇Щ+閫忔槑搴︼紙鍚堟垚灞傚弸濂斤級 */
+    /* 4. 閸楋紕澧栭崗銉ユ簚閸斻劎鏁鹃崢缁樺竴 filter:blur閿涘苯褰ф穱婵堟殌娴ｅ秶些+闁繑妲戞惔锔肩礄閸氬牊鍨氱仦鍌氬几婵傛枻绱?*/
     .tool-card { animation: cardIn .32s ease backwards; }
 
-    /* 5. 鍗＄墖 3D 閫忚鍦ㄨЕ灞忎笂鏃犳剰涔夛紙娌℃湁 hover锛夛紝鍘绘帀浠ョ渷鍚堟垚寮€閿€ */
+    /* 5. 閸楋紕澧?3D 闁繗顫嬮崷銊ㄐ曠仦蹇庣瑐閺冪姵鍓版稊澶涚礄濞屸剝婀?hover閿涘绱濋崢缁樺竴娴犮儳娓烽崥鍫熷灇瀵偓闁库偓 */
     .tool-card {
         transform-style: flat;
         perspective: none;
     }
 
-    /* 6. 闄嶄綆鍗＄墖闃村奖鎵╂暎鍗婂緞 */
+    /* 6. 闂勫秳缍嗛崡锛勫闂冩潙濂栭幍鈺傛殠閸楀﹤绶?*/
     .tool-card { box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 }
 
 /* ================================================================
-   移动端性能优化（第二轮：常驻动画与合成层）
+   绉诲姩绔€ц兘浼樺寲锛堢浜岃疆锛氬父椹诲姩鐢讳笌鍚堟垚灞傦級
    ----------------------------------------------------------------
-   上一轮关掉了 backdrop-filter。进一步排查发现还有一类更隐蔽的开销：
-   多个「无限循环」的动画即使视觉上很淡，也会让浏览器每帧都重新合成。
+   涓婁竴杞叧鎺変簡 backdrop-filter銆傝繘涓€姝ユ帓鏌ュ彂鐜拌繕鏈変竴绫绘洿闅愯斀鐨勫紑閿€锛?
+   澶氫釜銆屾棤闄愬惊鐜€嶇殑鍔ㄧ敾鍗充娇瑙嗚涓婂緢娣★紝涔熶細璁╂祻瑙堝櫒姣忓抚閮介噸鏂板悎鎴愩€?
 
-   卡片流光的 ::after 尤其典型：14 张卡片各有一个 paused 的
-   background-position 动画 + 200% 尺寸渐变，即使不播放也占合成层，
-   而触屏设备根本没有 hover，这个伪元素永远不会显示。
+   鍗＄墖娴佸厜鐨?::after 灏ゅ叾鍏稿瀷锛?4 寮犲崱鐗囧悇鏈変竴涓?paused 鐨?
+   background-position 鍔ㄧ敾 + 200% 灏哄娓愬彉锛屽嵆浣夸笉鎾斁涔熷崰鍚堟垚灞傦紝
+   鑰岃Е灞忚澶囨牴鏈病鏈?hover锛岃繖涓吉鍏冪礌姘歌繙涓嶄細鏄剧ず銆?
    ================================================================ */
 @media (max-width: 768px), (pointer: coarse) {
-    /* 卡片的流光边框伪元素：触屏无 hover，直接不渲染 */
+    /* 鍗＄墖鐨勬祦鍏夎竟妗嗕吉鍏冪礌锛氳Е灞忔棤 hover锛岀洿鎺ヤ笉娓叉煋 */
     .tool-card::after { display: none !important; }
 
-    /* 停掉所有常驻无限动画（每秒都在请求重绘/合成）：
-       brandFlow 品牌渐变流动 · pinnedPulse 推荐徽章脉冲
-       badgePulse 公告角标 · backTopPulse 回顶光晕
-       progressShimmer 顶部进度流光 */
+    /* 鍋滄帀鎵€鏈夊父椹绘棤闄愬姩鐢伙紙姣忕閮藉湪璇锋眰閲嶇粯/鍚堟垚锛夛細
+       brandFlow 鍝佺墝娓愬彉娴佸姩 路 pinnedPulse 鎺ㄨ崘寰界珷鑴夊啿
+       badgePulse 鍏憡瑙掓爣 路 backTopPulse 鍥為《鍏夋檿
+       progressShimmer 椤堕儴杩涘害娴佸厜 */
     .brand-text,
     .profile-info h1,
     .pinned-badge,
@@ -1138,9 +1149,61 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     #scrollProgress {
         animation: none !important;
     }
-    /* 进度条静态化后给纯色，否则看不到进度指示 */
+    /* 杩涘害鏉￠潤鎬佸寲鍚庣粰绾壊锛屽惁鍒欑湅涓嶅埌杩涘害鎸囩ず */
     #scrollProgress { background: var(--primary) !important; }
 
-    /* 粒子去光晕：每个粒子原本带 box-shadow 扩散，改为纯色圆点 */
+    /* 绮掑瓙鍘诲厜鏅曪細姣忎釜绮掑瓙鍘熸湰甯?box-shadow 鎵╂暎锛屾敼涓虹函鑹插渾鐐?*/
     .star, .shooting-star, .petal { box-shadow: none !important; }
 }
+
+/* ================================================================
+   广告位空白修复
+   ----------------------------------------------------------------
+   问题：.ad-container 在「没有真实广告填充」时仍保留 min-height，
+   实测 ad-top 和 ad-bottom 各占 280px，首页凭空多出 560px 空白，
+   用户看到的就是「上下大片留白」。
+   原因：adsense.js 在放行时会加 .ad-active 类，但该类的 CSS 只写了
+   min-height:auto，而 <ins> 元素本身仍带内联高度/最小高度。
+   处理：没有真实广告内容（<ins> 里没有 data-ad-status="filled"）时，
+   把容器彻底收起，不占任何空间。
+   ================================================================ */
+.ad-container:not(:has(ins.adsbygoogle[data-ad-status="filled"])) {
+    min-height: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    overflow: hidden;
+}
+.ad-container:not(:has(ins.adsbygoogle[data-ad-status="filled"]))::before { content: none !important; }
+.ad-container:not(:has(ins.adsbygoogle[data-ad-status="filled"])) > * { display: none !important; }
+
+/* 内联广告位（网格里那个 200px 高的卡片）同理 */
+.ad-inline:not(:has(ins.adsbygoogle[data-ad-status="filled"])) {
+    display: none !important;
+}
+
+/* ----------------------------------------------------------------
+   广告位空白修复 v2
+   ----------------------------------------------------------------
+   实测 DOM：
+     <ins class="adsbygoogle" data-adsbygoogle-status="done"> 高 0、display:none
+     （没填充时 Google 会把它隐藏，但留着的 min-height:90px 仍占位）
+   而 .ad-container 自身 min-height:90px + flex 居中还撑到 280px。
+   规则：当容器里没有「已填充」的广告（data-ad-status="filled"）时完全收起。
+   用 data-adsbygoogle-status 也能判断：done 且高度为 0 = 没填充。
+   ---------------------------------------------------------------- */
+.ad-container.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"])) {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    overflow: hidden !important;
+    display: none !important;
+}
+.ad-bottom.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"])) { display: none !important; }
+.ad-top.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"])) { display: none !important; }

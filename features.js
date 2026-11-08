@@ -459,11 +459,26 @@ var mgmtBtn = document.getElementById('mgmtBtn');
 if (mgmtBtn) mgmtBtn.onclick = function() { checkAdmin(); };
 
 // 页面加载时若已有会话，静默恢复「已登录」状态（不弹窗）
+// 页面加载时恢复登录态。
+// 旧实现只在「是管理员」时才 setAdminFlag(true)，普通用户登录后刷新会退回「登录」，
+// 因为 setAdminFlag(false) 会把账号按钮重置成未登录样式。
+// 现在改成：只要会话还在，就先把按钮设成已登录状态（显示「我的」），
+// 再异步确认是否管理员（是则额外显示管理面板入口）。
 (function restoreSession() {
-    if (!window.Auth || !window.Auth.isLoggedIn()) return;
+    if (!window.Auth || !window.Auth.isLoggedIn()) { updateAccountUI(); return; }
+    // 先立刻反映「已登录」，不等网络请求，避免页面闪一下「登录」
+    setAdminFlag(false);
     window.Auth.verifyAdmin().then(function(v) {
         if (v.isAdmin) setAdminFlag(true);
-        else if (!v.loggedIn) setAdminFlag(false);
+        else if (!v.loggedIn) {
+            // 会话确实失效了（token 过期且刷新失败）
+            setAdminFlag(false);
+        } else {
+            setAdminFlag(false);  // 普通用户，保持「我的」
+        }
+    }).catch(function() {
+        // 网络失败时也保持已登录显示，不要因为一次请求失败就把用户踢出去
+        setAdminFlag(false);
     });
 })();
 

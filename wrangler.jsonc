@@ -33,7 +33,14 @@
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
-    "html_handling": "auto-trailing-slash",
+    // html_handling 必须是 "none"。
+    // 默认值 auto-trailing-slash 会把 /t/56 这类「无扩展名路径」重定向成 /t/56/，
+    // 而 /t/56/ 没有对应文件，于是再回落成 307 → /，请求根本到不了 Worker，
+    // 工具详情页的服务端 meta 注入（SEO）因此完全失效。
+    // 改成 none 后路由完全由 Worker 决定：
+    //   /t/{id} → 注入 meta 后的 index.html
+    //   首页 / 及其他 SPA 路径 → Worker 的 404 兜底逻辑回退 index.html
+    "html_handling": "none",
     // 让所有请求都先经过 Worker，再由 Worker 内部调 env.ASSETS.fetch 取资源。
     // 原因：`run_worker_first: false`（默认）时，能匹配到静态资源的请求会被
     // Cloudflare 直接返回，**根本不进 Worker**，于是 Worker 里加的

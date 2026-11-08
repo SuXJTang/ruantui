@@ -252,9 +252,16 @@ export default {
         }
 
         // 非 API 请求由静态资源处理
-        var response = await env.ASSETS.fetch(request);
+        // html_handling 已设为 none，所以 "/" 不会再被自动解析成 index.html，
+        // 这里显式处理，避免首页 404。
+        var assetUrl = url;
+        if (url.pathname === '/' || url.pathname === '') {
+            assetUrl = new URL('/index.html', url);
+        }
+        var response = await env.ASSETS.fetch(assetUrl === url ? request : new Request(assetUrl, request));
         if (response.status === 404) {
-            // 保留原始 method / headers / body 等（旧实现 new Request(url) 会丢成 GET）
+            // SPA 回退：未知路径一律回 index.html（保留原始 method / headers / body，
+            // 旧实现 new Request(url) 会丢成 GET）
             var fallbackUrl = new URL(request.url);
             fallbackUrl.pathname = '/index.html';
             return applyCacheHeaders(request, await env.ASSETS.fetch(new Request(fallbackUrl, request)));

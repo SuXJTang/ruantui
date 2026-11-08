@@ -230,6 +230,22 @@
                     else if (/signups not allowed|Email signups are disabled/i.test(msg)) msg = '站点已关闭注册';
                     return { ok: false, error: msg };
                 }
+                // 判断「该邮箱是否已经注册过」——
+                // Supabase 出于防账号枚举的考虑，已存在的邮箱也返回 200 成功，
+                // 唯一可靠的判据是 identities 字段：
+                //   新注册   → identities 是长度 ≥1 的数组
+                //   已存在   → identities 是空数组 []
+                // 用这个差异给出明确提示，否则用户会以为注册成功了，
+                // 实际上既不会更新密码，也不会收到新的验证邮件。
+                var identities = d.identities || (d.user && d.user.identities);
+                if (Array.isArray(identities) && identities.length === 0) {
+                    return {
+                        ok: false,
+                        alreadyRegistered: true,
+                        error: '该邮箱已经注册过了。如果你记得密码，请直接登录；忘记密码可以联系站长重置。'
+                    };
+                }
+
                 // 有 session 说明直接注册并登录成功；没有则需邮件验证
                 if (d.access_token) {
                     var s = toSession(d, email);

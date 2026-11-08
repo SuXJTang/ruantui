@@ -311,6 +311,19 @@ function showAuthBox(mode) {
         submitBtn.disabled = true; submitBtn.textContent = '注册中…';
         var r = await window.Auth.signUp(email, pwd);
         submitBtn.disabled = false;
+
+        // 该邮箱已注册：Supabase 不会报错（防枚举），必须靠 identities 判出来。
+        // 这里直接切到登录页并把邮箱填好，省得用户再手动输入。
+        if (!r.ok && r.alreadyRegistered) {
+            setMode('login');
+            emailEl.value = email;
+            pwdEl.value = '';
+            fail(r.error);
+            submitBtn.textContent = '登录';
+            setTimeout(function() { pwdEl.focus(); }, 60);
+            return;
+        }
+
         if (!r.ok) { submitBtn.textContent = '注册并登录'; return fail(r.error); }
 
         // 情况一：Supabase 关闭了邮箱验证 → 注册即登录

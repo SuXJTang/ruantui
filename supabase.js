@@ -34,6 +34,37 @@ window.RuantuiSupabase = { url: SUPABASE_URL, key: SUPABASE_KEY, direct: SUPABAS
 
 // ---------- 读操作：直连 Supabase（公开可读） ----------
 
+// 带自动回退的 fetch：
+// 先走同域反代（/sb，国内更稳），如果反代不可用（Worker 异常、网络抖动、
+// 或还没部署），自动改成直连 supabase.co 再试一次。
+// 这样单条腿断了也不会整站数据加载失败，只会换一条路。
+var _sbUseDirect = false;          // 反代连续失败后，本页面内记住改用直连
+var _sbDirectTried = false;
+
+function sbFetch(path, opts) {
+    var proxyUrl = SUPABASE_URL + '/rest/v1/' + path;
+    var directUrl = SUPABASE_DIRECT + '/rest/v1/' + path;
+
+    // 反代已知不可用 → 直接走直连
+    if (_sbUseDirect && SUPABASE_URL !== SUPABASE_DIRECT) {
+        return fetch(directUrl, opts);
+    }
+
+    return fetch(proxyUrl, opts).catch(function(e) {
+        // 反向代理这一跳挂了，换直连重试一次
+        if (SUPABASE_URL === SUPABASE_DIRECT) throw e;
+        _sbUseDirect = true;
+        _sbDirectTried = true;
+        return fetch(directUrl, opts);
+    }).then(function(res) {
+        // 5xx 也视为反代异常，下次换直连
+        if (SUPABASE_URL !== SUPABASE_DIRECT && res && res.status >= 500) {
+            _sbUseDirect = true;
+        }
+        return res;
+    });
+}
+
 function supabaseFetch(method, path, body) {
     var opts = {
         method: method,
@@ -47,7 +78,7 @@ function supabaseFetch(method, path, body) {
         opts.headers['Prefer'] = 'return=minimal';
         opts.body = JSON.stringify(body);
     }
-    return fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+    return sbFetch(path, opts);
 }
 
 // 获取所有工具（置顶优先、按创建时间排序）
@@ -72,7 +103,7 @@ function fetchAnnouncements() {
 function incrementView(id) {
     var t = (App && App.state && App.state.tools) ? App.state.tools.find(function(x) { return x.id === id; }) : null;
     if (!t) return Promise.resolve();
-    return fetch(SUPABASE_URL + '/rest/v1/rpc/increment_tool_view', {
+    return sbFetch('rpc/increment_tool_view', {
         method: 'POST',
         headers: {
             'apikey': SUPABASE_KEY,
@@ -108,7 +139,7 @@ function adminFetch(method, path, body, isRetry) {
         var opts = { method: method, headers: headers };
         if (body !== undefined && body !== null) opts.body = JSON.stringify(body);
 
-        return fetch(SUPABASE_URL + '/rest/v1/' + path, opts).then(function(res) {
+        return sbFetch(path, opts).then(function(res) {
             if (res.status === 401 && !isRetry) {
                 // token 失效：刷新后重试一次
                 return window.Auth.refresh().then(function(ns) {

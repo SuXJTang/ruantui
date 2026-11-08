@@ -24,7 +24,9 @@ App.state.dataError = null;      // null = 正常；字符串 = 错误原因
 App.state.usingCache = false;    // true = 当前展示的是本地缓存
 
 // 从 Supabase 加载工具列表
-function loadTools() {
+// attempt: 当前第几次尝试（从 0 开始）。网络抖动时自动重试，最多 3 次。
+function loadTools(attempt) {
+    var tries = attempt || 0;
     App.state.dataError = null;
     App.state.usingCache = false;
 
@@ -48,7 +50,17 @@ function loadTools() {
         App.state.loading = false;
         return App.state.tools;
     }).catch(function(e) {
-        console.warn('Supabase 加载失败:', e);
+        console.warn('Supabase 加载失败（第 ' + (tries + 1) + ' 次）:', e);
+
+        // 网络类错误自动重试：反代 + 直连都可能抖动，
+        // 隔一会儿再试往往就好了，比直接甩「加载失败」体验好得多。
+        var isNetwork = !e || !e.message || /Failed to fetch|NetworkError|timeout|Load failed|abort/i.test(e.message) || /NetworkError/i.test(String(e));
+        if (isNetwork && tries < 2) {
+            var delay = 600 * Math.pow(2, tries);   // 600ms, 1200ms
+            return new Promise(function(resolve) { setTimeout(resolve, delay); })
+                .then(function() { return loadTools(tries + 1); });
+        }
+
         App.state.loading = false;
 
         // 仅作离线兜底：用本机缓存渲染（缓存一定是真实数据写进去的）

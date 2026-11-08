@@ -38,16 +38,16 @@
 :root {
     --primary: #FF7D20; --primary-rgb: 255,125,32;
     --accent: #3498db; --accent-rgb: 52,152,219;
-    --bg: #f8f9fb; --card: rgba(255,255,255,0.72);
-    --card-solid: #fff; --glass-bg: rgba(255,255,255,0.55);
+    --bg: #eef1f6; --card: rgba(255,255,255,0.92);
+    --card-solid: #ffffff; --glass-bg: rgba(255,255,255,0.78);
     /* 妞よ埖鐖懗灞炬珯閿涙俺绻庢稉宥夆偓蹇旀鐎圭偠澹婇敍灞炬禌娴?backdrop-filter閿涘牐顫?.topbar 濞夈劑鍣撮敍?*/
-    --topbar-bg: rgba(248,249,251,0.92);
+    --topbar-bg: rgba(238,241,246,0.95);
     --text: #1a1a2e; --text-light: #6B7280;
-    --border: rgba(0,0,0,0.06); --border-glow: rgba(var(--primary-rgb),0.18);
+    --border: rgba(15,23,42,0.09); --border-glow: rgba(var(--primary-rgb),0.18);
     --radius: 16px; --radius-sm: 10px; --radius-xs: 6px;
-    --shadow: 0 2px 8px rgba(0,0,0,0.04);
-    --shadow-md: 0 8px 24px rgba(0,0,0,0.06);
-    --shadow-lg: 0 16px 40px rgba(0,0,0,0.1);
+    --shadow: 0 1px 3px rgba(15,23,42,0.06);
+    --shadow-md: 0 4px 16px rgba(15,23,42,0.08);
+    --shadow-lg: 0 12px 32px rgba(15,23,42,0.12);
     --shadow-glow: 0 0 20px rgba(var(--primary-rgb),0.15);
     --transition: all .3s cubic-bezier(.25,.46,.45,.94);
     --glass-blur: saturate(180%) blur(20px);
@@ -228,7 +228,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
    鍘熸潵鏄浐瀹?max-width:1200px锛屽湪 1920 瀹界殑灞忎笂鍙敤浜?63% 瀹藉害锛?
    涓や晶澶х墖绌虹櫧銆佸崱鐗囨尋鎴?4 鍒椼€傛敼涓鸿嚜閫傚簲锛?
    灏忓睆閾烘弧锛屽ぇ灞忛€愭鏀惧鍒?1560px锛岃姣忚鑳芥斁 5-6 寮犲崱鐗囥€?*/
-.container { max-width: 1560px; margin: 0 auto; padding: 0 max(16px,3vw); flex: 1; width: 100%; }
+.container { max-width: 1800px; margin: 0 auto; padding: 0 max(16px,2.5vw); flex: 1; width: 100%; }
 
 /* ---------- 娑擃亙姹夌粻鈧禒?閳?濞撴劕褰夐崗澶嬫櫏 ---------- */
 .profile { padding: 28px 0 18px; position: relative; }
@@ -1207,3 +1207,36 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .ad-bottom.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"])) { display: none !important; }
 .ad-top.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"])) { display: none !important; }
+
+/* ================================================================
+   超宽屏优化
+   ----------------------------------------------------------------
+   问题：2560px 屏幕上容器 1800px 只占 70%，两侧各空 380px；
+   而且 minmax(220px) 在宽容器里会把卡片拉到 300px+，
+   一行的列数反而减少（实测 2560 下只有 5 列）。
+   处理：宽屏不给卡片无限撑开，用 minmax(上限) 约束单卡宽度，
+   让列数随宽度增加，而不是让卡片变胖。
+   ================================================================ */
+@media (min-width: 1700px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+}
+@media (min-width: 2000px) {
+    /* 2400+ 时限制单卡最大宽度，多出来的空间用来多排一列 */
+    .grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+}
+
+/* ================================================================
+   超宽屏容器放宽
+   ----------------------------------------------------------------
+   实测 2560px 屏幕下，max-width:1800px 只占 70%，左右各空 375px，
+   视觉上「内容缩在中间」很明显。
+   处理：2200px 以上取消固定上限，改为「左右各留 4vw」的自适应边距，
+   宽屏利用率提升的同时仍然保持内容不贴边。
+   ================================================================ */
+@media (min-width: 2200px) {
+    .container {
+        max-width: none;
+        padding-left: max(24px, 4vw);
+        padding-right: max(24px, 4vw);
+    }
+}

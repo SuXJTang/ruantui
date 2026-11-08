@@ -16,7 +16,9 @@ function openModal(tool) {
     if (tool.download) links.push('<a href="' + escHTML(tool.download) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-download"></i> 下载</a>');
     if (tool.link && tool.link !== tool.url && tool.link !== tool.affiliateUrl) links.push('<a href="' + escHTML(tool.link) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> 直达</a>');
 
-    var shareUrl = window.location.origin + window.location.pathname + '?tool=' + tool.id;
+    // 分享地址走独立页面路径 /t/{id}（Worker 已在服务端注入该工具的 meta），
+    // 没有 toolShareUrl 时退回同形式，保证单独引用也不会坏。
+    var shareUrl = window.toolShareUrl ? window.toolShareUrl(tool.id) : (window.location.origin + '/t/' + tool.id);
     var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(shareUrl);
 
     // 长文本折叠：默认只显示 3 行，超出时提供「展开」。

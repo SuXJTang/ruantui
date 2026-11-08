@@ -11,9 +11,17 @@ loadTools().then(function() {
     // 显示最后更新日期
     var fd = document.getElementById('footerDate');
     if (fd) fd.textContent = '· ' + new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' }) + ' 更新';
-    // 深链接：数据加载完后再检查 URL 参数
+    // 深链接：数据加载完后再检查 URL
+    // 支持两种形式：
+    //   ?tool=56  —— 旧形式，已分享出去的链接仍在用
+    //   /t/56     —— 独立页面路径，Worker 已在服务端注入该工具的 title/meta，
+    //                搜索引擎能抓到独立标题，这里只负责把详情弹窗打开
     var p = new URLSearchParams(window.location.search);
     var toolId = p.get('tool');
+    if (!toolId) {
+        var pathMatch = window.location.pathname.match(/^\/t\/(\d+)/);
+        if (pathMatch) toolId = pathMatch[1];
+    }
     if (toolId) { var t = App.state.tools.find(function(x) { return x.id === parseInt(toolId); }); if (t) openModal(t); }
 });
 
@@ -50,14 +58,21 @@ if (shareCopyTextEl) shareCopyTextEl.onclick = function() {
     copyToClipboard('🧰 软推 — 精选软件推荐\n🔗 ' + window.location.origin + window.location.pathname + '\n日常工作中沉淀下来的精选软件，每一个都经过长期使用检验。', '已复制');
 };
 
-window.copyToolLink = function(id) { copyToClipboard(window.location.origin + window.location.pathname + '?tool=' + id, '链接已复制'); };
+// 分享链接统一走 /t/{id} 独立页面路径：
+// 该路径由 Worker 在服务端注入该工具的 title/description/og/JSON-LD，
+// 分享出去才有 SEO 价值；旧的 ?tool={id} 仍然兼容（旧链接不会失效）。
+window.toolShareUrl = function(id) {
+    return window.location.origin + '/t/' + id;
+};
+
+window.copyToolLink = function(id) { copyToClipboard(window.toolShareUrl(id), '链接已复制'); };
 window.copyToolText = function(id) {
     var t = App.state.tools.find(function(x) { return x.id === id; });
-    if (t) copyToClipboard('🔧 ' + t.name + '\n⭐ ' + (t.rating || '?') + '/5\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.location.origin + window.location.pathname + '?tool=' + id, '已复制');
+    if (t) copyToClipboard('🔧 ' + t.name + '\n⭐ ' + (t.rating || '?') + '/5\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.toolShareUrl(id), '已复制');
 };
 window.downloadQR = function(id) {
     var a = document.createElement('a');
-    var shareUrl = window.location.origin + window.location.pathname + '?tool=' + id;
+    var shareUrl = window.toolShareUrl(id);
     a.href = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(shareUrl);
     a.download = 'tool-' + id + '-qrcode.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 };

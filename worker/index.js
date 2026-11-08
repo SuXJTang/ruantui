@@ -235,6 +235,22 @@ export default {
         if (url.pathname === '/api' || url.pathname.startsWith('/api/')) {
             return handleRequest(request, env);
         }
+
+        // 工具详情页 /t/{id}：服务 index.html，但把 <title>/<meta> 替换成该工具的信息。
+        // 这样每种工具都有独立可被搜索引擎抓取的标题与描述，而不必静态生成 18 个 HTML。
+        var toolId = matchToolPath(url.pathname);
+        if (toolId !== null) {
+            var htmlReq = new Request(new URL('/index.html', url), request);
+            var htmlRes = await env.ASSETS.fetch(htmlReq);
+            if (htmlRes.status === 200) {
+                var page = await injectToolMeta(htmlRes, toolId, url, ctx);
+                if (page) return applyCacheHeaders(request, page);
+            }
+            // 取不到数据时退回普通首页，不要给用户 404
+            var fb = new Request(new URL('/index.html', url), request);
+            return applyCacheHeaders(request, await env.ASSETS.fetch(fb));
+        }
+
         // 非 API 请求由静态资源处理
         var response = await env.ASSETS.fetch(request);
         if (response.status === 404) {
@@ -246,3 +262,138 @@ export default {
         return applyCacheHeaders(request, response);
     }
 };
+
+// ------------------------------------------------------------------
+// 工具详情页支持
+// ------------------------------------------------------------------
+var SB_URL = 'https://gxlykcseepskxccdxmxc.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4bHlrY3NlZXBza3hjY2R4bXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDA2MjksImV4cCI6MjA5NTE3NjYyOX0.oc8MKQ56zk585KgKPXXah_fsLzC5VZqHihOsCWH_zhE';
+
+// /t/56 或 /t/56-可可影视 都能识别
+function matchToolPath(pathname) {
+    var m = pathname.match(/^\/t\/(\d+)(?:[-/]|$)/);
+    return m ? parseInt(m[1], 10) : null;
+}
+
+function escHTML(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// 把 HTML 里的相对资源路径改成绝对路径。
+// 背景：index.html 是给根路径写的，里面的 style.css、ui.js、manifest.json 都是相对路径。
+// 当页面通过 /t/56 访问时，这些相对路径会被解析成 /t/style.css，全部 404，
+// 导致整站脚本加载失败、页面只剩骨架。
+// 只处理根目录下的相对引用（不含 / 开头、不含协议、不以 # 或 ? 开头），
+// 已有的绝对路径与 data: 之类原样保留。
+function absolutizeAssets(html, origin) {
+    function abs(p) {
+        if (!p) return p;
+        if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#|\?)/i.test(p)) return p; // 已是绝对/锚点/查询
+        return origin + '/' + p.replace(/^\.\//, '');
+    }
+    // <link href="...">
+    html = html.replace(/<link\b[^>]*\bhref="([^"]+)"/gi, function (m, href) {
+        return m.replace('href="' + href + '"', 'href="' + abs(href) + '"');
+    });
+    // <script src="...">
+    html = html.replace(/<script\b[^>]*\bsrc="([^"]+)"/gi, function (m, src) {
+        return m.replace('src="' + src + '"', 'src="' + abs(src) + '"');
+    });
+    // <img src="...">
+    html = html.replace(/<img\b[^>]*\bsrc="([^"]+)"/gi, function (m, src) {
+        return m.replace('src="' + src + '"', 'src="' + abs(src) + '"');
+    });
+    return html;
+}
+
+// 取工具数据（走 Supabase 公开只读接口，anon key 只能读不能写）
+async function fetchTool(id, ctx) {
+    var endpoint = SB_URL + '/rest/v1/tools?id=eq.' + id +
+        '&select=id,name,category,comment,detail,rating,iconUrl,color,tags&limit=1';
+    var cacheKey = new Request(endpoint, { method: 'GET' });
+    var cache = caches.default;
+    var hit = await cache.match(cacheKey);
+    if (hit) {
+        var cached = await hit.json();
+        return cached && cached[0] ? cached[0] : null;
+    }
+    var res = await fetch(endpoint, {
+        headers: {
+            'apikey': SB_KEY,
+            'Authorization': 'Bearer ' + SB_KEY,
+        },
+    });
+    if (!res.ok) return null;
+    var rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    // 缓存 10 分钟：工具信息改动不频繁，且管理员编辑后最多 10 分钟生效
+    if (ctx && ctx.waitUntil) {
+        var toCache = new Response(JSON.stringify(rows), {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+        });
+        ctx.waitUntil(cache.put(cacheKey, toCache));
+    }
+    return rows[0];
+}
+
+// 把首页 HTML 里的 title / description / og / canonical / JSON-LD 换成具体工具的信息
+async function injectToolMeta(htmlRes, toolId, url, ctx) {
+    var tool = await fetchTool(toolId, ctx);
+    if (!tool) return null;
+
+    var html = await htmlRes.text();
+    var origin = url.origin;
+    var pageUrl = origin + '/t/' + tool.id;
+
+    // ⚠️ 关键：index.html 里全是相对路径（style.css、ui.js、manifest.json…）。
+    // 一旦页面挂在 /t/56 这样的子路径下，浏览器会把它们解析成 /t/style.css 而全部 404，
+    // 结果是页面只有骨架、所有脚本都加载失败。
+    // 所以这里必须把根目录资源引用改成绝对路径。
+    html = absolutizeAssets(html, origin);
+
+    // 标题用「工具名 + 用途」，比单纯堆关键词更像给人看的
+    var title = tool.name + ' — ' + (tool.category || '工具') + '推荐 | 软推';
+    var desc = (tool.comment || '').slice(0, 110);
+    if (!desc && tool.detail) desc = tool.detail.slice(0, 110);
+    var img = tool.iconUrl || (origin + '/icon.svg');
+    if (img.indexOf('http') !== 0 && img.indexOf('//') !== 0) img = origin + '/' + img.replace(/^\/+/, '');
+
+    var t = escHTML(title), d = escHTML(desc), u = escHTML(pageUrl), im = escHTML(img), n = escHTML(tool.name);
+
+    html = html.replace(/<title>[^<]*<\/title>/i, '<title>' + t + '</title>');
+    html = html.replace(
+        /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i,
+        '<meta name="description" content="' + d + '">'
+    );
+    html = html.replace(/<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i, '<link rel="canonical" href="' + u + '">');
+    html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, '<meta property="og:title" content="' + t + '">');
+    html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, '<meta property="og:description" content="' + d + '">');
+    html = html.replace(/<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/i, '<meta property="og:url" content="' + u + '">');
+    html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"\s*\/?>/i, '<meta property="og:image" content="' + im + '">');
+    html = html.replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/i, '<meta property="og:type" content="article">');
+    html = html.replace(/<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/i, '<meta name="twitter:title" content="' + t + '">');
+    html = html.replace(/<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/i, '<meta name="twitter:description" content="' + d + '">');
+    html = html.replace(/<meta\s+name="twitter:image"\s+content="[^"]*"\s*\/?>/i, '<meta name="twitter:image" content="' + im + '">');
+
+    // 每条工具页注入 SoftwareApplication 结构化数据，搜索结果里能显示评分
+    var rating = Number(tool.rating) || 0;
+    var ratingBlock = rating > 0
+        ? ',"aggregateRating":{"@type":"AggregateRating","ratingValue":"' + rating + '","bestRating":"5","worstRating":"1","ratingCount":"1"}'
+        : '';
+    var ld = '{"@context":"https://schema.org","@type":"SoftwareApplication","name":"' + n +
+        '","applicationCategory":"' + escHTML(tool.category || 'Utility') + '"' +
+        ',"operatingSystem":"Android, iOS, Windows, macOS, Linux, Web"' +
+        ',"description":"' + escHTML(desc) + '"' +
+        ',"url":"' + u + '"' +
+        ',"image":"' + im + '"' + ratingBlock + '}';
+    html = html.replace('</head>',
+        '<script type="application/ld+json">' + ld + '</script>\n' +
+        '<script>window.__RUANTUI_TOOL_ID__=' + tool.id + ';</script>\n</head>');
+
+    return new Response(html, {
+        status: 200,
+        headers: htmlRes.headers,
+    });
+}

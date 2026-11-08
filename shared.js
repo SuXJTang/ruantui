@@ -70,6 +70,17 @@ function showToast(msg, type) {
     document.head.appendChild(s);
 })();
 
+// 把图标地址规范成浏览器能直接用的绝对地址。
+// 背景：自托管的图标在数据库里存的是相对路径（img/tools/hongguo.png），
+// 这样根路径部署和子路径部署都能用。但在 /t/56 这类子路径页面上，
+// 相对路径会被解析成 /t/img/tools/xxx.png 导致 404，
+// 所以统一在渲染时补成以 / 开头的根相对地址。
+function normalizeIconUrl(u) {
+    if (!u) return u;
+    if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|data:)/i.test(u)) return u;
+    return '/' + u.replace(/^\.\//, '').replace(/^\/+/, '');
+}
+
 // 渲染工具图标 HTML（卡片 / 弹窗 / 管理面板共用）
 // opts.eager: 是否立即加载图片。
 //   卡片列表用 eager —— 用户必然会滚动浏览，懒加载反而在快速滚动时看到空白方块，
@@ -77,7 +88,8 @@ function showToast(msg, type) {
 //   弹窗等按需出现的场景仍用 lazy。
 function renderIconHTML(tool, opts) {
     var eager = opts && opts.eager;
-    var imgSrc = escHTML(tool.iconUrl || (tool.slug ? 'https://cdn.simpleicons.org/' + tool.slug + '/ffffff' : ''));
+    var rawSrc = tool.iconUrl || (tool.slug ? 'https://cdn.simpleicons.org/' + tool.slug + '/ffffff' : '');
+    var imgSrc = escHTML(normalizeIconUrl(rawSrc));
     var hasImg = tool.iconUrl || tool.slug;
     if (hasImg) {
         return '<img src="' + imgSrc + '" alt="' + escHTML(tool.name) + '"' +

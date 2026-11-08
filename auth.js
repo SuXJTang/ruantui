@@ -54,6 +54,35 @@
         };
     }
 
+    // 把 fetch 抛出的原始异常翻译成人话。
+    // Failed to fetch / NetworkError 在国内网络环境里很常见（访问 supabase.co 偶尔超时），
+    // 直接甩英文会让用户以为是网站坏了。
+    function netErrorText(e) {
+        var raw = (e && e.message) ? e.message : '';
+        if (/Failed to fetch|NetworkError|Load failed|network error/i.test(raw)) {
+            return '网络连接失败，请检查网络后重试（如反复失败，可切换 Wi-Fi / 流量再试）';
+        }
+        if (/timeout|timed out/i.test(raw)) {
+            return '请求超时，请稍后重试';
+        }
+        if (/aborted/i.test(raw)) {
+            return '请求被中断，请重试';
+        }
+        return '网络错误：' + (raw || '无法连接，请检查网络');
+    }
+
+    // 带重试的 fetch：网络类错误自动重试 2 次（间隔 800ms、1600ms）。
+    // 只在「连接层面失败」时重试，4xx/5xx 属于服务端明确响应，不重试。
+    function fetchWithRetry(url, opts, retriesLeft) {
+        var left = (typeof retriesLeft === 'number') ? retriesLeft : 2;
+        return fetch(url, opts).catch(function(e) {
+            if (left <= 0) throw e;
+            var delay = 800 * Math.pow(2, 2 - left);
+            return new Promise(function(resolve) { setTimeout(resolve, delay); })
+                .then(function() { return fetchWithRetry(url, opts, left - 1); });
+        });
+    }
+
     function authHeaders(token) {
         var h = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY };
         if (token) h['Authorization'] = 'Bearer ' + token;
@@ -63,7 +92,7 @@
     // ---------- 登录 ----------
     // 返回 Promise<{ok:true} | {ok:false, error:string}>
     function signIn(email, password) {
-        return fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        return fetchWithRetry(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
             method: 'POST',
             headers: authHeaders(null),
             body: JSON.stringify({ email: email, password: password })
@@ -89,7 +118,7 @@
                 return { ok: true, session: s };
             });
         }).catch(function(e) {
-            return { ok: false, error: '网络错误：' + (e && e.message ? e.message : '无法连接') };
+            return { ok: false, error: netErrorText(e) };
         });
     }
 
@@ -180,7 +209,7 @@
     // Supabase 的 signUp 在邮箱已存在时也会返回 200（不报错，防止账号枚举），
     // 这种情况拿不到 session，按「需要验证」处理并提示用户。
     function signUp(email, password) {
-        return fetch(SUPABASE_URL + '/auth/v1/signup', {
+        return fetchWithRetry(SUPABASE_URL + '/auth/v1/signup', {
             method: 'POST',
             headers: authHeaders(null),
             body: JSON.stringify({ email: email, password: password })
@@ -213,7 +242,7 @@
                 return { ok: true, needsConfirm: true };
             });
         }).catch(function(e) {
-            return { ok: false, error: '网络错误：' + (e && e.message ? e.message : '无法连接') };
+            return { ok: false, error: netErrorText(e) };
         });
     }
 
@@ -222,7 +251,7 @@
     // Supabase 的 /auth/v1/resend 有频率限制（默认 60 秒一次），这里把
     // 429 也翻译成可读提示，避免用户以为是坏了。
     function resendConfirm(email) {
-        return fetch(SUPABASE_URL + '/auth/v1/resend', {
+        return fetchWithRetry(SUPABASE_URL + '/auth/v1/resend', {
             method: 'POST',
             headers: authHeaders(null),
             body: JSON.stringify({ type: 'signup', email: email })
@@ -243,7 +272,7 @@
                 return { ok: true };
             });
         }).catch(function(e) {
-            return { ok: false, error: '网络错误：' + (e && e.message ? e.message : '无法连接') };
+            return { ok: false, error: netErrorText(e) };
         });
     }
 

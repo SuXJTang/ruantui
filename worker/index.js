@@ -574,21 +574,29 @@ async function injectToolList(htmlRes, url, ctx) {
     // 这一步很关键：/t/{id} 之前是纯骨架页面（toolGrid 空、统计为 0），
     // 一旦 JS 加载失败，用户看到的就是「0 款工具 0 个分类」的空白页。
     // 注入卡片后，即使脚本挂了也能看到完整列表。
+    var __ssrDbg = 'start';
     try {
         var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned&order=pinned.desc,created_at.asc';
         var allTools = await fetchListCached(listEndpoint, ctx);
+        __ssrDbg = 'fetched:' + (allTools ? allTools.length : 'null');
         if (allTools && allTools.length) {
             var catSet = {};
             allTools.forEach(function (x) { var c = x.category || '未分类'; catSet[c] = (catSet[c] || 0) + 1; });
-            // 详情页的脚本用的是绝对路径，卡片里的链接也要用 origin
-            html = injectCardsIntoHTML(html, renderSSRCards(allTools, origin), allTools, Object.keys(catSet).length);
+            var cardsHtml = renderSSRCards(allTools, origin);
+            __ssrDbg += '|cards:' + cardsHtml.length;
+            var beforeLen = html.length;
+            html = injectCardsIntoHTML(html, cardsHtml, allTools, Object.keys(catSet).length);
+            __ssrDbg += '|htmlDelta:' + (html.length - beforeLen);
+            __ssrDbg += '|hasSSR:' + (html.indexOf('data-ssr') >= 0);
         }
     } catch (e) {
-        // 注入失败不影响主流程，页面仍可依赖前端 JS 渲染
+        __ssrDbg += '|ERR:' + (e && e.message);
         console.error('injectToolMeta: SSR 卡片注入失败', e && e.message);
     }
 
-    return new Response(html, { status: 200, headers: htmlRes.headers });
+    var dbgHeaders = new Headers(htmlRes.headers);
+    dbgHeaders.set('X-SSR-Debug', __ssrDbg);
+    return new Response(html, { status: 200, headers: dbgHeaders });
 }
 
 // 把首页 HTML 里的 title / description / og / canonical / JSON-LD 换成具体工具的信息

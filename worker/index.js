@@ -477,22 +477,24 @@ async function injectToolMeta(htmlRes, toolId, url, ctx) {
     html = html.replace(/<body([^>]*)>/i, '<body$1>' + breadcrumb);
 
     // 同类工具：拉同分类的其他工具（最多 8 个）
+    // 分类里只有它自己时（比如「效率工具」只有 Syncthing），related 为空，
+    // 但仍要输出「返回首页」链接，否则这个页面又变回死胡同。
     var related = await fetchRelatedTools(tool, ctx);
-    if (related.length) {
-        var relItems = related.map(function (r) {
-            return '<a class="ssr-rel-item" href="' + escHTML(origin + '/t/' + r.id) + '" ' +
-                'style="display:inline-block;padding:8px 14px;margin:6px 8px 6px 0;border:1px solid var(--border);' +
-                'border-radius:999px;font-size:13px;color:var(--text);text-decoration:none;background:rgba(128,128,128,.05);">' +
-                escHTML(r.name) + '</a>';
-        }).join('');
-        var relBlock = '<section class="ssr-related" style="max-width:1200px;margin:32px auto 48px;padding:0 max(16px,4vw);">' +
-            '<h2 style="font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text);">更多' +
-            escHTML(tool.category || '') + '工具</h2>' +
-            '<div>' + relItems + '</div>' +
-            '<a href="' + escHTML(origin + '/') + '" style="display:inline-block;margin-top:16px;font-size:13px;color:var(--primary);text-decoration:none;">← 返回首页查看全部工具</a>' +
-            '</section>';
-        html = html.replace(/<\/body>/i, relBlock + '</body>');
-    }
+    var relItems = related.map(function (r) {
+        return '<a class="ssr-rel-item" href="' + escHTML(origin + '/t/' + r.id) + '" ' +
+            'style="display:inline-block;padding:8px 14px;margin:6px 8px 6px 0;border:1px solid var(--border);' +
+            'border-radius:999px;font-size:13px;color:var(--text);text-decoration:none;background:rgba(128,128,128,.05);">' +
+            escHTML(r.name) + '</a>';
+    }).join('');
+    var relHeading = related.length
+        ? '更多' + escHTML(tool.category || '') + '工具'
+        : '浏览更多工具';
+    var relBlock = '<section class="ssr-related" style="max-width:1200px;margin:32px auto 48px;padding:0 max(16px,4vw);">' +
+        '<h2 style="font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text);">' + relHeading + '</h2>' +
+        (relItems ? '<div>' + relItems + '</div>' : '') +
+        '<a href="' + escHTML(origin + '/') + '" style="display:inline-block;margin-top:16px;font-size:13px;color:var(--primary);text-decoration:none;">← 返回首页查看全部工具</a>' +
+        '</section>';
+    html = html.replace(/<\/body>/i, relBlock + '</body>');
 
     // 面包屑结构化数据，搜索结果里会显示层级路径
     var crumbLd = '{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[' +

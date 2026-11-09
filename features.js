@@ -849,8 +849,8 @@ function loadVipUsers() {
     }
 
     // 管理员可以读全部 profiles（依赖 migration-vip.sql 里的管理员读策略）
-    adminFetch('GET', 'profiles?select=id,email,nickname,vip_until,created_at&order=created_at.desc&limit=200')
-        .then(function (res) { return res.json(); })
+    // 注：adminFetch 成功时返回 true（它只用于写操作），读数据要用 sbFetch。
+    loadProfilesForVip()
         .then(function (rows) {
             vipAllProfiles = Array.isArray(rows) ? rows : [];
             renderVipList();
@@ -859,6 +859,26 @@ function loadVipUsers() {
             vipUserList.innerHTML = '<p style="padding:20px;text-align:center;color:#ef4444;font-size:13px;">' +
                 escHTML(e.message || '加载失败') + '</p>';
         });
+}
+
+// 读取全部用户资料（管理员权限）。
+// 单独抽出来是因为列表刷新时要用两次（初次加载 + 每次修改后）。
+function loadProfilesForVip() {
+    return window.Auth.getAccessToken().then(function (token) {
+        if (!token) throw new Error('登录已过期，请重新登录');
+        return sbFetch('profiles?select=id,email,nickname,vip_until,created_at&order=created_at.desc&limit=200', {
+            method: 'GET',
+            headers: {
+                'apikey': window.RuantuiSupabase.key,
+                'Authorization': 'Bearer ' + token
+            }
+        });
+    }).then(function (res) {
+        if (res.status === 401) throw new Error('登录已过期，请重新登录');
+        if (res.status === 403) throw new Error('没有权限读取用户列表（请确认已执行 migration-vip.sql）');
+        if (!res.ok) throw new Error('加载失败 HTTP ' + res.status);
+        return res.json();
+    });
 }
 
 function vipState(p) {
@@ -951,13 +971,11 @@ function renderVipList() {
             adminFetch('PATCH', 'profiles?id=eq.' + encodeURIComponent(uid), patch)
                 .then(function () {
                     showToast(label, 'success');
-                    // 立即刷新列表
-                    return adminFetch('GET', 'profiles?select=id,email,nickname,vip_until,created_at&order=created_at.desc&limit=200')
-                        .then(function (res) { return res.json(); })
-                        .then(function (rows) {
-                            vipAllProfiles = Array.isArray(rows) ? rows : [];
-                            renderVipList();
-                        });
+                    // 立即刷新列表（用 loadProfilesForVip，不能用 adminFetch —— 它读不了数据）
+                    return loadProfilesForVip().then(function (rows) {
+                        vipAllProfiles = Array.isArray(rows) ? rows : [];
+                        renderVipList();
+                    });
                 })
                 .catch(function (e) {
                     sel.disabled = false;

@@ -227,13 +227,25 @@ function renderTools(filter) {
             actionsHTML = '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;">📋 查看详情</div>';
         }
 
+        // 收藏按钮直接渲染进 HTML，不再依赖 engagement.js 事后注入。
+        // 之前是 renderFavButtons() 用 querySelectorAll 补上去的，
+        // 一旦那一轮 JS 没跑完（网络抖动 / 脚本顺序问题），
+        // 卡片右上角就是一块空白 —— 用户根本看不出那里能点。
+        var favOn = (typeof isFavorited === 'function') ? isFavorited(t.id) : false;
+        var favBtnHTML = '<button class="card-fav-btn' + (favOn ? ' active' : '') + '" ' +
+            'data-fav-id="' + escHTML(t.id) + '" ' +
+            'aria-label="' + (favOn ? '取消收藏' : '收藏') + '" ' +
+            'title="' + (favOn ? '取消收藏' : '收藏') + '">' +
+            '<i class="' + (favOn ? 'fas' : 'far') + ' fa-heart"></i></button>';
+
         card.innerHTML =
+            favBtnHTML +
             '<div class="tool-icon" style="background:' + safeColor(t.color) + '">' + iconHTML + '</div>' +
             '<div class="tool-body">' +
             '<h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + nameHTML + '</h3>' +
             '<div class="tool-meta">' +
             '<span class="tool-cat">' + escHTML(t.category) + '</span>' +
-            '<span class="tool-views">👁 <span class="tool-views-num">' + (t.views || 0) + '</span></span>' +
+            '<span class="tool-views">👁 <span class="tool-views-num">' + (Number(t.views) || 0) + '</span></span>' +
             '</div>' +
             '<p>' + highlightText(t.comment, App.state.currentSearch.trim()) + '</p>' +
             '<div class="tool-tags">' + tagsHTML + '</div>' +

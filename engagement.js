@@ -259,19 +259,41 @@
     };
 
     // ---------- 在卡片上添加收藏按钮 ----------
+    // 注：ui.js 渲染卡片时已经把按钮写进 HTML 了（避免依赖事后注入导致空白）。
+    // 这里只做兜底：给还没按钮的卡片补一个，并且只同步一下状态。
     function injectFavButtons() {
         var cards = document.querySelectorAll('.tool-card:not(.fav-injected)');
         cards.forEach(function(card) {
             var id = parseInt(card.dataset.id);
             if (!id) return;
             card.classList.add('fav-injected');
+
+            // 已经有按钮（ui.js 渲染的）就只更新状态，不要重复追加
+            var existing = card.querySelector('.card-fav-btn');
+            if (existing) {
+                syncFavBtnState(existing, id);
+                return;
+            }
+
             var favBtn = document.createElement('button');
             favBtn.className = 'card-fav-btn ' + (isFavorited(id) ? 'active' : '');
             favBtn.innerHTML = '<i class="' + (isFavorited(id) ? 'fas' : 'far') + ' fa-heart"></i>';
             favBtn.setAttribute('aria-label', isFavorited(id) ? '取消收藏' : '收藏');
+            favBtn.title = isFavorited(id) ? '取消收藏' : '收藏';
             favBtn.dataset.favId = id;
             card.appendChild(favBtn);
         });
+    }
+
+    // 统一同步一个收藏按钮的视觉状态
+    function syncFavBtnState(btn, id) {
+        var on = isFavorited(id);
+        btn.classList.toggle('active', on);
+        var icon = btn.querySelector('i');
+        if (icon) icon.className = (on ? 'fas' : 'far') + ' fa-heart';
+        btn.setAttribute('aria-label', on ? '取消收藏' : '收藏');
+        btn.title = on ? '取消收藏' : '收藏';
+        btn.dataset.favId = id;
     }
 
     // 监听收藏点击
@@ -400,10 +422,12 @@
     // ---------- 收藏按钮 CSS ----------
     var favStyle = document.createElement('style');
     favStyle.textContent = [
-        '.card-fav-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(128,128,128,0.08);border:none;color:var(--text-light);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;z-index:3;opacity:0;}',
-        '.tool-card:hover .card-fav-btn{opacity:1;}',
-        '.card-fav-btn:hover{background:rgba(239,68,68,0.1);color:#ef4444;transform:scale(1.15);}',
-        '.card-fav-btn.active{opacity:1;color:#ef4444;}',
+        // 收藏按钮：默认就要可见。
+        // 原来是 opacity:0 + 靠 :hover 显示，但手机上没有 hover，
+        // 结果按钮永远看不到，用户根本不知道能收藏。
+        '.card-fav-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(128,128,128,0.10);border:none;color:var(--text-light);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;z-index:3;}',
+        '.card-fav-btn:hover{background:rgba(239,68,68,0.12);color:#ef4444;transform:scale(1.15);}',
+        '.card-fav-btn.active{color:#ef4444;}',
         '.card-fav-btn.active i{animation:heartBeat .6s ease;}',
         '@keyframes heartBeat{0%,100%{transform:scale(1)}25%{transform:scale(1.3)}50%{transform:scale(.9)}75%{transform:scale(1.15)}}',
         '.rating-stars{display:flex;align-items:center;gap:4px;margin:8px 0;}',
@@ -414,4 +438,10 @@
         '.filter-fav .filter-count{color:#ef4444;}'
     ].join('');
     document.head.appendChild(favStyle);
+
+    // ---------- 导出给 ui.js 用 ----------
+    // ui.js 渲染卡片时要判断「这个工具是否已收藏」来决定红心是实心还是空心，
+    // 但它在另一个 IIFE 里，必须挂到 window 才能访问。
+    window.isFavorited = isFavorited;
+    window.toggleFavorite = toggleFavorite;
 })();

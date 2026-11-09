@@ -1410,3 +1410,46 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .vip-badge.vip-vip { background: rgba(255,125,32,0.14); color: #FF7D20; }
 .vip-badge.vip-normal { background: rgba(128,128,128,0.12); color: var(--text-light); }
 .vip-badge.vip-expired { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+/* ================================================================
+   卡片收藏按钮
+   ----------------------------------------------------------------
+   engagement.js 会把 .card-fav-btn 追加到每张卡片上（绝对定位在右上角）。
+   之前完全没有样式，按钮虽然存在但不可见、也点不到 ——
+   用户看到右上角一块空白，根本不知道那里能收藏。
+   ================================================================ */
+.card-fav-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    z-index: 2;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0; border: none; border-radius: 50%;
+    background: rgba(128, 128, 128, 0.10);
+    color: var(--text-light);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .18s, color .18s, transform .18s;
+    -webkit-tap-highlight-color: transparent;
+}
+.card-fav-btn:hover {
+    background: rgba(var(--primary-rgb), 0.14);
+    color: var(--primary);
+    transform: scale(1.08);
+}
+.card-fav-btn.active {
+    background: rgba(var(--primary-rgb), 0.15);
+    color: var(--primary);
+}
+.card-fav-btn.active i { color: var(--primary); }
+.card-fav-btn i { pointer-events: none; }
+
+/* 暗色下稍微提亮，避免灰底看不清 */
+[data-mode="dark"] .card-fav-btn { background: rgba(255, 255, 255, 0.08); }
+[data-mode="dark"] .card-fav-btn:hover { background: rgba(var(--primary-rgb), 0.20); }
+
+/* 手机上按钮略大一点，方便点按（推荐最小 40px 触控区） */
+@media (max-width: 640px) {
+    .card-fav-btn { width: 34px; height: 34px; font-size: 15px; top: 8px; right: 8px; }
+}

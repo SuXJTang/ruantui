@@ -137,10 +137,18 @@ if (overlay) document.getElementById('toolGrid').addEventListener('click', funct
     if (tool) {
         openModal(tool);
         // 递增浏览量 + 更新卡片计数
+        // 注意：incrementView 返回的是新的浏览量数字（也可能是 undefined），
+        // 用它来写 DOM，而不是用 tool.views —— 后者在「找不到对象引用」时
+        // 可能仍是 undefined，直接写进去卡片上就会显示 NaN。
         if (typeof incrementView === 'function') {
-            incrementView(tool.id).then(function() {
+            incrementView(tool.id).then(function (newViews) {
                 var numEl = card.querySelector('.tool-views-num');
-                if (numEl) numEl.textContent = tool.views;
+                if (!numEl) return;
+                var n = Number(newViews);
+                if (!isNaN(n)) {
+                    numEl.textContent = n;
+                    tool.views = n;
+                }
             }).catch(function() {});
         }
     }

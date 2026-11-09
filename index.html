@@ -36,16 +36,16 @@
 <!-- ============================================================
      缓存版本号约定 —— 同一版本号，只改两处
      ------------------------------------------------------------
-     下方所有同源静态资源的 ?v=49 必须一致，且与 sw.js 里的
+     下方所有同源静态资源的 ?v=50 必须一致，且与 sw.js 里的
      CACHE_VERSION（'v18'）代表同一个发布版本。发版时：
-       1) 把本文件下面所有 ?v=49 全改成新号（如 ?v=49）
+       1) 把本文件下面所有 ?v=50 全改成新号（如 ?v=50）
        2) 把 sw.js 的 CACHE_VERSION 同时改成对应的 'v19'
      两步必须同时做，否则 SW 缓存与页面 URL 会对不上。
      详见 README「缓存版本号」一节。
      ============================================================ -->
-<link rel="preload" href="style.css?v=49" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="style.css?v=49"></noscript>
-    <link rel="stylesheet" href="style.css?v=49">
+<link rel="preload" href="style.css?v=50" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css?v=50"></noscript>
+    <link rel="stylesheet" href="style.css?v=50">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 广告位占位骨架：只在 .ad-container 还未被 adsense.js 标记为 .ad-active 时显示，
          替代原先挂到 .adsbygoogle <ins> 上的样式（那会污染 Google 的广告单元与广告拦截检测）。 -->
@@ -189,7 +189,7 @@
         <button class="modal-close mgmt-close"><i class="fas fa-times"></i></button>
         <div class="modal-body">
             <div class="mgmt-header"><h2>管理工具箱</h2><div class="mgmt-header-right"><button class="mgmt-add-btn" id="mgmtExportBtn" title="导出数据替换 data.js"><i class="fas fa-download"></i> 导出</button><button class="mgmt-add-btn" id="mgmtAddBtn"><i class="fas fa-plus"></i> 添加</button><button class="mgmt-logout" onclick="logoutAdmin()" title="退出登录"><i class="fas fa-sign-out-alt"></i></button></div></div>
-            <div class="mgmt-tabs"><button class="mgmt-tab active" data-tab="tools">🛠 工具</button><button class="mgmt-tab" data-tab="announcements">📢 公告</button></div>
+            <div class="mgmt-tabs"><button class="mgmt-tab active" data-tab="tools">🛠 工具</button><button class="mgmt-tab" data-tab="announcements">📢 公告</button><button class="mgmt-tab" data-tab="vip">👑 VIP</button></div>
             <!-- 工具管理 -->
             <div class="mgmt-tab-content active" id="mgmtTabTools">
                 <div class="mgmt-search"><i class="fas fa-search"></i><input type="text" id="mgmtSearchInput" placeholder="搜索工具名称..."></div>
@@ -199,6 +199,16 @@
             <div class="mgmt-tab-content" id="mgmtTabAnnouncements">
                 <div class="mgmt-header" style="margin-bottom:8px;"><span style="font-size:13px;color:var(--text-light);">已发布 <strong id="annCount">0</strong> 条公告</span><button class="mgmt-add-btn" id="annAddBtn"><i class="fas fa-plus"></i> 发布公告</button></div>
                 <div class="mgmt-list" id="annMgmtList"></div>
+            </div>
+            <!-- VIP 管理 -->
+            <div class="mgmt-tab-content" id="mgmtTabVip">
+                <p style="font-size:12.5px;color:var(--text-light);line-height:1.6;margin:0 0 12px;">
+                    用户转账后在这里手动开通。到期时间设为未来即生效，设为空或过去则取消 VIP。
+                </p>
+                <div class="mgmt-search"><i class="fas fa-search"></i><input type="text" id="vipSearchInput" placeholder="搜索邮箱..."></div>
+                <div class="mgmt-list" id="vipUserList">
+                    <p style="padding:20px;text-align:center;color:var(--text-light);font-size:13px;">加载中…</p>
+                </div>
             </div>
         </div>
     </div>
@@ -329,22 +339,22 @@
     <div class="ann-panel-body" id="annPanelBody"><div class="ann-loading">加载中...</div></div>
 </div>
 
-<script defer src="shared.js?v=49"></script>
-<script defer src="supabase.js?v=49"></script>
-<script defer src="auth.js?v=49"></script>
-<script defer src="data.js?v=49"></script>
-<script defer src="ui.js?v=49"></script>
-<script defer src="modal.js?v=49"></script>
-<script defer src="apikey-config.js?v=49"></script>
-<script defer src="features.js?v=49"></script>
-<script defer src="theme.js?v=49"></script>
-<script defer src="particles.js?v=49"></script>
-<script defer src="effects.js?v=49"></script>
-<script defer src="interactions.js?v=49"></script>
-<script defer src="engagement.js?v=49"></script>
-<script defer src="mobile.js?v=49"></script>
-<script defer src="analytics.js?v=49"></script>
-<script defer src="adsense.js?v=49"></script>
+<script defer src="shared.js?v=50"></script>
+<script defer src="supabase.js?v=50"></script>
+<script defer src="auth.js?v=50"></script>
+<script defer src="data.js?v=50"></script>
+<script defer src="ui.js?v=50"></script>
+<script defer src="modal.js?v=50"></script>
+<script defer src="apikey-config.js?v=50"></script>
+<script defer src="features.js?v=50"></script>
+<script defer src="theme.js?v=50"></script>
+<script defer src="particles.js?v=50"></script>
+<script defer src="effects.js?v=50"></script>
+<script defer src="interactions.js?v=50"></script>
+<script defer src="engagement.js?v=50"></script>
+<script defer src="mobile.js?v=50"></script>
+<script defer src="analytics.js?v=50"></script>
+<script defer src="adsense.js?v=50"></script>
 <button id="backTop" aria-label="回到顶部" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </body>
 </html>

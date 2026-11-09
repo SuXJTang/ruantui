@@ -1392,3 +1392,21 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
    最多 3 行，所以 min-height 取 3 行高度即可。
    ================================================================ */
 .tool-body p { min-height: calc(1.6em * 3); }
+
+/* ================================================================
+   VIP 管理（管理面板 → VIP 标签页）
+   ================================================================ */
+.vip-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--border); margin-bottom: 8px;
+    background: var(--card-solid);
+}
+.vip-row:last-child { margin-bottom: 0; }
+.vip-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+}
+.vip-badge.vip-vip { background: rgba(255,125,32,0.14); color: #FF7D20; }
+.vip-badge.vip-normal { background: rgba(128,128,128,0.12); color: var(--text-light); }
+.vip-badge.vip-expired { background: rgba(239,68,68,0.12); color: #ef4444; }

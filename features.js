@@ -822,9 +822,141 @@ function createAnnouncement(title, content, type) {
             var target = document.getElementById('mgmtTab' + this.dataset.tab.charAt(0).toUpperCase() + this.dataset.tab.slice(1));
             if (target) target.classList.add('active');
             if (this.dataset.tab === 'announcements') renderAnnouncementList();
+            if (this.dataset.tab === 'vip') loadVipUsers();
         };
     });
 })();
+
+// ============================================================
+// VIP 管理（管理面板 → 👑 VIP 标签页）
+// ------------------------------------------------------------
+// 使用方式：用户转账后，站长在这里搜索邮箱 → 设置到期时间 → 保存。
+//
+// 安全说明：vip_until 的写入受数据库触发器保护（见 migration-vip.sql），
+// 只有管理员能改。普通用户即使直接调 API 也会被静默还原。
+// ============================================================
+
+var vipUserList = null;   // 延迟取，避免脚本执行时元素还没渲染
+var vipAllProfiles = [];
+
+function loadVipUsers() {
+    vipUserList = document.getElementById('vipUserList');
+    if (!vipUserList) return;
+
+    if (typeof adminFetch !== 'function') {
+        vipUserList.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-light);">数据模块未加载</p>';
+        return;
+    }
+
+    // 管理员可以读全部 profiles（依赖 migration-vip.sql 里的管理员读策略）
+    adminFetch('GET', 'profiles?select=id,email,nickname,vip_until,created_at&order=created_at.desc&limit=200')
+        .then(function (res) { return res.json(); })
+        .then(function (rows) {
+            vipAllProfiles = Array.isArray(rows) ? rows : [];
+            renderVipList();
+        })
+        .catch(function (e) {
+            vipUserList.innerHTML = '<p style="padding:20px;text-align:center;color:#ef4444;font-size:13px;">' +
+                escHTML(e.message || '加载失败') + '</p>';
+        });
+}
+
+function vipState(p) {
+    if (!p.vip_until) return { on: false, text: '普通用户', cls: 'normal' };
+    var t = new Date(p.vip_until).getTime();
+    if (isNaN(t)) return { on: false, text: '普通用户', cls: 'normal' };
+    if (t <= Date.now()) return { on: false, text: '已过期', cls: 'expired' };
+    var days = Math.ceil((t - Date.now()) / 86400000);
+    return { on: true, text: 'VIP · 还剩 ' + days + ' 天', cls: 'vip' };
+}
+
+function renderVipList() {
+    vipUserList = vipUserList || document.getElementById('vipUserList');
+    if (!vipUserList) return;
+
+    var kw = ((document.getElementById('vipSearchInput') || {}).value || '').trim().toLowerCase();
+    var list = vipAllProfiles.filter(function (p) {
+        if (!kw) return true;
+        return (p.email || '').toLowerCase().indexOf(kw) >= 0 ||
+               (p.nickname || '').toLowerCase().indexOf(kw) >= 0;
+    });
+
+    if (!list.length) {
+        vipUserList.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-light);font-size:13px;">' +
+            (kw ? '没有匹配的用户' : '还没有注册用户') + '</p>';
+        return;
+    }
+
+    vipUserList.innerHTML = list.map(function (p) {
+        var st = vipState(p);
+        var until = p.vip_until ? new Date(p.vip_until).toLocaleDateString('zh-CN') : '';
+        return '<div class="vip-row" data-uid="' + escHTML(p.id) + '">' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+                escHTML(p.email || '(无邮箱)') + '</div>' +
+              '<div style="font-size:11.5px;color:var(--text-light);margin-top:2px;">' +
+                '<span class="vip-badge vip-' + st.cls + '">' + escHTML(st.text) + '</span>' +
+                (until ? ' <span style="opacity:.7">到期 ' + until + '</span>' : '') +
+              '</div>' +
+            '</div>' +
+            '<select class="vip-days" data-uid="' + escHTML(p.id) + '" style="flex-shrink:0;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card-solid);color:var(--text);font-size:12px;">' +
+              '<option value="">选择时长</option>' +
+              '<option value="30">1 个月</option>' +
+              '<option value="90">3 个月</option>' +
+              '<option value="180">半年</option>' +
+              '<option value="365">1 年</option>' +
+              '<option value="0">取消 VIP</option>' +
+            '</select>' +
+        '</div>';
+    }).join('');
+
+    // 绑定下拉选择
+    vipUserList.querySelectorAll('.vip-days').forEach(function (sel) {
+        sel.onchange = function () {
+            var days = this.value;
+            if (!days) return;
+            var uid = this.dataset.uid;
+            this.disabled = true;
+
+            var patch;
+            if (days === '0') {
+                patch = { vip_until: null };
+            } else {
+                // 从「现在」或「当前到期日（如果还没过期）」往后加，避免续费时白丢剩余天数
+                var p = vipAllProfiles.filter(function (x) { return x.id === uid; })[0];
+                var base = Date.now();
+                if (p && p.vip_until) {
+                    var cur = new Date(p.vip_until).getTime();
+                    if (cur > base) base = cur;
+                }
+                patch = { vip_until: new Date(base + parseInt(days, 10) * 86400000).toISOString() };
+            }
+
+            adminFetch('PATCH', 'profiles?id=eq.' + encodeURIComponent(uid), patch)
+                .then(function () {
+                    showToast(days === '0' ? '已取消 VIP' : '已开通 ' + days + ' 天', 'success');
+                    // 立即刷新列表
+                    return adminFetch('GET', 'profiles?select=id,email,nickname,vip_until,created_at&order=created_at.desc&limit=200')
+                        .then(function (res) { return res.json(); })
+                        .then(function (rows) {
+                            vipAllProfiles = Array.isArray(rows) ? rows : [];
+                            renderVipList();
+                        });
+                })
+                .catch(function (e) {
+                    sel.disabled = false;
+                    sel.value = '';
+                    showToast(e.message || '操作失败', 'error');
+                });
+        };
+    });
+}
+
+// 搜索框
+document.addEventListener('DOMContentLoaded', function () {
+    var s = document.getElementById('vipSearchInput');
+    if (s) s.oninput = function () { renderVipList(); };
+});
 
 // 渲染公告管理列表
 var annMgmtList = document.getElementById('annMgmtList');

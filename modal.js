@@ -39,6 +39,7 @@ function openModal(tool) {
         + sectionHTML('详细介绍', tool.detail || tool.comment, '')
         + sectionHTML('使用说明', tool.usage, '📖 ')
         + (links.length ? '<div class="modal-section"><h4>链接</h4><div class="modal-links">' + links.join('') + '</div></div>' : '')
+        + '<div class="modal-section" id="_vipDownloadSection"></div>'
         + '<div class="modal-section"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></div>'
 
         + '<div class="modal-section modal-share"><h4>分享此工具</h4><div class="share-body">'
@@ -57,7 +58,58 @@ function openModal(tool) {
         };
     }
 
+    // VIP 专属下载区：只有数据库里有专属链接、且当前用户有权限时才显示。
+    // 链接本身不写进 HTML，必须调 get_download_url() 由数据库判断权限后返回，
+    // 所以普通用户在页面源码里看不到 VIP 地址。
+    loadVipDownload(tool.id);
+
     overlay.setAttribute('aria-hidden', 'false'); overlay.classList.add('active'); document.body.style.overflow = 'hidden';
+}
+
+// 拉取并渲染 VIP 专属下载链接
+function loadVipDownload(toolId) {
+    var box = document.getElementById('_vipDownloadSection');
+    if (!box) return;
+
+    // 没登录就没有 VIP 概念，不显示这一块（不打扰游客）
+    if (!window.Auth || !window.Auth.isLoggedIn()) {
+        box.style.display = 'none';
+        return;
+    }
+    if (typeof adminFetch !== 'function') {
+        box.style.display = 'none';
+        return;
+    }
+
+    box.style.display = '';
+    box.innerHTML = '<h4>专属下载</h4><p style="font-size:12.5px;color:var(--text-light);">检查中…</p>';
+
+    // get_download_url 是数据库函数：内部判断身份，无权限时返回空集
+    adminFetch('POST', 'rpc/get_download_url', { p_tool_id: toolId })
+        .then(function (res) { return res.json(); })
+        .then(function (rows) {
+            var target = document.getElementById('_vipDownloadSection');
+            if (!target) return;   // 弹窗已关闭
+            var row = Array.isArray(rows) && rows[0];
+            if (!row || !row.url) {
+                // 没有专属链接，或当前用户没有下载权限 —— 直接隐藏这一块，
+                // 不提示「你没权限」，避免把「有这个资源」的事实暴露给普通用户
+                target.style.display = 'none';
+                return;
+            }
+            target.style.display = '';
+            target.innerHTML = '<h4>专属下载</h4>' +
+                '<div class="modal-links">' +
+                '<a href="' + escHTML(row.url) + '" class="modal-link primary" target="_blank" rel="noopener">' +
+                '<i class="fas fa-download"></i> ' +
+                (row.tier === 'vip' ? 'VIP 专属下载' : '登录下载') +
+                '</a></div>';
+        })
+        .catch(function () {
+            // 函数不存在（还没执行 migration-vip.sql）或网络问题：静默隐藏
+            var target = document.getElementById('_vipDownloadSection');
+            if (target) target.style.display = 'none';
+        });
 }
 
 function closeModal() {

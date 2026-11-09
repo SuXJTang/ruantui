@@ -358,9 +358,14 @@ export default {
             if (homeRes.status === 200) {
                 var rendered = await injectToolList(homeRes, url, ctx);
                 if (rendered) {
-                    // 防止边缘缓存把旧版 SSR 内容一直返回
+                    // SSR 内容随工具数据变化，不能长缓存；但也不能 no-store ——
+                    // no-store 会让每次刷新都回源（Worker + Supabase 各一次往返），
+                    // 用户体感就是「刷新很慢，一直转圈」。
+                    // 折中：边缘缓存 60 秒 + 浏览器 30 秒后可用旧内容并在后台刷新。
+                    //   60 秒内重复访问直接命中边缘缓存，秒开；
+                    //   管理员改完数据最多 1 分钟生效，可接受。
                     var rHeaders = new Headers(rendered.headers);
-                    rHeaders.set('Cache-Control', 'no-store, must-revalidate');
+                    rHeaders.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300');
                     return new Response(rendered.body, { status: 200, headers: rHeaders });
                 }
             }
@@ -603,11 +608,10 @@ async function injectToolList(htmlRes, url, ctx) {
         console.error('injectToolMeta: SSR 卡片注入失败', e && e.message);
     }
 
-    // 详情页内容随工具数据变化，且依赖 SSR 注入逻辑，
-    // 必须禁掉 Cloudflare 边缘缓存 —— 否则改了注入逻辑后，
-    // 已有缓存的 /t/{id} 会一直返回旧版本（实测踩过）。
+    // 详情页同理：短缓存而不是 no-store。
+    // no-store 会导致每次刷新都回源，用户体感很慢（截图里那个一直转的圈）。
     var metaHeaders = new Headers(htmlRes.headers);
-    metaHeaders.set('Cache-Control', 'no-store, must-revalidate');
+    metaHeaders.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300');
     // 这里不再经过 applyCacheHeaders，所以安全头要自己补上
     if (!metaHeaders.has('X-Content-Type-Options')) metaHeaders.set('X-Content-Type-Options', 'nosniff');
     if (!metaHeaders.has('Referrer-Policy')) metaHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');

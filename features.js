@@ -866,6 +866,10 @@ function vipState(p) {
     var t = new Date(p.vip_until).getTime();
     if (isNaN(t)) return { on: false, text: '普通用户', cls: 'normal' };
     if (t <= Date.now()) return { on: false, text: '已过期', cls: 'expired' };
+    // 永久 VIP 用 2099-12-31 作哨兵值，单独显示，不要算成「还剩 27000 天」
+    if (new Date(p.vip_until).getUTCFullYear() >= 2099) {
+        return { on: true, text: 'VIP · 永久', cls: 'vip' };
+    }
     var days = Math.ceil((t - Date.now()) / 86400000);
     return { on: true, text: 'VIP · 还剩 ' + days + ' 天', cls: 'vip' };
 }
@@ -905,6 +909,7 @@ function renderVipList() {
               '<option value="90">3 个月</option>' +
               '<option value="180">半年</option>' +
               '<option value="365">1 年</option>' +
+              '<option value="forever">永久</option>' +
               '<option value="0">取消 VIP</option>' +
             '</select>' +
         '</div>';
@@ -919,22 +924,33 @@ function renderVipList() {
             this.disabled = true;
 
             var patch;
+            var label;
             if (days === '0') {
                 patch = { vip_until: null };
+                label = '已取消 VIP';
+            } else if (days === 'forever') {
+                // 永久 VIP：用 2099-12-31 作为哨兵值。
+                // 不用 null 表示永久，因为 null 在语义上是「不是 VIP」，
+                // 而且 is_vip() 的判断是 vip_until > now()，2099 年足够远，
+                // 实际使用中等于永久。前端显示时单独识别这个值。
+                patch = { vip_until: '2099-12-31T00:00:00.000Z' };
+                label = '已设为永久 VIP';
             } else {
                 // 从「现在」或「当前到期日（如果还没过期）」往后加，避免续费时白丢剩余天数
                 var p = vipAllProfiles.filter(function (x) { return x.id === uid; })[0];
                 var base = Date.now();
                 if (p && p.vip_until) {
                     var cur = new Date(p.vip_until).getTime();
+                    // 已经是永久时不要再往后加，保持永久
                     if (cur > base) base = cur;
                 }
                 patch = { vip_until: new Date(base + parseInt(days, 10) * 86400000).toISOString() };
+                label = '已开通 ' + days + ' 天';
             }
 
             adminFetch('PATCH', 'profiles?id=eq.' + encodeURIComponent(uid), patch)
                 .then(function () {
-                    showToast(days === '0' ? '已取消 VIP' : '已开通 ' + days + ' 天', 'success');
+                    showToast(label, 'success');
                     // 立即刷新列表
                     return adminFetch('GET', 'profiles?select=id,email,nickname,vip_until,created_at&order=created_at.desc&limit=200')
                         .then(function (res) { return res.json(); })

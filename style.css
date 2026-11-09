@@ -1415,8 +1415,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
    卡片收藏按钮
    ----------------------------------------------------------------
    engagement.js 会把 .card-fav-btn 追加到每张卡片上（绝对定位在右上角）。
-   之前完全没有样式，按钮虽然存在但不可见、也点不到 ——
-   用户看到右上角一块空白，根本不知道那里能收藏。
+   默认隐藏，鼠标悬停卡片时淡入 —— 保持卡片干净，不抢视觉焦点。
+   触屏设备没有 hover，所以用 @media (hover: none) 让它在触屏上常显可点。
    ================================================================ */
 .card-fav-btn {
     position: absolute;
@@ -1430,26 +1430,37 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-size: 14px;
     line-height: 1;
     cursor: pointer;
-    transition: background .18s, color .18s, transform .18s;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity .2s, transform .2s, background .18s, color .18s;
     -webkit-tap-highlight-color: transparent;
 }
+.tool-card:hover .card-fav-btn {
+    opacity: 1;
+    transform: scale(1);
+}
 .card-fav-btn:hover {
-    background: rgba(var(--primary-rgb), 0.14);
-    color: var(--primary);
-    transform: scale(1.08);
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    transform: scale(1.12);
 }
+/* 已收藏的按钮始终可见（否则用户看不出哪些收藏了） */
 .card-fav-btn.active {
-    background: rgba(var(--primary-rgb), 0.15);
-    color: var(--primary);
+    opacity: 1;
+    transform: scale(1);
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
 }
-.card-fav-btn.active i { color: var(--primary); }
+.card-fav-btn.active i { color: #ef4444; }
 .card-fav-btn i { pointer-events: none; }
+
+/* 触屏设备没有 hover：常显，否则用户根本发现不了 */
+@media (hover: none) {
+    .card-fav-btn { opacity: 1; transform: scale(1); }
+}
 
 /* 暗色下稍微提亮，避免灰底看不清 */
 [data-mode="dark"] .card-fav-btn { background: rgba(255, 255, 255, 0.08); }
-[data-mode="dark"] .card-fav-btn:hover { background: rgba(var(--primary-rgb), 0.20); }
+[data-mode="dark"] .card-fav-btn:hover { background: rgba(239, 68, 68, 0.20); }
+[data-mode="dark"] .card-fav-btn.active { background: rgba(239, 68, 68, 0.20); }
 
-/* 手机上按钮略大一点，方便点按（推荐最小 40px 触控区） */
-@media (max-width: 640px) {
-    .card-fav-btn { width: 34px; height: 34px; font-size: 15px; top: 8px; right: 8px; }
-}

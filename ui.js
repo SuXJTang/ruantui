@@ -227,10 +227,9 @@ function renderTools(filter) {
             actionsHTML = '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;">📋 查看详情</div>';
         }
 
-        // 收藏按钮直接渲染进 HTML，不再依赖 engagement.js 事后注入。
-        // 之前是 renderFavButtons() 用 querySelectorAll 补上去的，
-        // 一旦那一轮 JS 没跑完（网络抖动 / 脚本顺序问题），
-        // 卡片右上角就是一块空白 —— 用户根本看不出那里能点。
+        // 收藏按钮直接渲染进 HTML（样式在 style.css，默认隐藏、悬停卡片时淡入）。
+        // 之所以不交给 engagement.js 事后注入：那一轮 JS 没跑完时，
+        // 卡片右上角会彻底空着，连悬停都触发不出按钮。
         var favOn = (typeof isFavorited === 'function') ? isFavorited(t.id) : false;
         var favBtnHTML = '<button class="card-fav-btn' + (favOn ? ' active' : '') + '" ' +
             'data-fav-id="' + escHTML(t.id) + '" ' +

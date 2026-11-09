@@ -420,14 +420,11 @@
     document.head.appendChild(style);
 
     // ---------- 收藏按钮 CSS ----------
+    // .card-fav-btn 的完整样式在 style.css 里（含默认隐藏、悬停淡入、
+    // 触屏常显的处理）。这里只补充动画，不要重复定义布局，
+    // 否则两处会互相覆盖，改起来容易漏。
     var favStyle = document.createElement('style');
     favStyle.textContent = [
-        // 收藏按钮：默认就要可见。
-        // 原来是 opacity:0 + 靠 :hover 显示，但手机上没有 hover，
-        // 结果按钮永远看不到，用户根本不知道能收藏。
-        '.card-fav-btn{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(128,128,128,0.10);border:none;color:var(--text-light);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;z-index:3;}',
-        '.card-fav-btn:hover{background:rgba(239,68,68,0.12);color:#ef4444;transform:scale(1.15);}',
-        '.card-fav-btn.active{color:#ef4444;}',
         '.card-fav-btn.active i{animation:heartBeat .6s ease;}',
         '@keyframes heartBeat{0%,100%{transform:scale(1)}25%{transform:scale(1.3)}50%{transform:scale(.9)}75%{transform:scale(1.15)}}',
         '.rating-stars{display:flex;align-items:center;gap:4px;margin:8px 0;}',

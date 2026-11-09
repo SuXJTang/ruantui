@@ -1117,6 +1117,15 @@ document.addEventListener('click', function(e) {
 // 页面加载时加载公告
 loadAnnouncements().then(function() { renderAnnouncements(); });
 
+// ---------- 导出管理面板里的函数 ----------
+// 管理面板的 tab 切换在另一个 IIFE 里，通过名字调用这些函数，
+// 但它们定义在当前 IIFE 内部，必须显式挂到 window 才能被访问到。
+// （历史上 VIP 标签页点了没反应就是因为漏了这一步）
+window.loadVipUsers = loadVipUsers;
+window.renderVipList = renderVipList;
+window.loadProfilesForVip = loadProfilesForVip;
+window.renderAnnouncementList = renderAnnouncementList;
+
 })();
 
 // ---------- PWA （在 IIFE 外部，需挂在 window） ----------

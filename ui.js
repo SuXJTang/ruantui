@@ -218,16 +218,30 @@ function renderTools(filter) {
         // ---------- 下载权限：free / user / vip ----------
         // 无权限时把下载地址从所有按钮里摘掉，
         // 否则用户右键「复制链接地址」就能绕过限制。
+        //
+        // ⚠️ 时序问题：页面加载时 loadMyVip() 是异步的，
+        // 卡片可能比 VIP 状态先渲染出来。此时 App.state.vipInfo 还是
+        // { loading: true }，isVip 为 undefined —— 不能直接当「非 VIP」处理，
+        // 否则 VIP 用户刷新页面会看到「开通 VIP」的锁定按钮。
+        // 处理方式：状态未知时先按「暂不锁定」渲染，等 loadMyVip 完成后
+        // 再整体重渲染一次（见 features.js 的 onVipLoaded 回调）。
         var tier = t.download_tier || 'free';
         var canDownload = true, lockedReason = '';
 
+        var vipState = App.state.vipInfo || {};
+        var vipKnown = (vipState.loading === false) || (typeof vipState.isVip === 'boolean');
+        var vLogged = !!(window.Auth && window.Auth.isLoggedIn());
+        var vIsVip = !!vipState.isVip;
+
         if (tier === 'vip') {
-            var vLogged = !!(window.Auth && window.Auth.isLoggedIn());
-            var vIsVip = !!(App.state.vipInfo && App.state.vipInfo.isVip);
             if (!vLogged) { canDownload = false; lockedReason = 'login'; }
+            else if (!vipKnown) {
+                // 状态还没读到：先不锁，等状态到位会重渲染
+                canDownload = true;
+            }
             else if (!vIsVip) { canDownload = false; lockedReason = 'vip'; }
         } else if (tier === 'user') {
-            if (!(window.Auth && window.Auth.isLoggedIn())) {
+            if (!vLogged) {
                 canDownload = false; lockedReason = 'login';
             }
         }
@@ -287,17 +301,12 @@ function renderTools(filter) {
             '<h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + nameHTML + '</h3>' +
             '<div class="tool-meta">' +
             '<span class="tool-cat">' + escHTML(t.category) + '</span>' +
-            // 数据展示：下载次数（主）+ 浏览数（次）
-            // 用 Font Awesome 图标替代 emoji 👁 —— emoji 在不同系统/浏览器里
-            // 渲染差异很大（Windows 是彩色、iOS 是黑白），和整体 UI 不协调。
+            // 数据展示：只显示下载量，靠右对齐
+            // （浏览量对普通用户没有参考价值，隐藏掉更清爽）
             '<span class="tool-metrics">' +
               '<span class="tool-dl" title="下载次数">' +
                 '<i class="fas fa-download"></i>' +
                 '<span class="tool-dl-num">' + (typeof formatCount === 'function' ? formatCount(t.downloads) : (Number(t.downloads) || 0)) + '</span>' +
-              '</span>' +
-              '<span class="tool-eye" title="浏览次数">' +
-                '<i class="far fa-eye"></i>' +
-                '<span class="tool-views-num">' + (Number(t.views) || 0) + '</span>' +
               '</span>' +
             '</span>' +
             '</div>' +

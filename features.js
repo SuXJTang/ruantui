@@ -203,6 +203,13 @@ function loadMyVip(forceRefresh) {
         if (timeoutId) clearTimeout(timeoutId);
         App.state.vipInfo = info;
         if (typeof updateAccountUI === 'function') updateAccountUI();
+        // VIP 状态变了会影响「VIP 专属工具」的下载按钮是否锁定，
+        // 所以状态到位后重渲染一次卡片列表。
+        // （首次加载时卡片可能比这里先渲染，那时 vipInfo 还是空的，
+        //   按「暂不锁定」处理，这里补一次正确的渲染）
+        if (typeof renderTools === 'function' && typeof App !== 'undefined' && App.state) {
+            try { renderTools(App.state.currentFilter); } catch (e) {}
+        }
         return info;
     }).catch(function (e) {
         if (timeoutId) clearTimeout(timeoutId);

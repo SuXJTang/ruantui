@@ -574,8 +574,6 @@ function renderSSRCards(tools, origin) {
             '<span class="tool-metrics">' +
               '<span class="tool-dl" title="下载次数"><i class="fas fa-download"></i>' +
               '<span class="tool-dl-num">' + (Number(t.downloads) || 0) + '</span></span>' +
-              '<span class="tool-eye" title="浏览次数"><i class="far fa-eye"></i>' +
-              '<span class="tool-views-num">' + (Number(t.views) || 0) + '</span></span>' +
             '</span>' +
             '</div>' +
             '<p>' + comment + '</p>' +

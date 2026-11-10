@@ -38,7 +38,6 @@ function openModal(tool) {
     modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + safeColor(tool.color) + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + escHTML(tool.name) + '</h2><div class="modal-hmeta"><span class="tool-cat">' + escHTML(tool.category) + '</span>' +
         '<span class="tool-metrics">' +
           '<span class="tool-dl" title="全站累计下载次数"><i class="fas fa-download"></i><span class="tool-dl-num">' + (typeof formatCount === 'function' ? formatCount(tool.downloads) : (Number(tool.downloads) || 0)) + '</span></span>' +
-          '<span class="tool-eye" title="浏览次数"><i class="far fa-eye"></i><span class="tool-views-num">' + (Number(tool.views) || 0) + '</span></span>' +
         '</span>' +
         '</div></div></div>'
         + sectionHTML('详细介绍', tool.detail || tool.comment, '')

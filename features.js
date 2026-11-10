@@ -732,7 +732,17 @@ function renderMgmtList() {
     }).join('');
     mgmtList.querySelectorAll('.edit-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var t = byId(this.dataset.id); if (t) openForm(t); }; });
     mgmtList.querySelectorAll('.del-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id, 10); var t = byId(this.dataset.id); showConfirm('确定删除「' + (t ? t.name : '') + '」？', function() { deleteTool(id); }); }; });
-    mgmtList.querySelectorAll('.pin-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); togglePin(parseInt(this.dataset.id, 10)); }; });
+    // 置顶按钮
+    // 注意：点击后要主动 blur()，否则按钮会保留焦点样式，
+    // 在部分浏览器/主题下看起来像「还在高亮」，用户会以为没取消成功。
+    mgmtList.querySelectorAll('.pin-btn').forEach(function (b) {
+        b.onclick = function (e) {
+            e.stopPropagation();
+            var id = parseInt(this.dataset.id, 10);
+            this.blur();                    // 立即移走焦点
+            togglePin(id);
+        };
+    });
 }
 
 // 删除工具

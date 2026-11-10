@@ -782,6 +782,24 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     color: #ef4444;
 }
 
+/* 点击后的焦点：只在键盘操作时显示描边，鼠标点击不显示
+   否则按钮会保留一个「看起来像高亮」的焦点环，让人误以为状态没变 */
+.mgmt-row-actions .pin-btn:focus {
+    outline: none;
+}
+.mgmt-row-actions .pin-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+/* 置顶按钮的颜色切换要快：原来的 var(--transition) 是 .3s，
+   点击后颜色会渐变 0.3 秒，视觉上像「没变化」。
+   置顶是二元状态，应当瞬间切换。 */
+.mgmt-row-actions .pin-btn {
+    transition: background .12s ease, color .12s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .mgmt-tabs { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
 .mgmt-tab { padding: 8px 16px; font-size: 13px; font-weight: 600; background: transparent; color: var(--text-light); border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all .25s; }
 .mgmt-tab:hover { color: var(--text); }

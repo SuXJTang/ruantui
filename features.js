@@ -781,6 +781,8 @@ function togglePin(id) {
 
 // ---------- 编辑表单 ----------
 var formOverlay = document.getElementById('formOverlay');
+
+
 // 表单控件的安全访问：缺元素时返回 null / 空串，而不是抛 TypeError 让整个弹窗炸掉
 function _fInput(id) { return document.getElementById(id); }
 function _fVal(id) { var el = _fInput(id); return el ? el.value : ''; }
@@ -820,6 +822,35 @@ function openForm(tool) {
     formOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
+
+// ============================================================
+// 管理面板「+ 添加」按钮 → 打开空白工具表单
+// ------------------------------------------------------------
+// 之前这个按钮在 HTML 里存在但从来没有绑定事件，点击完全没反应。
+//
+// 注意事项：
+//   · 必须放在 openForm 定义之后，确保函数已就绪
+//   · 用 typeof 守卫，万一 openForm 出问题也不至于整个脚本崩
+//   · 只绑定一次（模块加载时），不要放进 renderMgmtList
+// ============================================================
+(function bindMgmtAddBtn() {
+    var addBtn = document.getElementById('mgmtAddBtn');
+    if (!addBtn) {
+        console.warn('[mgmt] 找不到 #mgmtAddBtn');
+        return;
+    }
+    addBtn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof openForm === 'function') {
+            openForm(null);
+        } else {
+            console.error('[mgmt] openForm 不可用');
+            if (typeof showToast === 'function') showToast('表单加载失败，请刷新页面', 'error');
+        }
+    };
+    console.log('[mgmt] 添加按钮已绑定');
+})();
 
 function updateIconPreview() {
     var color = _fVal('formColor') || '#3B82F6';

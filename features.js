@@ -735,15 +735,55 @@ function renderMgmtList() {
     mgmtList.querySelectorAll('.pin-btn').forEach(function(b) { b.onclick = function(e) { e.stopPropagation(); togglePin(parseInt(this.dataset.id, 10)); }; });
 }
 
+// 删除工具
+// ------------------------------------------------------------
+// 删除不可撤销，所以不做乐观更新（万一失败要恢复很麻烦）。
+// 但要让用户知道「点到了」，做法：
+//   1. 按钮立刻变成「删除中」，防止重复点击
+//   2. 成功后从本地列表移除并重绘（不等 refreshTools 的网络往返）
+//   3. 失败则恢复按钮状态并提示
 function deleteTool(id) {
     var t = App.state.tools.find(function(x) { return x.id === id; });
     var tName = t ? t.name : '';
     var tCat = t ? t.category : '';
-    removeTool(id).then(function() {
-        refreshTools().then(function() { App.state._originalTools = App.state.tools.slice(); renderMgmtList(); });
-        showToast('已删除', 'info');
+
+    // 按钮进入「删除中」态，防重复点击
+    var btns = document.querySelectorAll('.del-btn[data-id="' + id + '"]');
+    btns.forEach(function (b) {
+        b.disabled = true;
+        b.style.opacity = '0.4';
+        b.style.pointerEvents = 'none';
+    });
+
+    removeTool(id).then(function () {
+        // 本地立即移除并重绘
+        App.state.tools = App.state.tools.filter(function (x) { return x.id !== id; });
+        App.state._originalTools = App.state.tools.slice();
+        renderMgmtList();
+        showToast('已删除「' + (tName || '该工具') + '」', 'success');
+
+        // 后台同步一次，保持与服务器一致
+        refreshTools().then(function () {
+            App.state._originalTools = App.state.tools.slice();
+            renderMgmtList();
+        }).catch(function () {});
+
+        // 自动生成一条公告
         if (tName) createAnnouncement('已移除工具', '移除了「' + tName + '」(' + tCat + ')', 'delete');
-    }).catch(function() { showToast('删除失败', 'error'); });
+    }).catch(function (e) {
+        // 恢复按钮
+        btns.forEach(function (b) {
+            b.disabled = false;
+            b.style.opacity = '';
+            b.style.pointerEvents = '';
+        });
+        var msg = (e && e.message) ? e.message : '未知错误';
+        if (/401|403|permission/i.test(msg)) {
+            showToast('没有权限删除，请重新登录管理员账号', 'error');
+        } else {
+            showToast('删除失败：' + msg.slice(0, 50), 'error');
+        }
+    });
 }
 
 function showConfirm(msg, onOk) {
@@ -763,20 +803,53 @@ function showConfirm(msg, onOk) {
     box.onclick = function(e) { if (e.target === box) box.remove(); };
 }
 
+// 置顶 / 取消置顶
+// ------------------------------------------------------------
+// 采用「乐观更新」：点击瞬间就改本地状态并重绘，网络请求在后台跑。
+//
+// 为什么这么做：原来要等 refreshTools() 重新拉整个工具列表才更新 UI，
+// 实测延迟 1.5~2 秒。用户以为没点到，会再点一次 —— 结果两次点击
+// 互相抵消，看起来像「要点两次才生效」。
+//
+// 现在：立即反馈，失败时回滚并提示。
 function togglePin(id) {
     var t = App.state.tools.find(function(x) { return x.id === id; });
     if (!t) return;
-    var newPinned = !t.pinned;
-    // 走 Worker API
-    if (typeof toggleToolPin === 'function') {
-        toggleToolPin(id, newPinned).then(function() {
-            t.pinned = newPinned;
-            refreshTools().then(function() { App.state._originalTools = App.state.tools.slice(); renderMgmtList(); });
-            showToast(newPinned ? '已置顶' : '已取消置顶', 'success');
-        }).catch(function() { showToast('操作失败', 'error'); });
-    } else {
+
+    if (typeof toggleToolPin !== 'function') {
         showToast('管理 API 不可用', 'error');
+        return;
     }
+
+    var oldPinned = !!t.pinned;
+    var newPinned = !oldPinned;
+
+    // ---- 1. 立即更新本地状态并重绘（不等网络）----
+    t.pinned = newPinned;
+    renderMgmtList();
+
+    // ---- 2. 后台写数据库 ----
+    toggleToolPin(id, newPinned).then(function () {
+        showToast(newPinned ? '已置顶' : '已取消置顶', 'success');
+        // 数据已经写进去了，后台刷新一次保持与服务器一致
+        // （不阻塞 UI，失败也不影响用户体验）
+        refreshTools().then(function () {
+            App.state._originalTools = App.state.tools.slice();
+            renderMgmtList();
+        }).catch(function () { /* 静默：本地状态已经是对的 */ });
+    }).catch(function (e) {
+        // ---- 3. 失败回滚 ----
+        t.pinned = oldPinned;
+        renderMgmtList();
+        var msg = (e && e.message) ? e.message : '未知错误';
+        if (/401|403|permission/i.test(msg)) {
+            showToast('没有权限，请重新登录管理员账号', 'error');
+        } else if (/network|fetch|连接/i.test(msg)) {
+            showToast('网络连接失败，已撤销刚才的操作', 'error');
+        } else {
+            showToast('操作失败，已撤销：' + msg.slice(0, 50), 'error');
+        }
+    });
 }
 
 // ---------- 编辑表单 ----------

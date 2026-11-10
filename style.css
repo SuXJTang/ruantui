@@ -857,7 +857,11 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     /* 从顶栏通知按钮下方弹出（原来固定在右下角铃铛旁） */
     position: fixed;
     top: 72px;
-    right: max(16px, calc((100vw - 1200px) / 2 + 16px));
+    /* 对齐 .container 右边缘 = (视口宽 - min(1800,视口宽)) / 2 + padding */
+    /* 右边缘对齐 .container 内容区：容器右侧实际内缩量 */
+    /* 容器右侧实际内缩量 = 居中偏移 + padding(2.5vw) */
+    /* fallback 值；打开面板时 JS 会用真实布局精确对齐（见 features.js alignAnnPanel） */
+    right: calc(max((100vw - 1800px) / 2, 0px) + 2.5vw);
     z-index: 9991;
     width: 360px;
     max-width: calc(100vw - 32px);
@@ -1721,11 +1725,14 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 
 /* ---------- 顶部滚动横幅 ---------- */
 .notif-bar {
-    /* 放在顶栏正下方，随页面滚动 */
+    /* 放在顶栏正下方，随页面滚动
+       max-width / padding 必须与 .container 完全一致，
+       否则桌面端横幅左右两端和卡片对不齐 */
     display: block;
     margin: 0 auto;
-    max-width: 1200px;
-    padding: 0 16px;
+    max-width: 1800px;
+    width: 100%;
+    padding: 0 max(16px, 2.5vw);
     cursor: pointer;
     user-select: none;
 }
@@ -1808,7 +1815,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
         max-height: 60vh;
     }
     .notif-bar {
-        padding: 0 12px;
+        /* 与 .container 手机端 padding 一致（.container 是 0 16px） */
+        padding: 0 16px;
     }
     .notif-bar-inner {
         margin-top: 6px;

@@ -1628,8 +1628,37 @@ function renderAnnouncements() {
 }
 
 // 打开/关闭通知面板
+// 让面板右边缘精确对齐内容区右边缘
+// 为什么要 JS 算：CSS 无法可靠地参照「居中容器的内容右边缘」
+// （100vw 含滚动条宽度，但定位百分比参照的是不含滚动条的宽度）
+function alignAnnPanel() {
+    if (!annPanel) return;
+
+    // 手机端：媒体查询里已设为 left/right:12px 撑满，不需要算
+    if (window.innerWidth <= 640) {
+        annPanel.style.right = '';
+        return;
+    }
+
+    var grid = document.getElementById('toolGrid');
+    if (!grid) { annPanel.style.right = ''; return; }
+
+    var gridRect = grid.getBoundingClientRect();
+    // 定位基准是视口右边（不含滚动条），用 documentElement.clientWidth
+    var viewportRight = document.documentElement.clientWidth;
+    var offset = Math.round(viewportRight - gridRect.right);
+
+    // 兜底：算出负数或异常值时用 CSS fallback
+    if (offset < 0 || offset > 300) {
+        annPanel.style.right = '';
+        return;
+    }
+    annPanel.style.right = offset + 'px';
+}
+
 function openAnnPanel() {
     if (!annPanel) return;
+    alignAnnPanel();          // 先对齐，再显示，避免看到跳动
     annPanel.classList.add('active');
     // 打开即视为已读
     markAllRead();
@@ -1673,6 +1702,11 @@ document.addEventListener('click', function (e) {
 // ESC 关闭
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && annPanel && annPanel.classList.contains('active')) closeAnnPanel();
+});
+
+// 视口尺寸变化时重新对齐（面板开着的情况下）
+window.addEventListener('resize', function () {
+    if (annPanel && annPanel.classList.contains('active')) alignAnnPanel();
 });
 
 // 页面加载时加载公告

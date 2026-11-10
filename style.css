@@ -1511,3 +1511,114 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 [data-mode="dark"] .tool-visit-btn.tool-visit-locked {
     background: linear-gradient(135deg, #9a7209, #c49a12);
 }
+
+/* ================================================================
+   用户中心 · 账号信息卡
+   ----------------------------------------------------------------
+   放在「我的」面板顶部，一眼看到自己是谁、什么身份、VIP 还剩多久。
+   ================================================================ */
+.dash-card.uc-account {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    grid-column: 1 / -1;   /* 占满整行 */
+    padding: 16px 18px;
+}
+/* VIP 用户：卡片加一圈金色描边 */
+.dash-card.uc-account.uc-is-vip {
+    border-color: rgba(212, 160, 23, 0.45);
+    background: linear-gradient(135deg, rgba(212,160,23,0.07), rgba(212,160,23,0.02));
+}
+
+.uc-avatar {
+    width: 48px; height: 48px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    font-size: 20px; font-weight: 700;
+}
+.uc-avatar-vip {
+    background: linear-gradient(135deg, #d4a017, #f0c040);
+    box-shadow: 0 0 0 2px rgba(212,160,23,0.25);
+}
+.uc-avatar-guest {
+    background: rgba(128,128,128,0.16);
+    color: var(--text-light);
+    font-size: 18px;
+}
+
+.uc-info { flex: 1; min-width: 0; }
+
+.uc-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex; align-items: center; gap: 8px;
+}
+.uc-sub { font-size: 12px; color: var(--text-light); margin-top: 3px; }
+
+.uc-tag {
+    flex-shrink: 0;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+.uc-tag-admin  { background: rgba(var(--primary-rgb),0.14); color: var(--primary); }
+.uc-tag-vip    { background: rgba(212,160,23,0.16); color: #b8860b; }
+.uc-tag-normal { background: rgba(128,128,128,0.14); color: var(--text-light); }
+[data-mode="dark"] .uc-tag-vip { background: rgba(245,197,66,0.18); color: #f5c542; }
+
+.uc-vip-line {
+    font-size: 12px;
+    margin-top: 5px;
+    color: #b8860b;
+    font-weight: 600;
+}
+[data-mode="dark"] .uc-vip-line { color: #f5c542; }
+.uc-vip-none { color: var(--text-light); font-weight: 400; }
+.uc-vip-none a { color: var(--primary); text-decoration: none; }
+.uc-vip-none a:hover { text-decoration: underline; }
+
+.uc-sync { font-size: 11.5px; margin-top: 5px; }
+.uc-sync-ok   { color: #10b981; }
+.uc-sync-warn { color: #f59e0b; }
+
+.uc-action {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .2s, transform .2s;
+}
+.uc-action:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.uc-action-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-light);
+}
+.uc-action-ghost:hover {
+    filter: none;
+    background: rgba(239,68,68,0.08);
+    border-color: rgba(239,68,68,0.4);
+    color: #ef4444;
+    transform: none;
+}
+
+/* 手机上按钮换行到下方 */
+@media (max-width: 520px) {
+    .dash-card.uc-account {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .uc-action { width: 100%; margin-top: 4px; }
+}

@@ -26,6 +26,77 @@
     function getHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; } }
     function getVisits() { try { return JSON.parse(localStorage.getItem(VISIT_KEY) || '{}'); } catch(e) { return {}; } }
 
+    // ============================================================
+    // 账号信息卡（用户中心顶部）
+    // ------------------------------------------------------------
+    // 未登录 → 引导登录/注册
+    // 已登录 → 邮箱、身份、VIP 到期时间、同步状态
+    // ============================================================
+    function buildAccountCard() {
+        var loggedIn = !!(window.Auth && window.Auth.isLoggedIn());
+
+        if (!loggedIn) {
+            return '<div class="dash-card uc-account uc-guest">' +
+                '<div class="uc-avatar uc-avatar-guest"><i class="fas fa-user"></i></div>' +
+                '<div class="uc-info">' +
+                  '<div class="uc-title">未登录</div>' +
+                  '<div class="uc-sub">登录后可云端同步收藏、跨设备使用</div>' +
+                '</div>' +
+                '<button type="button" class="uc-action" id="ucLoginBtn">登录 / 注册</button>' +
+                '</div>';
+        }
+
+        var u = (window.Auth.currentUser && window.Auth.currentUser()) || {};
+        var admin = !!(App.state && App.state.isAdmin);
+        var vipInfo = (App.state && App.state.vipInfo) || {};
+        var isVip = !!vipInfo.isVip;
+
+        var roleTag;
+        if (admin) {
+            roleTag = '<span class="uc-tag uc-tag-admin">管理员</span>';
+        } else if (isVip) {
+            roleTag = '<span class="uc-tag uc-tag-vip">👑 VIP</span>';
+        } else {
+            roleTag = '<span class="uc-tag uc-tag-normal">普通用户</span>';
+        }
+
+        var vipLine = '';
+        if (isVip) {
+            if (vipInfo.forever) {
+                vipLine = '<div class="uc-vip-line">👑 VIP 永久有效</div>';
+            } else if (vipInfo.until) {
+                var d = new Date(vipInfo.until);
+                var days = Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+                vipLine = '<div class="uc-vip-line">👑 有效期至 ' +
+                    d.toLocaleDateString('zh-CN') + '（还剩 ' + days + ' 天）</div>';
+            }
+        } else if (!admin) {
+            vipLine = '<div class="uc-vip-line uc-vip-none">还不是 VIP · <a href="javascript:void(0)" id="ucVipInfo">了解会员权益</a></div>';
+        }
+
+        var usingCache = !!(App.state && App.state.usingCache);
+        var dataError = App.state ? App.state.dataError : null;
+        var syncLine;
+        if (dataError === 'offline' || usingCache) {
+            syncLine = '<div class="uc-sync uc-sync-warn">⚠️ 当前显示本地缓存，网络恢复后自动同步</div>';
+        } else if (dataError === 'failed') {
+            syncLine = '<div class="uc-sync uc-sync-warn">⚠️ 数据加载失败，内容可能不是最新</div>';
+        } else {
+            syncLine = '<div class="uc-sync uc-sync-ok">✓ 收藏已云端同步</div>';
+        }
+
+        var initial = (u.email || '?').charAt(0).toUpperCase();
+
+        return '<div class="dash-card uc-account' + (isVip ? ' uc-is-vip' : '') + '">' +
+            '<div class="uc-avatar' + (isVip ? ' uc-avatar-vip' : '') + '">' + escHTML(initial) + '</div>' +
+            '<div class="uc-info">' +
+              '<div class="uc-title">' + escHTML(u.email || '已登录') + ' ' + roleTag + '</div>' +
+              vipLine + syncLine +
+            '</div>' +
+            '<button type="button" class="uc-action uc-action-ghost" id="ucLogoutBtn">退出登录</button>' +
+            '</div>';
+    }
+
     // 构建仪表盘 HTML
     function buildDashboard() {
         var clicks = getClicks();
@@ -86,12 +157,14 @@
         var totalVisits = Object.values(visits).reduce(function(a, b) { return a + b; }, 0);
 
         return '<div class="dash-grid">' +
+            // 0. 账号信息（登录后第一眼看到自己是谁）
+            buildAccountCard() +
             // 1. 我的收藏 —— 放最前，用户一眼看到
             '<div class="dash-card dash-fav-card"><h4>❤ 我的收藏' + (favTools.length ? ' (' + favTools.length + ')' : '') + '</h4><div class="dash-fav-list">' + favHTML + '</div></div>' +
             // 2. 统计卡片
             '<div class="dash-card dash-stats">' +
-            '<div class="dash-stat-item"><i class="fas fa-eye"></i><div><strong>' + totalVisits + '</strong><span>总访问</span></div></div>' +
-            '<div class="dash-stat-item"><i class="fas fa-mouse-pointer"></i><div><strong>' + totalClicks + '</strong><span>总点击</span></div></div>' +
+            '<div class="dash-stat-item"><i class="fas fa-eye"></i><div><strong>' + totalVisits + '</strong><span>本机访问</span></div></div>' +
+            '<div class="dash-stat-item"><i class="fas fa-mouse-pointer"></i><div><strong>' + totalClicks + '</strong><span>本机点击</span></div></div>' +
             '<div class="dash-stat-item"><i class="fas fa-heart"></i><div><strong>' + favs.length + '</strong><span>收藏数</span></div></div>' +
             '<div class="dash-stat-item"><i class="fas fa-clock"></i><div><strong>' + history.length + '</strong><span>浏览记录</span></div></div>' +
             '</div>' +
@@ -112,7 +185,7 @@
             dashOverlay.className = 'overlay dash-overlay';
             dashOverlay.innerHTML = '<div class="modal modal-lg" role="dialog">' +
                 '<button class="modal-close dash-close"><i class="fas fa-times"></i></button>' +
-                '<div class="modal-body"><div class="dash-header"><h2>❤ 我的</h2><p class="dash-subtitle">收藏、浏览记录与使用数据</p></div>' +
+                '<div class="modal-body"><div class="dash-header"><h2>👤 我的</h2><p class="dash-subtitle">账号、会员与收藏</p></div>' +
                 '<div id="dashContent"></div></div></div>';
             document.body.appendChild(dashOverlay);
             dashOverlay.querySelector('.dash-close').onclick = closeDashboard;
@@ -122,6 +195,37 @@
         dashOverlay.classList.add('active');
         dashOverlay.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+
+        // 账号卡按钮
+        var loginBtn = document.getElementById('ucLoginBtn');
+        if (loginBtn) {
+            loginBtn.onclick = function () {
+                closeDashboard();
+                setTimeout(function () {
+                    if (typeof window.showAuthBox === 'function') window.showAuthBox('login');
+                    else if (typeof window.showLoginBox === 'function') window.showLoginBox();
+                }, 250);
+            };
+        }
+
+        var logoutBtn = document.getElementById('ucLogoutBtn');
+        if (logoutBtn) {
+            logoutBtn.onclick = function () {
+                if (!confirm('确定退出登录？')) return;
+                if (window.logoutAdmin) window.logoutAdmin();
+                closeDashboard();
+            };
+        }
+
+        var vipInfoLink = document.getElementById('ucVipInfo');
+        if (vipInfoLink) {
+            vipInfoLink.onclick = function () {
+                closeDashboard();
+                setTimeout(function () {
+                    if (typeof showVipRequiredTip === 'function') showVipRequiredTip();
+                }, 250);
+            };
+        }
 
         // 点击历史/收藏项打开详情
         dashOverlay.querySelectorAll('[data-tool-id]').forEach(function(el) {

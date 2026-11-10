@@ -150,7 +150,17 @@ function loadMyVip(forceRefresh) {
 
     App.state.vipInfo = { loading: true, isVip: false };
 
-    return window.Auth.getAccessToken().then(function (token) {
+    // 整体超时保护：getAccessToken 在 token 过期时会触发刷新，
+    // 如果那个请求卡住（国内访问 Supabase 偶发），loading 会永远是 true，
+    // 界面就一直显示「读取中」。这里加 8 秒兜底。
+    var timeoutId = null;
+    var timeoutPromise = new Promise(function (resolve, reject) {
+        timeoutId = setTimeout(function () {
+            reject(new Error('超时'));
+        }, 8000);
+    });
+
+    var work = window.Auth.getAccessToken().then(function (token) {
         if (!token) throw new Error('未登录');
         return sbFetch('profiles?select=vip_until', {
             method: 'GET',
@@ -159,7 +169,9 @@ function loadMyVip(forceRefresh) {
                 'Authorization': 'Bearer ' + token
             }
         });
-    }).then(function (res) {
+    });
+
+    return Promise.race([work, timeoutPromise]).then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
     }).then(function (rows) {
@@ -174,12 +186,15 @@ function loadMyVip(forceRefresh) {
                 info.forever = new Date(until).getUTCFullYear() >= 2099;
             }
         }
+        if (timeoutId) clearTimeout(timeoutId);
         App.state.vipInfo = info;
         if (typeof updateAccountUI === 'function') updateAccountUI();
         return info;
     }).catch(function (e) {
-        // 读不到就当作非 VIP，但标记 error，菜单里不误导用户
+        if (timeoutId) clearTimeout(timeoutId);
+        // 读不到就当作非 VIP，但标记 error，菜单里不再显示「读取中」
         App.state.vipInfo = { loading: false, isVip: false, error: e.message };
+        if (typeof updateAccountUI === 'function') updateAccountUI();
         return App.state.vipInfo;
     });
 }
@@ -187,7 +202,7 @@ function loadMyVip(forceRefresh) {
 // 把 VIP 状态格式化成一段说明文字
 function vipText() {
     var v = App.state.vipInfo || {};
-    if (v.loading) return '读取中…';
+    if (v.loading) return '普通用户';   // 读取中先按普通用户显示，避免菜单里一直挂着「读取中」
     if (!v.isVip) return '普通用户';
     if (v.forever) return '👑 VIP · 永久';
     if (v.until) {
@@ -957,6 +972,122 @@ function createAnnouncement(title, content, type) {
 })();
 
 // ============================================================
+// 卡片状态自动刷新
+// ------------------------------------------------------------
+// 目的：用户停留在页面上时，浏览量、工具信息能自动更新，
+// 不用手动刷新整页（国内访问偶尔慢，刷新体验不好）。
+//
+// 关键约束 —— 只做「就地更新」，绝不重建列表：
+//   · 不调 renderTools()（会清空并重建 DOM，滚动位置丢失、卡片动画重放）
+//   · 只更新已存在卡片上的文字节点（浏览量、名称、分类、描述）
+//   · 新增/删除的工具需要重建，这种情况才动列表
+//   · 用户正在搜索/筛选时，不动列表（避免打断）
+// ============================================================
+
+var _autoRefreshTimer = null;
+var _lastRefreshAt = 0;
+var _refreshing = false;
+
+// 就地更新一张卡片上的可见数据。找不到对应元素就跳过，绝不报错。
+function patchCardInPlace(card, fresh) {
+    if (!card || !fresh) return false;
+    var changed = false;
+
+    var viewsEl = card.querySelector('.tool-views-num');
+    if (viewsEl && typeof fresh.views === 'number') {
+        var nv = String(fresh.views);
+        if (viewsEl.textContent !== nv) { viewsEl.textContent = nv; changed = true; }
+    }
+
+    var nameEl = card.querySelector('h3 a');
+    if (nameEl && fresh.name && nameEl.textContent !== fresh.name) {
+        nameEl.textContent = fresh.name; changed = true;
+    }
+
+    var catEl = card.querySelector('.tool-cat');
+    if (catEl && fresh.category && catEl.textContent !== fresh.category) {
+        catEl.textContent = fresh.category; changed = true;
+    }
+
+    return changed;
+}
+
+// 静默同步：拉最新数据，能就地更新就就地更新，
+// 工具增删了才重建列表。
+function silentRefreshTools() {
+    if (_refreshing) return Promise.resolve();
+    if (typeof App === 'undefined' || !App.state) return Promise.resolve();
+    if (typeof fetchTools !== 'function') return Promise.resolve();
+
+    // 用户正在搜索时不动，避免打断输入
+    var q = (App.state.currentSearch || '').trim();
+    if (q) return Promise.resolve();
+
+    // 管理面板开着时不动
+    var mgmt = document.getElementById('mgmtOverlay');
+    if (mgmt && mgmt.classList.contains('active')) return Promise.resolve();
+
+    _refreshing = true;
+    _lastRefreshAt = Date.now();
+
+    return fetchTools().then(function (data) {
+        if (!Array.isArray(data) || !data.length) return;
+
+        var oldList = App.state.tools || [];
+        var sameCount = oldList.length === data.length;
+        var sameIds = sameCount && oldList.every(function (t) {
+            return data.some(function (d) { return d.id === t.id; });
+        });
+
+        App.state.tools = data;
+        try { localStorage.setItem(App.constants.CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+
+        if (!sameIds) {
+            // 工具增删了：需要重建列表
+            _refreshing = false;
+            if (typeof rebuildCategories === 'function') rebuildCategories();
+            if (typeof renderTools === 'function') renderTools(App.state.currentFilter);
+            return;
+        }
+
+        // 数据集没变：只就地更新每张卡片的数字
+        var byId = {};
+        data.forEach(function (d) { byId[d.id] = d; });
+
+        document.querySelectorAll('.tool-card[data-id]').forEach(function (card) {
+            var id = parseInt(card.dataset.id, 10);
+            if (!id) return;
+            patchCardInPlace(card, byId[id]);
+        });
+
+        // 总数/分类数也顺便同步（管理员增删工具后能反映出来）
+        var tcN = document.getElementById('totalCount');
+        if (tcN && tcN.textContent !== String(data.length)) tcN.textContent = data.length;
+    }).catch(function () {
+        // 静默失败：自动刷新不该弹错误打扰用户
+    }).then(function () {
+        _refreshing = false;
+    });
+}
+
+// 启动自动刷新。60 秒一次；页面切回来时若已超过 30 秒也刷一次。
+function startAutoRefresh() {
+    if (_autoRefreshTimer) return;
+
+    _autoRefreshTimer = setInterval(function () {
+        if (document.hidden) return;   // 后台不刷，省流量
+        silentRefreshTools();
+    }, 60000);
+
+    // 页面重新可见时补刷一次（手机上切到别的 App 再回来很常见）
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) return;
+        if (Date.now() - _lastRefreshAt < 30000) return;
+        silentRefreshTools();
+    });
+}
+
+// ============================================================
 // VIP 管理（管理面板 → 👑 VIP 标签页）
 // ------------------------------------------------------------
 // 使用方式：用户转账后，站长在这里搜索邮箱 → 设置到期时间 → 保存。
@@ -1245,6 +1376,10 @@ document.addEventListener('click', function(e) {
 
 // 页面加载时加载公告
 loadAnnouncements().then(function() { renderAnnouncements(); });
+
+// 启动卡片状态自动刷新（60 秒一次 + 页面切回来时补刷）
+// 只就地更新浏览量等数字，不重建列表，不影响滚动和交互。
+startAutoRefresh();
 
 // ---------- 导出管理面板里的函数 ----------
 // 管理面板的 tab 切换在另一个 IIFE 里，通过名字调用这些函数，

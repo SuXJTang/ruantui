@@ -306,6 +306,7 @@ function showAccountMenu(skipWait) {
             '<small class="' + roleCls + '">' + escHTML(roleText) + '</small></div>';
         if (admin) html += '<button class="am-item" data-act="manage"><i class="fas fa-cog"></i> 管理面板</button>';
         html += '<button class="am-item" data-act="favs"><i class="fas fa-heart"></i> 我的收藏</button>';
+        html += '<button class="am-item" data-act="settings"><i class="fas fa-gear"></i> 账号设置</button>';
         html += '<button class="am-item am-danger" data-act="logout"><i class="fas fa-right-from-bracket"></i> 退出登录</button>';
     }
     menu.innerHTML = html;
@@ -325,6 +326,21 @@ function showAccountMenu(skipWait) {
             else if (act === 'register') showAuthBox('register');
             else if (act === 'manage') { setAdminFlag(true); openMgmt(); }
             else if (act === 'favs') { var f = document.querySelector('.dash-fab'); if (f) f.click(); }
+            else if (act === 'settings') {
+                // 先打开用户中心，再切到设置页
+                if (typeof window.openUserSettings === 'function') {
+                    window.openUserSettings();
+                } else {
+                    var fab = document.querySelector('.dash-fab');
+                    if (fab) {
+                        fab.click();
+                        setTimeout(function () {
+                            var sb = document.getElementById('ucSettingsBtn');
+                            if (sb) sb.click();
+                        }, 400);
+                    }
+                }
+            }
             else if (act === 'logout') window.logoutAdmin();
         };
     });

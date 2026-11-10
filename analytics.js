@@ -138,7 +138,8 @@
 
         var backBtn = document.getElementById('ucBackBtn');
         if (backBtn) {
-            backBtn.onclick = function () {
+            backBtn.onclick = function (e) {
+                e.stopPropagation();
                 // 还原用户中心内容
                 if (backupContent !== null) {
                     content.innerHTML = backupContent;
@@ -188,7 +189,7 @@
 
         content.innerHTML = buildDashboard();
         var settingsBtn = document.getElementById('ucSettingsBtn');
-        if (settingsBtn) settingsBtn.onclick = function () { openSettingsPage(); };
+        if (settingsBtn) settingsBtn.onclick = function (e) { e.stopPropagation(); openSettingsPage(); };
         var logoutBtn = document.getElementById('ucLogoutBtn');
         if (logoutBtn) {
             logoutBtn.onclick = function () {
@@ -695,7 +696,12 @@
 
         var settingsBtn = document.getElementById('ucSettingsBtn');
         if (settingsBtn) {
-            settingsBtn.onclick = function () {
+            settingsBtn.onclick = function (e) {
+                // ⚠️ 必须阻止冒泡！
+                // dashOverlay 上绑了「点空白关闭」：if (!e.target.closest('.modal')) closeDashboard()
+                // 设置按钮在 .dash-card 里，不在 .modal 里，不阻止冒泡的话
+                // 点击会冒泡到 overlay → 面板被关闭 → 用户看到「闪一下回到主页」
+                e.stopPropagation();
                 openSettingsPage();
             };
         }
@@ -788,4 +794,27 @@
         '@media(max-width:480px){.dash-stats{grid-template-columns:repeat(2,1fr);}.dash-hist-list,.dash-fav-list{grid-template-columns:repeat(2,1fr);}}'
     ].join('');
     document.head.appendChild(style);
+
+    // ============================================================
+    // 导出给其他模块用
+    // ------------------------------------------------------------
+    // 这些函数定义在上面的 IIFE 里，外部访问不到，
+    // 必须显式挂到 window 上（本项目踩过多次这个坑）。
+    // ============================================================
+    window.openUserSettings = function () {
+        // 如果用户中心已经开着，直接切到设置页
+        if (dashOverlay && dashOverlay.classList.contains('active')) {
+            openSettingsPage();
+            return;
+        }
+        // 否则先打开用户中心
+        openDashboard();
+        // 等用户中心渲染完再切设置页
+        setTimeout(function () {
+            openSettingsPage();
+        }, 350);
+    };
+
+    window.openDashboard = openDashboard;
+
 })();

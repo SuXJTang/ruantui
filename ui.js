@@ -287,7 +287,19 @@ function renderTools(filter) {
             '<h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + nameHTML + '</h3>' +
             '<div class="tool-meta">' +
             '<span class="tool-cat">' + escHTML(t.category) + '</span>' +
-            '<span class="tool-views">👁 <span class="tool-views-num">' + (Number(t.views) || 0) + '</span></span>' +
+            // 数据展示：下载次数（主）+ 浏览数（次）
+            // 用 Font Awesome 图标替代 emoji 👁 —— emoji 在不同系统/浏览器里
+            // 渲染差异很大（Windows 是彩色、iOS 是黑白），和整体 UI 不协调。
+            '<span class="tool-metrics">' +
+              '<span class="tool-dl" title="下载次数">' +
+                '<i class="fas fa-download"></i>' +
+                '<span class="tool-dl-num">' + (typeof formatCount === 'function' ? formatCount(t.downloads) : (Number(t.downloads) || 0)) + '</span>' +
+              '</span>' +
+              '<span class="tool-eye" title="浏览次数">' +
+                '<i class="far fa-eye"></i>' +
+                '<span class="tool-views-num">' + (Number(t.views) || 0) + '</span>' +
+              '</span>' +
+            '</span>' +
             '</div>' +
             '<p>' + highlightText(t.comment, App.state.currentSearch.trim()) + '</p>' +
             '<div class="tool-tags">' + tagsHTML + '</div>' +
@@ -480,7 +492,14 @@ if (grid) grid.addEventListener('click', function(e) {
 
     var btn = e.target.closest('.tool-visit-btn[data-tool-id]');
     if (!btn) return;
+
+    var toolId = parseInt(btn.dataset.toolId, 10);
     trackToolClick(btn.dataset.toolId, btn.dataset.toolName);
+
+    // 只有「下载」按钮才计入下载次数，去官网/优惠直达不算
+    if (btn.textContent.indexOf('下载') >= 0 && typeof incrementDownload === 'function') {
+        incrementDownload(toolId).catch(function () {});
+    }
 });
 
 // VIP 专属资源的开通提示

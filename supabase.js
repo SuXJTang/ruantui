@@ -120,6 +120,49 @@ function incrementView(id) {
     });
 }
 
+// 递增下载次数（原子操作，全站累计，与浏览量分开统计）
+//   views     = 打开详情的次数
+//   downloads = 实际点下载的次数
+function incrementDownload(id) {
+    var t = (App && App.state && App.state.tools)
+        ? App.state.tools.find(function (x) { return x.id === id; })
+        : null;
+    if (!t) return Promise.resolve();
+
+    return sbFetch('rpc/increment_tool_download', {
+        method: 'POST',
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tool_id: id })
+    }).then(function (res) {
+        if (!res.ok) throw new Error('increment download failed: ' + res.status);
+        return res.text().then(function (v) { return parseInt(v, 10); });
+    }).then(function (n) {
+        if (!isNaN(n)) {
+            t.downloads = n;
+            // 同步卡片上的数字
+            var card = document.querySelector('.tool-card[data-id="' + id + '"]');
+            if (card) {
+                var el = card.querySelector('.tool-dl-num');
+                if (el) el.textContent = formatCount(n);
+            }
+        }
+        return n;
+    });
+}
+
+// 大数字格式化：1234 → 1.2k，1234567 → 123万
+function formatCount(n) {
+    n = Number(n) || 0;
+    if (n < 1000) return String(n);
+    if (n < 10000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    if (n < 100000000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+    return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '亿';
+}
+
 // ---------- 写操作：带管理员 JWT 直连 Supabase ----------
 // 权限由数据库 RLS 的 is_admin() 判定：只认 admins 表里登记过的 UID。
 // 前端篡改无效，最坏情况只是被 RLS 拒绝（403）。

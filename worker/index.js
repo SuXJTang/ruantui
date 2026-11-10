@@ -570,7 +570,13 @@ function renderSSRCards(tools, origin) {
             '<div class="tool-body">' +
             '<h3>' + pinnedHTML + '<a href="' + detailUrl + '" style="color:inherit;text-decoration:none">' + name + '</a></h3>' +
             '<div class="tool-meta"><span class="tool-cat">' + cat + '</span>' +
-            (t.rating ? '<span class="tool-views"><i class="fas fa-star"></i>' + t.rating + '</span>' : '') +
+            // 与前端卡片保持一致：下载次数（主）+ 浏览次数（次）
+            '<span class="tool-metrics">' +
+              '<span class="tool-dl" title="下载次数"><i class="fas fa-download"></i>' +
+              '<span class="tool-dl-num">' + (Number(t.downloads) || 0) + '</span></span>' +
+              '<span class="tool-eye" title="浏览次数"><i class="far fa-eye"></i>' +
+              '<span class="tool-views-num">' + (Number(t.views) || 0) + '</span></span>' +
+            '</span>' +
             '</div>' +
             '<p>' + comment + '</p>' +
             tagHTML +
@@ -585,7 +591,7 @@ function renderSSRCards(tools, origin) {
 // 而不是只看到一个空的「0 款工具」。
 // 渲染出来的卡片与前端 renderTools() 的结构一致，JS 接管时直接覆盖，不会闪烁错乱。
 async function injectToolList(htmlRes, url, ctx) {
-    var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier&order=pinned.desc,created_at.asc';
+    var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier,downloads,views&order=pinned.desc,created_at.asc';
     var tools = await fetchListCached(endpoint, ctx);
     if (!tools || !tools.length) return null;
 
@@ -616,7 +622,7 @@ async function injectToolList(htmlRes, url, ctx) {
     // 一旦 JS 加载失败，用户看到的就是「0 款工具 0 个分类」的空白页。
     // 注入卡片后，即使脚本挂了也能看到完整列表。
     try {
-        var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier&order=pinned.desc,created_at.asc';
+        var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier,downloads,views&order=pinned.desc,created_at.asc';
         var allTools = await fetchListCached(listEndpoint, ctx);
         if (allTools && allTools.length) {
             var catSet = {};

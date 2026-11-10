@@ -1622,3 +1622,65 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     }
     .uc-action { width: 100%; margin-top: 4px; }
 }
+
+/* ================================================================
+   卡片数据展示：下载次数 + 浏览次数
+   ----------------------------------------------------------------
+   原来只有一个 emoji 👁 + 数字，问题：
+     · emoji 在 Windows 是彩色、iOS 是黑白，风格不统一
+     · 只显示浏览数，用户看不出这个工具「有多少人真的在用」
+   现在改成两个带 Font Awesome 图标的指标：
+     · fa-download  下载次数（主，更重的颜色）
+     · far fa-eye   浏览次数（次，浅色）
+   ================================================================ */
+.tool-metrics {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-light);
+    white-space: nowrap;
+}
+
+.tool-metrics > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.tool-metrics i {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+/* 下载次数：用主题色突出，因为它是「实际使用量」 */
+.tool-dl {
+    color: var(--primary);
+    font-weight: 600;
+}
+.tool-dl i {
+    opacity: 1;
+}
+
+/* 浏览次数：低调一些 */
+.tool-eye {
+    opacity: 0.8;
+}
+
+/* 数字变化时轻微高亮，让用户能感知到「刚刚 +1」 */
+@keyframes countPulse {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+.tool-dl-num.pulse,
+.tool-views-num.pulse {
+    display: inline-block;
+    animation: countPulse .45s ease;
+}
+
+/* 窄屏：两个指标缩小一点，避免挤占分类文字 */
+@media (max-width: 420px) {
+    .tool-metrics { gap: 7px; font-size: 11.5px; }
+    .tool-metrics i { font-size: 10px; }
+}

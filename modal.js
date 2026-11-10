@@ -13,7 +13,7 @@ function openModal(tool) {
     // 联盟链接优先
     if (tool.affiliateUrl) links.push('<a href="' + escHTML(tool.affiliateUrl) + '" class="modal-link affiliate" target="_blank" rel="noopener" data-aff-id="' + escHTML(tool.id) + '"><i class="fas fa-fire"></i> 优惠购买</a>');
     if (tool.url) links.push('<a href="' + escHTML(tool.url) + '" class="modal-link primary" target="_blank" rel="noopener"><i class="fas fa-globe"></i> 官网</a>');
-    if (tool.download) links.push('<a href="' + escHTML(tool.download) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-download"></i> 下载</a>');
+    if (tool.download) links.push('<a href="' + escHTML(tool.download) + '" class="modal-link" target="_blank" rel="noopener" data-dl-id="' + escHTML(tool.id) + '"><i class="fas fa-download"></i> 下载</a>');
     if (tool.link && tool.link !== tool.url && tool.link !== tool.affiliateUrl) links.push('<a href="' + escHTML(tool.link) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> 直达</a>');
 
     // 分享地址走独立页面路径 /t/{id}（Worker 已在服务端注入该工具的 meta），
@@ -35,7 +35,12 @@ function openModal(tool) {
             '</div>';
     }
 
-    modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + safeColor(tool.color) + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + escHTML(tool.name) + '</h2><div class="modal-hmeta"><span class="tool-cat">' + escHTML(tool.category) + '</span><span class="modal-views">👁 ' + (tool.views || 0) + ' 次浏览</span></div></div></div>'
+    modalBody.innerHTML = '<div class="modal-header"><div class="modal-icon" style="background:' + safeColor(tool.color) + '">' + iconHTML + '</div><div class="modal-hinfo"><h2>' + escHTML(tool.name) + '</h2><div class="modal-hmeta"><span class="tool-cat">' + escHTML(tool.category) + '</span>' +
+        '<span class="tool-metrics">' +
+          '<span class="tool-dl" title="全站累计下载次数"><i class="fas fa-download"></i><span class="tool-dl-num">' + (typeof formatCount === 'function' ? formatCount(tool.downloads) : (Number(tool.downloads) || 0)) + '</span></span>' +
+          '<span class="tool-eye" title="浏览次数"><i class="far fa-eye"></i><span class="tool-views-num">' + (Number(tool.views) || 0) + '</span></span>' +
+        '</span>' +
+        '</div></div></div>'
         + sectionHTML('详细介绍', tool.detail || tool.comment, '')
         + sectionHTML('使用说明', tool.usage, '📖 ')
         + (links.length ? '<div class="modal-section"><h4>链接</h4><div class="modal-links">' + links.join('') + '</div></div>' : '')
@@ -160,6 +165,12 @@ if (overlay) {
     overlay.addEventListener('click', function(e) {
         var a = e.target.closest('.modal-link[data-aff-id]');
         if (a) trackToolClick(a.dataset.affId, '');
+
+        // 详情页里的「下载」也计入下载次数（与卡片按钮同一份统计）
+        var dl = e.target.closest('.modal-link[data-dl-id]');
+        if (dl && typeof incrementDownload === 'function') {
+            incrementDownload(parseInt(dl.dataset.dlId, 10)).catch(function () {});
+        }
     });
 }
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });

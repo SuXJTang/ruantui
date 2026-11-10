@@ -881,7 +881,17 @@ if (toolForm) {
             document.body.style.overflow = '';
             refreshTools().then(function() { App.state._originalTools = App.state.tools.slice(); renderMgmtList(); });
             showToast(id ? '已更新 ✓' : '已添加 ✓', 'success');
-        }).catch(function() { showToast('保存失败，请重试', 'error'); });
+        }).catch(function(e) {
+            // 显示具体原因，而不是笼统的「保存失败」
+            // 最常见的是数据库还没执行 migration-download-tier.sql，
+            // 报错是「column tools.download_tier does not exist」
+            var msg = (e && e.message) ? e.message : '未知错误';
+            if (/download_tier.*does not exist|column .* does not exist/i.test(msg)) {
+                msg = '数据库缺少 download_tier 字段，请先执行 migration-download-tier.sql';
+            }
+            showToast('保存失败：' + msg.slice(0, 90), 'error');
+            console.error('保存工具失败:', e);
+        });
     };
 }
 

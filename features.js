@@ -792,6 +792,17 @@ function openForm(tool) {
     _fSet('formTags', tool ? (tool.tags || []).join(', ') : '');
     _fSet('formUrl', tool ? (tool.url || '') : '');
     _fSet('formDownload', tool ? (tool.download || '') : '');
+    // 下载权限：默认 free
+    var tierSel = document.getElementById('formDownloadTier');
+    if (tierSel) {
+        tierSel.value = (tool && tool.download_tier) ? tool.download_tier : 'free';
+        tierSel.onchange = function () { syncTierUI(); };
+    }
+    // VIP 专属链接（异步加载，不阻塞表单打开）
+    var vipInput = document.getElementById('formVipDownload');
+    if (vipInput) vipInput.value = '';
+    if (tool && tool.id) loadVipDownloadUrl(tool.id);
+    syncTierUI();
     _fSet('formUsage', tool ? (tool.usage || '') : '');
     _fSet('formSlug', tool ? (tool.slug || '') : '');
     _fSet('formIconUrl', tool ? (tool.iconUrl || '') : '');
@@ -844,13 +855,26 @@ if (toolForm) {
             tags: _fVal('formTags').split(/\s*,\s*/).filter(Boolean),
             url: _fVal('formUrl').trim(),
             download: _fVal('formDownload').trim(),
+        download_tier: (_fVal('formDownloadTier') || 'free').trim(),
             usage: _fVal('formUsage').trim(),
             slug: _fVal('formSlug').trim(),
             iconUrl: _fVal('formIconUrl').trim(),
             icon: _fVal('formIcon').trim() || 'fa-cube'
         };
         if (!data.name || !data.category) { showToast('请填写名称和分类', 'error'); return; }
-        var savePromise = id ? updateTool(parseInt(id), data) : insertTool(data);
+        // 保存 VIP 专属链接（单独存 tool_downloads 表，不进 tools）
+        var vipUrl = (_fVal('formVipDownload') || '').trim();
+        var tier = data.download_tier;
+
+        var savePromise = (id ? updateTool(parseInt(id), data) : insertTool(data)).then(function() {
+            // 工具保存成功后再同步 VIP 链接
+            var toolId = id ? parseInt(id) : null;
+            if (!toolId) {
+                // 新建时拿不到 id，跳过（用户重新编辑时再设）
+                return;
+            }
+            return syncVipDownload(toolId, tier === 'vip' ? vipUrl : '');
+        });
         savePromise.then(function() {
             formOverlay.classList.remove('active');
             formOverlay.setAttribute('aria-hidden', 'true');
@@ -1114,6 +1138,109 @@ function startAutoRefresh() {
         if (document.hidden) return;
         if (Date.now() - _lastRefreshAt < 30000) return;
         silentRefreshTools();
+    });
+}
+
+// ============================================================
+// 下载权限（管理面板 → 工具编辑表单）
+// ------------------------------------------------------------
+// 每个工具可以设成：
+//   free  所有人可下（含游客）
+//   user  需登录
+//   vip   仅 VIP
+//
+// VIP 专属链接存在 tool_downloads 表里，不放进 tools，
+// 所以普通用户在页面源码里看不到真实地址。
+// ============================================================
+
+// 选了「仅 VIP」才显示专属链接输入框
+function syncTierUI() {
+    var sel = document.getElementById('formDownloadTier');
+    var wrap = document.getElementById('vipUrlWrap');
+    if (!sel || !wrap) return;
+    wrap.style.display = (sel.value === 'vip') ? '' : 'none';
+}
+
+// 读取某工具的 VIP 专属链接（编辑时回填）
+function loadVipDownloadUrl(toolId) {
+    if (typeof window.Auth === 'undefined') return;
+    window.Auth.getAccessToken().then(function (token) {
+        if (!token) return;
+        return sbFetch('tool_downloads?tool_id=eq.' + toolId + '&tier=eq.vip&select=url&limit=1', {
+            method: 'GET',
+            headers: {
+                'apikey': window.RuantuiSupabase.key,
+                'Authorization': 'Bearer ' + token
+            }
+        });
+    }).then(function (res) {
+        if (!res || !res.ok) return;
+        return res.json();
+    }).then(function (rows) {
+        var el = document.getElementById('formVipDownload');
+        if (!el) return;
+        var row = Array.isArray(rows) && rows[0];
+        el.value = row ? (row.url || '') : '';
+    }).catch(function () {
+        // 静默失败：VIP 链接读不到不影响主流程
+    });
+}
+
+// 保存 VIP 专属链接。空字符串 = 删除
+function syncVipDownload(toolId, url) {
+    return window.Auth.getAccessToken().then(function (token) {
+        if (!token) return;
+
+        // 先查现有的
+        return sbFetch('tool_downloads?tool_id=eq.' + toolId + '&tier=eq.vip&select=id,url', {
+            method: 'GET',
+            headers: {
+                'apikey': window.RuantuiSupabase.key,
+                'Authorization': 'Bearer ' + token
+            }
+        }).then(function (res) { return res.json(); })
+          .then(function (rows) {
+              var existing = Array.isArray(rows) && rows[0];
+
+              if (!url) {
+                  // 要删除
+                  if (!existing) return;
+                  return sbFetch('tool_downloads?id=eq.' + existing.id, {
+                      method: 'DELETE',
+                      headers: {
+                          'apikey': window.RuantuiSupabase.key,
+                          'Authorization': 'Bearer ' + token
+                      }
+                  });
+              }
+
+              if (existing) {
+                  if (existing.url === url) return;   // 没变
+                  return sbFetch('tool_downloads?id=eq.' + existing.id, {
+                      method: 'PATCH',
+                      headers: {
+                          'apikey': window.RuantuiSupabase.key,
+                          'Authorization': 'Bearer ' + token,
+                          'Content-Type': 'application/json',
+                          'Prefer': 'return=minimal'
+                      },
+                      body: JSON.stringify({ url: url })
+                  });
+              }
+
+              return sbFetch('tool_downloads', {
+                  method: 'POST',
+                  headers: {
+                      'apikey': window.RuantuiSupabase.key,
+                      'Authorization': 'Bearer ' + token,
+                      'Content-Type': 'application/json',
+                      'Prefer': 'return=minimal'
+                  },
+                  body: JSON.stringify({ tool_id: toolId, url: url, tier: 'vip' })
+              });
+          });
+    }).catch(function (e) {
+        console.warn('保存 VIP 链接失败:', e && e.message);
     });
 }
 
@@ -1422,6 +1549,7 @@ window.renderVipList = renderVipList;
 window.loadProfilesForVip = loadProfilesForVip;
 window.renderAnnouncementList = renderAnnouncementList;
 window.loadMyVip = loadMyVip;
+window.syncTierUI = syncTierUI;
 window.vipText = vipText;
 window.silentRefreshTools = silentRefreshTools;
 window.startAutoRefresh = startAutoRefresh;

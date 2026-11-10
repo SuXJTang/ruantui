@@ -202,6 +202,7 @@ function renderTools(filter) {
         } else if (t.url && primaryHref === t.url) {
             primaryLabel = '🌐 去官网';
         }
+
         // 次按钮：再找一个与主按钮不同的链接
         var altLink = null;
         for (var li = 0; li < allLinks.length; li++) {
@@ -214,9 +215,42 @@ function renderTools(filter) {
             else if (t.affiliateUrl && altLink === t.affiliateUrl) altLabel = '🔥 优惠';
         }
 
+        // ---------- 下载权限：free / user / vip ----------
+        // 无权限时把下载地址从所有按钮里摘掉，
+        // 否则用户右键「复制链接地址」就能绕过限制。
+        var tier = t.download_tier || 'free';
+        var canDownload = true, lockedReason = '';
+
+        if (tier === 'vip') {
+            var vLogged = !!(window.Auth && window.Auth.isLoggedIn());
+            var vIsVip = !!(App.state.vipInfo && App.state.vipInfo.isVip);
+            if (!vLogged) { canDownload = false; lockedReason = 'login'; }
+            else if (!vIsVip) { canDownload = false; lockedReason = 'vip'; }
+        } else if (tier === 'user') {
+            if (!(window.Auth && window.Auth.isLoggedIn())) {
+                canDownload = false; lockedReason = 'login';
+            }
+        }
+
+        if (!canDownload) {
+            // 主按钮是下载链接 → 换成官网；没有官网就换成提示按钮
+            if (primaryHref && t.download && primaryHref === t.download) {
+                if (t.url) { primaryHref = t.url; primaryLabel = '🌐 去官网'; }
+                else { primaryHref = null; primaryLabel = ''; }
+            }
+            // 次按钮是下载链接 → 丢掉它
+            if (altLink && t.download && altLink === t.download) altLink = null;
+        }
+
         // 按钮区：只有一个链接时保持原样；有两个时并排显示
         var actionsHTML;
-        if (primaryHref && altLink) {
+        if (!canDownload && !primaryHref && !altLink) {
+            // 完全没权限也没官网：显示一个引导按钮
+            var lockText = lockedReason === 'vip' ? '👑 开通 VIP 下载' : '🔒 登录后下载';
+            actionsHTML = '<button class="tool-visit-btn tool-visit-locked" type="button" ' +
+                'data-locked-tool="' + escHTML(t.id) + '" data-locked-reason="' + escHTML(lockedReason) + '">' +
+                lockText + '</button>';
+        } else if (primaryHref && altLink) {
             actionsHTML = '<div class="tool-actions">' +
                 '<a class="tool-visit-btn" href="' + escHTML(primaryHref) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + primaryLabel + '</a>' +
                 '<a class="tool-visit-btn tool-visit-alt" href="' + escHTML(altLink) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + altLabel + '</a>' +
@@ -225,6 +259,15 @@ function renderTools(filter) {
             actionsHTML = '<a class="tool-visit-btn" href="' + escHTML(primaryHref) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + primaryLabel + '</a>';
         } else {
             actionsHTML = '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;">📋 查看详情</div>';
+        }
+
+        // 有官网但下载被锁：在官网按钮旁边补一个提示
+        if (!canDownload && primaryHref) {
+            var tipText = lockedReason === 'vip' ? '👑 VIP 专属下载' : '🔒 登录后可下载';
+            actionsHTML = '<div class="tool-actions">' + actionsHTML +
+                '<button class="tool-visit-btn tool-visit-locked" type="button" ' +
+                'data-locked-tool="' + escHTML(t.id) + '" data-locked-reason="' + escHTML(lockedReason) + '">' +
+                tipText + '</button></div>';
         }
 
         // 收藏按钮直接渲染进 HTML（样式在 style.css，默认隐藏、悬停卡片时淡入）。
@@ -419,10 +462,63 @@ window.retryLoadData = function() {
 
 // 访问链接埋点 — 模块作用域只注册一次（renderTools 会反复重建卡片，但监听器不需重建）
 if (grid) grid.addEventListener('click', function(e) {
+    // 被锁的下载按钮：引导用户登录 / 开通 VIP
+    var locked = e.target.closest('.tool-visit-locked');
+    if (locked) {
+        e.preventDefault();
+        e.stopPropagation();
+        var reason = locked.dataset.lockedReason;
+        if (reason === 'login') {
+            if (typeof window.showAuthBox === 'function') window.showAuthBox('login');
+            else if (typeof window.showLoginBox === 'function') window.showLoginBox();
+        } else if (reason === 'vip') {
+            // 显示开通说明：告诉用户怎么成为 VIP
+            showVipRequiredTip();
+        }
+        return;
+    }
+
     var btn = e.target.closest('.tool-visit-btn[data-tool-id]');
     if (!btn) return;
     trackToolClick(btn.dataset.toolId, btn.dataset.toolName);
 });
+
+// VIP 专属资源的开通提示
+function showVipRequiredTip() {
+    var existing = document.getElementById('_vipTipModal');
+    if (existing) existing.remove();
+
+    var box = document.createElement('div');
+    box.id = '_vipTipModal';
+    box.className = 'auth-overlay';
+    box.innerHTML =
+        '<div class="auth-card" role="dialog" aria-modal="true">' +
+          '<button class="auth-close" type="button" aria-label="关闭">' +
+            '<i class="fas fa-times"></i>' +
+          '</button>' +
+          '<div class="auth-logo">👑</div>' +
+          '<h3 class="auth-title">VIP 专属资源</h3>' +
+          '<p class="auth-sub">这个工具的下载需要 VIP 会员</p>' +
+          '<div style="font-size:13px;line-height:1.9;color:var(--text);text-align:left;' +
+            'background:rgba(var(--primary-rgb),0.06);padding:14px 16px;border-radius:12px;margin:16px 0;">' +
+            '<div>· 联系站长开通（微信 / 支付宝转账）</div>' +
+            '<div>· 开通后立即可用，无需重新登录</div>' +
+            '<div>· 已开通但看不到？刷新页面再试</div>' +
+          '</div>' +
+          '<button type="button" class="auth-submit" id="_vipTipOk">知道了</button>' +
+        '</div>';
+
+    document.body.appendChild(box);
+    requestAnimationFrame(function () { box.classList.add('active'); });
+
+    function close() {
+        box.classList.remove('active');
+        setTimeout(function () { box.remove(); }, 200);
+    }
+    box.querySelector('.auth-close').onclick = close;
+    box.querySelector('#_vipTipOk').onclick = close;
+    box.onclick = function (e) { if (e.target === box) close(); };
+}
 
 // 分类点击
 if (filterBar) filterBar.addEventListener('click', function(e) {

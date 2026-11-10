@@ -235,6 +235,19 @@
                 <div class="form-group"><label>使用说明（可选）</label><div class="form-input-row"><textarea id="formUsage" rows="2" placeholder="安装步骤、配置技巧"></textarea><button type="button" class="ai-btn ai-btn-ta" onclick="aiGenerateUsage()">🤖</button></div></div>
                 <div class="form-section">链接</div>
                 <div class="form-row"><div class="form-group"><label>官网（可选）</label><input type="url" id="formUrl" placeholder="https://"></div><div class="form-group"><label>下载</label><input type="url" id="formDownload" placeholder="https://"></div></div>
+                <div class="form-group"><label>下载权限</label>
+                    <select id="formDownloadTier" style="width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card-solid);color:var(--text);font-size:13px;">
+                        <option value="free">🟢 所有人可下载（含游客）</option>
+                        <option value="user">🟡 需登录才能下载</option>
+                        <option value="vip">👑 仅 VIP 可下载</option>
+                    </select>
+                    <div class="form-hint">选「仅 VIP」时，普通用户看到下载按钮会提示开通会员</div>
+                </div>
+                <div class="form-group" id="vipUrlWrap" style="display:none;">
+                    <label>VIP 专属下载地址（可选）</label>
+                    <input type="url" id="formVipDownload" placeholder="https://（留空则复用上面的下载地址）">
+                    <div class="form-hint">专属链接存在数据库里，普通用户在页面源码中看不到</div>
+                </div>
                 <div class="form-actions"><button type="button" class="form-cancel" id="formCancel">取消</button><button type="submit" class="form-submit">保存</button></div>
                 <div style="text-align:center;font-size:11px;color:var(--text-light);margin-top:4px;">🤖 AI 生成 <button type="button" onclick="resetApiKey()" style="background:none;border:none;color:var(--primary);cursor:pointer;text-decoration:underline;font-size:11px;">更换 Key</button></div>
             </form>

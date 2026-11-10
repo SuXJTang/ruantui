@@ -542,9 +542,28 @@ function renderSSRCards(tools, origin) {
         //   · 有 url（官网）→ 指向官网
         //   · 都没有 → 指向详情页
         // 之前这里一律指向 detailUrl，导致用户点「⬇️ 下载」跳到 /t/{id} 详情页 —— 明显不对。
-        var primaryLink = t.download || t.url || (origin + '/t/' + t.id);
-        var btnLabel = t.download ? '⬇️ 下载' : (t.url ? '🌐 去官网' : '查看详情');
-        var btnHTML = '<a class="tool-visit-btn" href="' + escHTML(primaryLink) + '" target="_blank" rel="noopener">' + btnLabel + '</a>';
+        // SSR 阶段无法知道访客是不是 VIP，所以：
+        //   free → 直接放下载地址
+        //   user / vip → 不把下载地址写进 HTML（否则看源码就能拿到），
+        //                改为链接到详情页，由前端按登录态/会员态决定能否下载
+        var tier = t.download_tier || 'free';
+        var primaryLink, btnLabel, btnClass = 'tool-visit-btn';
+
+        if (tier === 'free') {
+            primaryLink = t.download || t.url || (origin + '/t/' + t.id);
+            btnLabel = t.download ? '⬇️ 下载' : (t.url ? '🌐 去官网' : '查看详情');
+        } else if (t.url) {
+            // 有官网就先给官网，详情页里有下载入口
+            primaryLink = t.url;
+            btnLabel = '🌐 去官网';
+        } else {
+            primaryLink = origin + '/t/' + t.id;
+            btnLabel = tier === 'vip' ? '👑 VIP 专属' : '🔒 登录后下载';
+            btnClass += ' tool-visit-locked-link';
+        }
+
+        var btnHTML = '<a class="' + btnClass + '" href="' + escHTML(primaryLink) + '"' +
+            (tier === 'free' ? ' target="_blank" rel="noopener"' : '') + '>' + btnLabel + '</a>';
 
         return '<article class="tool-card ssr-card">' +
             iconHTML +
@@ -566,7 +585,7 @@ function renderSSRCards(tools, origin) {
 // 而不是只看到一个空的「0 款工具」。
 // 渲染出来的卡片与前端 renderTools() 的结构一致，JS 接管时直接覆盖，不会闪烁错乱。
 async function injectToolList(htmlRes, url, ctx) {
-    var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned&order=pinned.desc,created_at.asc';
+    var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier&order=pinned.desc,created_at.asc';
     var tools = await fetchListCached(endpoint, ctx);
     if (!tools || !tools.length) return null;
 
@@ -597,7 +616,7 @@ async function injectToolList(htmlRes, url, ctx) {
     // 一旦 JS 加载失败，用户看到的就是「0 款工具 0 个分类」的空白页。
     // 注入卡片后，即使脚本挂了也能看到完整列表。
     try {
-        var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned&order=pinned.desc,created_at.asc';
+        var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier&order=pinned.desc,created_at.asc';
         var allTools = await fetchListCached(listEndpoint, ctx);
         if (allTools && allTools.length) {
             var catSet = {};

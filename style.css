@@ -1490,3 +1490,24 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 [data-mode="dark"] .header-btn.account-btn.account-vip,
 [data-mode="dark"] .header-btn.account-btn.account-vip i,
 [data-mode="dark"] .header-btn.account-btn.account-vip .account-label { color: #f5c542; }
+
+/* ================================================================
+   下载权限：被锁定的下载按钮
+   ----------------------------------------------------------------
+   普通用户看到 VIP 专属工具时，下载按钮变成这个样式，
+   点击弹「开通 VIP」提示，而不是直接放行。
+   ================================================================ */
+.tool-visit-btn.tool-visit-locked {
+    background: linear-gradient(135deg, #b8860b, #d4a017);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+.tool-visit-btn.tool-visit-locked:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+[data-mode="dark"] .tool-visit-btn.tool-visit-locked {
+    background: linear-gradient(135deg, #9a7209, #c49a12);
+}

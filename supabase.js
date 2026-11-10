@@ -90,12 +90,35 @@ function fetchTools() {
         });
 }
 
-// 获取所有公告（最新优先）
+// 获取当前有效的公告（最新优先）
+//
+// 用 active_announcements 视图而不是直接查表：
+// 视图已过滤「未到开始时间」和「已过结束时间」的公告，
+// 并已按优先级排好序（紧急 → 重要 → 普通）。
+//
+// 视图不存在时（还没跑 migration-announcement-enhance.sql）
+// 自动回退到查原表，保证升级过程不断服。
 function fetchAnnouncements() {
-    return supabaseFetch('GET', 'announcements?order=created_at.desc&active=eq.true')
-        .then(function(res) {
-            if (!res.ok) throw new Error('Failed to fetch announcements: ' + res.status);
-            return res.json();
+    return supabaseFetch('GET', 'active_announcements')
+        .then(function (res) {
+            if (res.ok) return res.json();
+            // 视图不存在 → 回退
+            return supabaseFetch('GET', 'announcements?order=created_at.desc&active=eq.true')
+                .then(function (r2) {
+                    if (!r2.ok) throw new Error('Failed to fetch announcements: ' + r2.status);
+                    return r2.json();
+                });
+        })
+        .then(function (rows) {
+            if (!Array.isArray(rows)) return [];
+            // 前端再过滤一次时间窗口：视图已过滤，但回退路径没有，
+            // 统一在客户端兜底，逻辑只写一处。
+            var now = Date.now();
+            return rows.filter(function (a) {
+                if (a.starts_at && new Date(a.starts_at).getTime() > now) return false;
+                if (a.ends_at && new Date(a.ends_at).getTime() <= now) return false;
+                return true;
+            });
         });
 }
 

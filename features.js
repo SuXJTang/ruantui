@@ -1439,7 +1439,35 @@ function renderAnnouncementList() {
         return;
     }
     annMgmtList.innerHTML = App.state.announcements.map(function(a) {
-        return '<div class="mgmt-row" style="align-items:flex-start;"><div class="mgmt-row-info" style="flex:1;"><h4>' + escHTML(a.title) + ' <span style="font-size:10px;font-weight:500;color:var(--text-light);">' + (typeLabels[a.type] || '📢') + '</span></h4><p style="white-space:normal;font-size:12px;margin-top:2px;">' + escHTML(a.content) + '</p><span style="font-size:10px;color:var(--text-light);opacity:.5;">' + new Date(a.created_at).toLocaleDateString('zh-CN') + '</span></div><div class="mgmt-row-actions"><button class="del-btn ann-del-btn" data-id="' + a.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
+        // 优先级徽标
+        var prio = a.priority || 'normal';
+        var prioBadge = '';
+        if (prio === 'urgent') prioBadge = '<span class="ann-prio ann-prio-urgent">🚨 紧急</span>';
+        else if (prio === 'important') prioBadge = '<span class="ann-prio ann-prio-important">⚠️ 重要</span>';
+
+        // 显示方式
+        var modeBadge = '';
+        if ((a.display_mode || 'banner') === 'list') {
+            modeBadge = '<span class="ann-prio ann-prio-list">仅列表</span>';
+        }
+
+        // 时间状态
+        var timeInfo = '';
+        var now = Date.now();
+        if (a.starts_at && new Date(a.starts_at).getTime() > now) {
+            timeInfo = '<span class="ann-time ann-time-scheduled">⏰ ' +
+                new Date(a.starts_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 开始</span>';
+        } else if (a.ends_at) {
+            var endMs = new Date(a.ends_at).getTime();
+            if (endMs <= now) {
+                timeInfo = '<span class="ann-time ann-time-expired">已过期</span>';
+            } else {
+                timeInfo = '<span class="ann-time">⏳ ' +
+                    new Date(a.ends_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 结束</span>';
+            }
+        }
+
+        return '<div class="mgmt-row" style="align-items:flex-start;"><div class="mgmt-row-info" style="flex:1;"><h4>' + escHTML(a.title) + ' <span style="font-size:10px;font-weight:500;color:var(--text-light);">' + (typeLabels[a.type] || '📢') + '</span>' + prioBadge + modeBadge + '</h4><p style="white-space:normal;font-size:12px;margin-top:2px;">' + escHTML(a.content) + '</p><div style="display:flex;gap:8px;align-items:center;font-size:10px;color:var(--text-light);opacity:.6;margin-top:2px;"><span>' + new Date(a.created_at).toLocaleDateString('zh-CN') + '</span>' + timeInfo + (a.dismissible === false ? '<span>不可关闭</span>' : '') + '</div></div><div class="mgmt-row-actions"><button class="del-btn ann-del-btn" data-id="' + a.id + '" title="删除"><i class="fas fa-trash"></i></button></div></div>';
     }).join('');
     annMgmtList.querySelectorAll('.ann-del-btn').forEach(function(b) {
         b.onclick = function(e) { e.stopPropagation(); var id = parseInt(this.dataset.id); showConfirm('确定删除此公告？', function() { deleteAnnouncement(id); }); };
@@ -1467,9 +1495,64 @@ function openAnnForm(ann) {
     _fSet('annFormTitleInput', ann ? ann.title : '');
     _fSet('annFormContent', ann ? ann.content : '');
     _fSet('annFormType', ann ? ann.type : 'manual');
-    annFormOverlay.setAttribute('aria-hidden', 'false'); annFormOverlay.classList.add('active'); document.body.style.overflow = 'hidden';
+
+    // 优先级 / 显示方式 / 时间 / 可关闭
+    _fSet('annFormPriority', (ann && ann.priority) || 'normal');
+    _fSet('annFormDisplayMode', (ann && ann.display_mode) || 'banner');
+
+    // datetime-local 需要 'YYYY-MM-DDTHH:mm' 格式
+    _fSet('annFormStartsAt', ann && ann.starts_at ? toLocalDT(ann.starts_at) : '');
+    _fSet('annFormEndsAt', ann && ann.ends_at ? toLocalDT(ann.ends_at) : '');
+
+    var dis = document.getElementById('annFormDismissible');
+    if (dis) dis.checked = (ann && ann.dismissible === false) ? false : true;
+
+    updateAnnFormTip();
+    annFormOverlay.setAttribute('aria-hidden', 'false');
+    annFormOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
+
+// ISO 时间 → datetime-local 需要的本地时间字符串
+function toLocalDT(iso) {
+    try {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+               'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    } catch (e) { return ''; }
+}
+
+// 根据优先级和显示方式给管理员一句人话提示
+function updateAnnFormTip() {
+    var tip = document.getElementById('annFormTip');
+    if (!tip) return;
+    var p = (_fVal('annFormPriority') || 'normal');
+    var mode = (_fVal('annFormDisplayMode') || 'banner');
+
+    var msg = '';
+    if (p === 'urgent') {
+        msg = '🚨 紧急通知：红色横幅、不可关闭、不会自动收起。用户一定会看到，请只在真正紧急时使用。';
+    } else if (p === 'important') {
+        msg = '⚠️ 重要通知：橙色横幅，12 秒后自动收起，用户可关闭。';
+    } else {
+        msg = '普通通知：浅色横幅，8 秒后自动收起，用户可关闭。';
+    }
+    if (mode === 'list') {
+        msg = '📋 已设为「只进通知列表」：不会出现在横幅上，用户点顶栏 🔔 才能看到。适合不需要打扰的场景。';
+    }
+    tip.textContent = msg;
+    tip.style.display = msg ? '' : 'none';
+}
+
 function closeAnnForm() { if (annFormOverlay) { annFormOverlay.classList.remove('active'); annFormOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } }
+
+// 优先级 / 显示方式变化时更新提示
+['annFormPriority', 'annFormDisplayMode'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.onchange = updateAnnFormTip;
+});
 
 var _afc = document.getElementById('annFormCancel'); if (_afc) _afc.onclick = closeAnnForm;
 var _afcx = document.querySelector('.ann-form-close'); if (_afcx) _afcx.onclick = closeAnnForm;
@@ -1484,7 +1567,39 @@ if (annForm) annForm.onsubmit = function(e) {
     if (!title || !content) { showToast('请填写标题和内容', 'error'); return; }
     var annIdVal = _fVal('annFormId');
     var isEdit = !!annIdVal;
-    var data = { title: title, content: content, type: type };
+
+    // 优先级 / 显示方式 / 定时 / 可关闭
+    var priority = _fVal('annFormPriority') || 'normal';
+    var displayMode = _fVal('annFormDisplayMode') || 'banner';
+    var startsAtRaw = _fVal('annFormStartsAt');
+    var endsAtRaw = _fVal('annFormEndsAt');
+
+    // datetime-local 给的是本地时间，转成 ISO（UTC）再存
+    var startsAt = startsAtRaw ? new Date(startsAtRaw).toISOString() : null;
+    var endsAt = endsAtRaw ? new Date(endsAtRaw).toISOString() : null;
+
+    // 时间校验：结束必须晚于开始
+    if (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt)) {
+        showToast('结束时间必须晚于开始时间', 'error');
+        return;
+    }
+
+    var disEl = document.getElementById('annFormDismissible');
+    var dismissible = disEl ? disEl.checked : true;
+    // 紧急通知强制不可关闭（避免管理员误勾）
+    if (priority === 'urgent') dismissible = false;
+
+    var data = {
+        title: title,
+        content: content,
+        type: type,
+        priority: priority,
+        display_mode: displayMode,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        dismissible: dismissible
+    };
+
     var savePromise;
     if (isEdit) {
         savePromise = updateAnnouncement(parseInt(annIdVal, 10), data);
@@ -1496,9 +1611,22 @@ if (annForm) annForm.onsubmit = function(e) {
         loadAnnouncements().then(function() {
             renderAnnouncementList();
             renderAnnouncements();
+            // 新发布的公告要立刻出横幅，清掉已关闭记录和当天配额
+            try {
+                localStorage.removeItem('ruantui_notif_dismissed');
+                localStorage.removeItem('ruantui_notif_bar_quota');
+            } catch (e) {}
+            renderNotifBar();
+            updateNotifBadge();
         });
         showToast(isEdit ? '公告已更新 ✓' : '公告已发布 ✓', 'success');
-    }).catch(function() { showToast('发布失败', 'error'); });
+    }).catch(function(e) {
+        var msg = (e && e.message) ? e.message : '未知错误';
+        if (/priority|display_mode|starts_at|ends_at|dismissible|column .* does not exist/i.test(msg)) {
+            msg = '数据库缺字段，请先执行 migration-announcement-enhance.sql';
+        }
+        showToast('发布失败：' + msg.slice(0, 80), 'error');
+    });
 };
 
 // ============================================================
@@ -1563,30 +1691,163 @@ function updateNotifBadge() {
     }
 }
 
-// 顶部滚动横幅：显示最新一条通知
+// ============================================================
+// 顶部滚动横幅
+// ------------------------------------------------------------
+// 设计原则：不要让人烦。
+//
+//   · 可关闭 —— 点 ✕ 后这条不再出横幅（红点还在，通知列表里能看到）
+//   · 自动淡出 —— 看过之后停 3 秒自动收起，鼠标移上去暂停
+//   · 频率限制 —— 同一设备一天最多出现 3 次横幅
+//   · 紧急通知例外 —— 不可关闭、不自动收起、红色高亮
+//   · 只显示 display_mode='banner' 的通知
+//
+// 本地存储：
+//   ruantui_notif_dismissed  已关闭的通知 id 列表
+//   ruantui_notif_bar_quota  { date: '2026-11-10', count: 2 }
+// ============================================================
+
+var NOTIF_DISMISSED_KEY = 'ruantui_notif_dismissed';
+var NOTIF_QUOTA_KEY = 'ruantui_notif_bar_quota';
+var NOTIF_BAR_DAILY_LIMIT = 3;
+
+function readDismissedIds() {
+    try {
+        var arr = JSON.parse(localStorage.getItem(NOTIF_DISMISSED_KEY) || '[]');
+        return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+}
+
+// 用户点了 ✕：今天不再用横幅打扰（但通知仍在列表里）
+//
+// 为什么不是「只隐藏这一条」：
+// 那样关掉一条就会立刻冒出下一条，用户会觉得按了没用，更烦。
+// 直接一整天收起横幅，是最省心的做法。
+function dismissNotif(id) {
+    try {
+        // 记下这条（用于统计 / 未来可能恢复）
+        var arr = readDismissedIds();
+        if (arr.indexOf(id) < 0) {
+            arr.push(id);
+            if (arr.length > 100) arr = arr.slice(-100);
+            localStorage.setItem(NOTIF_DISMISSED_KEY, JSON.stringify(arr));
+        }
+        // 关键：把今天的横幅配额用满，等于今天不再显示
+        var today = new Date().toISOString().slice(0, 10);
+        localStorage.setItem(NOTIF_QUOTA_KEY, JSON.stringify({ date: today, count: NOTIF_BAR_DAILY_LIMIT }));
+    } catch (e) {}
+    hideNotifBar();
+}
+
+// 每天的横幅展示配额
+function canShowBarToday() {
+    try {
+        var today = new Date().toISOString().slice(0, 10);
+        var q = JSON.parse(localStorage.getItem(NOTIF_QUOTA_KEY) || '{}');
+        if (q.date !== today) return true;      // 新的一天，重置
+        return (q.count || 0) < NOTIF_BAR_DAILY_LIMIT;
+    } catch (e) { return true; }
+}
+
+function bumpBarQuota() {
+    try {
+        var today = new Date().toISOString().slice(0, 10);
+        var q = JSON.parse(localStorage.getItem(NOTIF_QUOTA_KEY) || '{}');
+        if (q.date !== today) q = { date: today, count: 0 };
+        q.count = (q.count || 0) + 1;
+        localStorage.setItem(NOTIF_QUOTA_KEY, JSON.stringify(q));
+    } catch (e) {}
+}
+
+var notifBarTimer = null;
+var notifBarHovered = false;
+
+function hideNotifBar() {
+    if (!notifBar) return;
+    if (notifBarTimer) { clearTimeout(notifBarTimer); notifBarTimer = null; }
+    notifBar.classList.add('hiding');
+    setTimeout(function () {
+        notifBar.style.display = 'none';
+        notifBar.classList.remove('hiding');
+    }, 260);
+}
+
 function renderNotifBar() {
     if (!notifBar || !notifBarText) return;
+
     var list = App.state.announcements || [];
-    if (!list.length) {
+    var dismissed = readDismissedIds();
+
+    // 找要显示的通知：
+    //   · 只看 display_mode === 'banner' 的（旧数据没字段时默认 banner）
+    //   · 紧急通知优先，且无视已关闭记录
+    //   · 普通通知如果用户关过（或今天配额用完），横幅整体不显示
+    var urgent = null;
+    var normal = null;
+
+    for (var i = 0; i < list.length; i++) {
+        var a = list[i];
+        var mode = a.display_mode || 'banner';
+        if (mode !== 'banner') continue;
+        if (a.priority === 'urgent') {
+            if (!urgent) urgent = a;
+        } else if (!normal) {
+            normal = a;
+        }
+    }
+
+    // 紧急通知优先，不受任何限制
+    var pick = urgent;
+    if (!pick) {
+        // 普通通知：用户关闭过任意一条，或今天配额用完 → 不显示
+        if (dismissed.length > 0 || !canShowBarToday()) {
+            notifBar.style.display = 'none';
+            return;
+        }
+        pick = normal;
+    }
+
+    if (!pick) {
         notifBar.style.display = 'none';
         return;
     }
 
-    // announcements 已按时间倒序（最新在前）
-    var latest = list[0];
+    var priority = pick.priority || 'normal';
+    var isUrgent = priority === 'urgent';
+    var isImportant = priority === 'important';
+    var canDismiss = (pick.dismissible !== false) && !isUrgent;
 
-    // 横幅内容：标题 + 截断的内容
-    var text = latest.title || '';
-    var content = (latest.content || '').replace(/\s+/g, ' ').trim();
+    // （频率限制已在上面挑选阶段处理）
+
+    // ---- 内容 ----
+    var text = pick.title || '';
+    var content = (pick.content || '').replace(/\s+/g, ' ').trim();
     if (content) {
         text += ' · ' + (content.length > 40 ? content.slice(0, 40) + '…' : content);
     }
     notifBarText.textContent = text;
-    notifBar.style.display = '';
 
-    // 内容超出容器时加滚动动画
+    // ---- 样式 ----
+    notifBar.className = 'notif-bar' +
+        (isUrgent ? ' urgent' : '') +
+        (isImportant ? ' important' : '');
+
+    // 关闭按钮：紧急通知不显示
+    var closeBtn = notifBar.querySelector('.notif-bar-close');
+    if (closeBtn) {
+        closeBtn.style.display = canDismiss ? '' : 'none';
+        closeBtn.onclick = function (e) {
+            e.stopPropagation();
+            dismissNotif(pick.id);
+        };
+    }
+
+    notifBar.style.display = '';
+    bumpBarQuota();
+
+    // ---- 溢出滚动 ----
     requestAnimationFrame(function () {
-        if (!notifBarText || !notifBar) return;
+        if (!notifBar || !notifBarText) return;
         var track = notifBar.querySelector('.notif-bar-track');
         if (!track) return;
         var overflow = notifBarText.scrollWidth - track.clientWidth;
@@ -1598,6 +1859,18 @@ function renderNotifBar() {
             notifBarText.style.animationDuration = '';
         }
     });
+
+    // ---- 自动淡出 ----
+    // 紧急通知不自动收起；用户正在悬停阅读时也不收
+    if (notifBarTimer) { clearTimeout(notifBarTimer); notifBarTimer = null; }
+
+    if (!isUrgent) {
+        var autoHideMs = isImportant ? 12000 : 8000;
+        notifBarTimer = setTimeout(function () {
+            if (notifBarHovered) return;    // 悬停中，等鼠标移开
+            hideNotifBar();
+        }, autoHideMs);
+    }
 }
 
 function renderAnnouncements() {
@@ -1676,6 +1949,19 @@ if (notifBtn) {
     };
 }
 
+// 悬停时暂停自动收起
+if (notifBar) {
+    notifBar.onmouseenter = function () { notifBarHovered = true; };
+    notifBar.onmouseleave = function () {
+        notifBarHovered = false;
+        // 鼠标移开后重新计时，给用户留时间继续看
+        if (notifBarTimer) clearTimeout(notifBarTimer);
+        notifBarTimer = setTimeout(function () {
+            if (!notifBarHovered) hideNotifBar();
+        }, 3000);
+    };
+}
+
 // 点横幅也打开面板
 if (notifBar) {
     notifBar.onclick = function () { openAnnPanel(); };
@@ -1728,6 +2014,7 @@ window.loadProfilesForVip = loadProfilesForVip;
 window.renderAnnouncementList = renderAnnouncementList;
 window.loadMyVip = loadMyVip;
 window.renderNotifBar = renderNotifBar;
+window.dismissNotif = dismissNotif;
 window.updateNotifBadge = updateNotifBadge;
 window.openAnnPanel = openAnnPanel;
 window.syncTierUI = syncTierUI;

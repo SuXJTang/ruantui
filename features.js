@@ -117,18 +117,99 @@ function updateAccountUI() {
     }
     var u = window.Auth.currentUser() || {};
     var admin = !!App.state.isAdmin;
+    var vip = !!(App.state.vipInfo && App.state.vipInfo.isVip);
     btn.classList.add('account-in');
-    btn.setAttribute('title', admin ? '管理员：' + (u.email || '') : (u.email || '已登录'));
+    btn.classList.toggle('account-vip', vip);
+    btn.setAttribute('title',
+        admin ? '管理员：' + (u.email || '')
+              : (vip ? 'VIP 会员：' + (u.email || '') : (u.email || '已登录')));
     btn.setAttribute('aria-label', '账号');
-    label.textContent = admin ? '管理员' : '我的';
+    // 按钮文案：管理员 > VIP > 我的
+    label.textContent = admin ? '管理员' : (vip ? 'VIP' : '我的');
     btn.querySelector('i').className = admin ? 'fas fa-user-shield' : 'fas fa-user-check';
 }
 window.updateAccountUI = updateAccountUI;
+
+// ============================================================
+// 当前用户的 VIP 状态
+// ------------------------------------------------------------
+// 之前 vip_until 只在管理面板内部用，普通用户界面上完全看不到
+// 自己是不是会员 —— 站长开了 VIP，用户还是显示「普通用户」。
+// 这里统一读取并在账号菜单里展示。
+// ============================================================
+
+// App.state.vipInfo = { loading, isVip, forever, until, error }
+function loadMyVip(forceRefresh) {
+    if (!window.Auth || !window.Auth.isLoggedIn()) {
+        App.state.vipInfo = { loading: false, isVip: false };
+        return Promise.resolve(App.state.vipInfo);
+    }
+    if (App.state.vipInfo && App.state.vipInfo.isVip !== undefined && !forceRefresh) {
+        return Promise.resolve(App.state.vipInfo);
+    }
+
+    App.state.vipInfo = { loading: true, isVip: false };
+
+    return window.Auth.getAccessToken().then(function (token) {
+        if (!token) throw new Error('未登录');
+        return sbFetch('profiles?select=vip_until', {
+            method: 'GET',
+            headers: {
+                'apikey': window.RuantuiSupabase.key,
+                'Authorization': 'Bearer ' + token
+            }
+        });
+    }).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    }).then(function (rows) {
+        var row = Array.isArray(rows) && rows[0];
+        var until = row ? row.vip_until : null;
+        var info = { loading: false, isVip: false, until: until };
+        if (until) {
+            var t = new Date(until).getTime();
+            if (!isNaN(t) && t > Date.now()) {
+                info.isVip = true;
+                // 2099 年当作永久
+                info.forever = new Date(until).getUTCFullYear() >= 2099;
+            }
+        }
+        App.state.vipInfo = info;
+        if (typeof updateAccountUI === 'function') updateAccountUI();
+        return info;
+    }).catch(function (e) {
+        // 读不到就当作非 VIP，但标记 error，菜单里不误导用户
+        App.state.vipInfo = { loading: false, isVip: false, error: e.message };
+        return App.state.vipInfo;
+    });
+}
+
+// 把 VIP 状态格式化成一段说明文字
+function vipText() {
+    var v = App.state.vipInfo || {};
+    if (v.loading) return '读取中…';
+    if (!v.isVip) return '普通用户';
+    if (v.forever) return '👑 VIP · 永久';
+    if (v.until) {
+        var d = new Date(v.until);
+        var days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+        return '👑 VIP · 还剩 ' + days + ' 天（' + d.toLocaleDateString('zh-CN') + ' 到期）';
+    }
+    return '👑 VIP';
+}
 
 // 账号下拉菜单
 function showAccountMenu() {
     var old = document.getElementById('_accountMenu');
     if (old) { old.remove(); return; }
+
+    // 打开菜单时后台刷新一次 VIP 状态（站长刚开通的话能立刻看到）
+    if (window.Auth && window.Auth.isLoggedIn()) {
+        loadMyVip(true).then(function () {
+            // 状态有变化时更新一下账号按钮的图标
+            updateAccountUI();
+        });
+    }
 
     var btn = document.getElementById('accountBtn');
     var r = btn.getBoundingClientRect();
@@ -161,7 +242,16 @@ function showAccountMenu() {
         html += '<button class="am-item am-primary" data-act="login"><i class="fas fa-right-to-bracket"></i> 登录</button>';
         html += '<button class="am-item" data-act="register"><i class="fas fa-user-plus"></i> 注册新账号</button>';
     } else {
-        html += '<div class="am-head"><strong>' + escHTML(u.email || '已登录') + '</strong><small>' + (admin ? '管理员' : '普通用户') + '</small></div>';
+        // 身份行：管理员 > VIP > 普通用户
+        var roleText;
+        if (admin) {
+            roleText = '管理员' + (App.state.vipInfo && App.state.vipInfo.isVip ? ' · VIP' : '');
+        } else {
+            roleText = vipText();
+        }
+        var roleCls = (App.state.vipInfo && App.state.vipInfo.isVip) ? 'am-role am-role-vip' : 'am-role';
+        html += '<div class="am-head"><strong>' + escHTML(u.email || '已登录') + '</strong>' +
+            '<small class="' + roleCls + '">' + escHTML(roleText) + '</small></div>';
         if (admin) html += '<button class="am-item" data-act="manage"><i class="fas fa-cog"></i> 管理面板</button>';
         html += '<button class="am-item" data-act="favs"><i class="fas fa-heart"></i> 我的收藏</button>';
         html += '<button class="am-item am-danger" data-act="logout"><i class="fas fa-right-from-bracket"></i> 退出登录</button>';
@@ -318,6 +408,8 @@ function showAuthBox(mode) {
         var v = await window.Auth.verifyAdmin();
         setAdminFlag(!!v.isAdmin);
         close();
+        // 登录后立刻读一次 VIP 状态，账号菜单里能马上看到是不是会员
+        loadMyVip(true);
         showToast(v.isAdmin ? '登录成功，管理员' : '登录成功 ✓', 'success');
         if (v.isAdmin) openMgmt();
     }
@@ -513,6 +605,9 @@ function writeAdminFlagCache(v) {
     // 先按上次记住的状态渲染，一上来就是正确的，不闪烁
     var cachedAdmin = readAdminFlagCache();
     setAdminFlag(!!cachedAdmin);
+
+    // 同时拉一次 VIP 状态，账号菜单里能看到是不是会员
+    loadMyVip(true);
 
     window.Auth.verifyAdmin().then(function(v) {
         if (!v.loggedIn) {

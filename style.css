@@ -1464,3 +1464,29 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 [data-mode="dark"] .card-fav-btn:hover { background: rgba(239, 68, 68, 0.20); }
 [data-mode="dark"] .card-fav-btn.active { background: rgba(239, 68, 68, 0.20); }
 
+/* ================================================================
+   VIP 身份标识
+   ----------------------------------------------------------------
+   账号按钮 / 下拉菜单里体现会员身份，用户能直接看到自己是不是 VIP。
+   ================================================================ */
+/* 顶栏账号按钮：VIP 用户用金色描边 + 金色图标 */
+.header-btn.account-btn.account-vip {
+    color: #e0a500;
+}
+.header-btn.account-btn.account-vip i {
+    color: #e0a500;
+}
+.header-btn.account-btn.account-vip .account-label {
+    color: #e0a500;
+    font-weight: 700;
+}
+
+/* 下拉菜单里的身份行 */
+.account-menu .am-head .am-role-vip {
+    color: #e0a500 !important;
+    font-weight: 700;
+}
+[data-mode="dark"] .account-menu .am-head .am-role-vip { color: #f5c542 !important; }
+[data-mode="dark"] .header-btn.account-btn.account-vip,
+[data-mode="dark"] .header-btn.account-btn.account-vip i,
+[data-mode="dark"] .header-btn.account-btn.account-vip .account-label { color: #f5c542; }

@@ -182,12 +182,21 @@
         return getAccessToken().then(function(token) {
             if (!token) return { loggedIn: false, isAdmin: false };
             // 查 admins 表：RLS 只允许本人看到自己的行，所以能查到 == 是管理员
-            return fetch(SUPABASE_URL + '/rest/v1/admins?select=user_id&limit=1', {
+            return fetchWithRetry(SUPABASE_URL + '/rest/v1/admins?select=user_id&limit=1', {
                 headers: authHeaders(token)
             }).then(function(res) {
                 if (res.status === 401) {
                     writeSession(null);
                     return { loggedIn: false, isAdmin: false };
+                }
+                if (!res.ok) {
+                    // 5xx / 网关异常：这属于「没查成」，不是「不是管理员」。
+                    // 两者必须区分 —— 否则管理员会因为一次请求失败被降级成普通用户，
+                    // 界面上「管理员」会突然退回「我的」。
+                    return {
+                        loggedIn: true, isAdmin: null, unknown: true,
+                        email: (currentUser() || {}).email || ''
+                    };
                 }
                 return res.json().then(function(rows) {
                     var u = currentUser();
@@ -199,7 +208,11 @@
                 });
             });
         }).catch(function() {
-            return { loggedIn: false, isAdmin: false };
+            // 连接层失败同样是「没查成」，不要误判成普通用户
+            return {
+                loggedIn: true, isAdmin: null, unknown: true,
+                email: (currentUser() || {}).email || ''
+            };
         });
     }
 

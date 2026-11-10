@@ -92,6 +92,8 @@ window.logoutAdmin = function() {
 function setAdminFlag(v) {
     App.state.isAdmin = !!v;
     App.state.adminToken = v ? 'session' : null;
+    // 同步缓存，下次刷新可以立刻按正确状态渲染（避免「我的/管理员」闪烁）
+    if (typeof writeAdminFlagCache === 'function') writeAdminFlagCache(!!v);
     // 管理面板按钮只在「已登录且是管理员」时出现 —— 普通用户和游客都看不到，
     // 避免暴露后台入口（真正的权限仍由数据库 RLS 的 is_admin() 判定）。
     var b = document.getElementById('mgmtBtn');
@@ -487,21 +489,53 @@ if (mgmtBtn) mgmtBtn.onclick = function() { checkAdmin(); };
 // 因为 setAdminFlag(false) 会把账号按钮重置成未登录样式。
 // 现在改成：只要会话还在，就先把按钮设成已登录状态（显示「我的」），
 // 再异步确认是否管理员（是则额外显示管理面板入口）。
+// 记住当前账号是否为管理员。
+// 用途：页面刷新时先按缓存渲染出正确的按钮状态，
+// 再异步校验。避免「先显示我的 → 变管理员 → 又变回我的」这种闪烁。
+// 键里带 user_id，换账号登录不会串。
+function adminFlagCacheKey() {
+    var u = (window.Auth && window.Auth.currentUser && window.Auth.currentUser()) || {};
+    return 'ruantui_is_admin_' + (u.user_id || u.email || 'anon');
+}
+function readAdminFlagCache() {
+    try { return localStorage.getItem(adminFlagCacheKey()) === '1'; } catch (e) { return false; }
+}
+function writeAdminFlagCache(v) {
+    try {
+        var k = adminFlagCacheKey();
+        if (v) localStorage.setItem(k, '1'); else localStorage.removeItem(k);
+    } catch (e) {}
+}
+
 (function restoreSession() {
     if (!window.Auth || !window.Auth.isLoggedIn()) { updateAccountUI(); return; }
-    // 先立刻反映「已登录」，不等网络请求，避免页面闪一下「登录」
-    setAdminFlag(false);
+
+    // 先按上次记住的状态渲染，一上来就是正确的，不闪烁
+    var cachedAdmin = readAdminFlagCache();
+    setAdminFlag(!!cachedAdmin);
+
     window.Auth.verifyAdmin().then(function(v) {
-        if (v.isAdmin) setAdminFlag(true);
-        else if (!v.loggedIn) {
-            // 会话确实失效了（token 过期且刷新失败）
-            setAdminFlag(false);
-        } else {
-            setAdminFlag(false);  // 普通用户，保持「我的」
+        if (!v.loggedIn) {
+            // 会话确实失效（token 过期且刷新失败）
+            writeAdminFlagCache(false);
+            App.state.isAdmin = false;
+            App.state.adminToken = null;
+            var b = document.getElementById('mgmtBtn');
+            if (b) b.style.display = 'none';
+            updateAccountUI();
+            return;
         }
+        if (v.unknown) {
+            // 没查成（网络抖动 / 服务端异常）：沿用缓存的判定，
+            // 绝不因为一次请求失败就把管理员降级成普通用户
+            setAdminFlag(!!cachedAdmin);
+            return;
+        }
+        writeAdminFlagCache(!!v.isAdmin);
+        setAdminFlag(!!v.isAdmin);
     }).catch(function() {
-        // 网络失败时也保持已登录显示，不要因为一次请求失败就把用户踢出去
-        setAdminFlag(false);
+        // 同上：查询失败不改判定
+        setAdminFlag(!!cachedAdmin);
     });
 })();
 

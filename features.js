@@ -1501,17 +1501,112 @@ if (annForm) annForm.onsubmit = function(e) {
     }).catch(function() { showToast('发布失败', 'error'); });
 };
 
-// 通知浮窗交互
-var annFloat = document.getElementById('annFloat');
+// ============================================================
+// 通知系统
+// ------------------------------------------------------------
+// 交互：
+//   · 顶栏 🔔 按钮 → 打开通知面板
+//   · 顶部滚动横幅 → 显示最新一条，点击也打开面板
+//   · 未读红点 → 有新通知但没看过时显示
+//
+// 已读状态存 localStorage（按通知 id 记录），
+// 换设备会重新算未读，但不影响功能。
+// ============================================================
 var annPanel = document.getElementById('annPanel');
-var annBadge = document.getElementById('annBadge');
+var notifDot = document.getElementById('notifDot');
+var notifBtn = document.getElementById('notifBtn');
+var notifBar = document.getElementById('notifBar');
+var notifBarText = document.getElementById('notifBarText');
+
+var NOTIF_READ_KEY = 'ruantui_notif_read';
+
+function readSeenIds() {
+    try {
+        var arr = JSON.parse(localStorage.getItem(NOTIF_READ_KEY) || '[]');
+        return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+}
+
+function markAllRead() {
+    try {
+        var ids = (App.state.announcements || []).map(function (a) { return a.id; });
+        localStorage.setItem(NOTIF_READ_KEY, JSON.stringify(ids));
+    } catch (e) {}
+    updateNotifBadge();
+}
+
+// 计算未读数并更新红点
+function updateNotifBadge() {
+    var list = App.state.announcements || [];
+    if (!list.length) {
+        if (notifDot) notifDot.style.display = 'none';
+        // 没通知时铃铛不摇
+        if (notifBtn) notifBtn.classList.remove('has-unread');
+        return;
+    }
+    var seen = readSeenIds();
+    var unread = list.filter(function (a) { return seen.indexOf(a.id) < 0; }).length;
+
+    if (notifDot) {
+        if (unread > 0) {
+            notifDot.textContent = unread > 99 ? '99+' : String(unread);
+            notifDot.style.display = '';
+        } else {
+            notifDot.style.display = 'none';
+        }
+    }
+
+    // 有未读时铃铛轻微摇动（CSS 里的 .has-unread i 动画）
+    if (notifBtn) {
+        if (unread > 0) notifBtn.classList.add('has-unread');
+        else notifBtn.classList.remove('has-unread');
+    }
+}
+
+// 顶部滚动横幅：显示最新一条通知
+function renderNotifBar() {
+    if (!notifBar || !notifBarText) return;
+    var list = App.state.announcements || [];
+    if (!list.length) {
+        notifBar.style.display = 'none';
+        return;
+    }
+
+    // announcements 已按时间倒序（最新在前）
+    var latest = list[0];
+
+    // 横幅内容：标题 + 截断的内容
+    var text = latest.title || '';
+    var content = (latest.content || '').replace(/\s+/g, ' ').trim();
+    if (content) {
+        text += ' · ' + (content.length > 40 ? content.slice(0, 40) + '…' : content);
+    }
+    notifBarText.textContent = text;
+    notifBar.style.display = '';
+
+    // 内容超出容器时加滚动动画
+    requestAnimationFrame(function () {
+        if (!notifBarText || !notifBar) return;
+        var track = notifBar.querySelector('.notif-bar-track');
+        if (!track) return;
+        var overflow = notifBarText.scrollWidth - track.clientWidth;
+        if (overflow > 4) {
+            notifBarText.style.animationDuration = Math.max(8, Math.round(overflow / 28)) + 's';
+            notifBarText.classList.add('scrolling');
+        } else {
+            notifBarText.classList.remove('scrolling');
+            notifBarText.style.animationDuration = '';
+        }
+    });
+}
 
 function renderAnnouncements() {
     var body = document.getElementById('annPanelBody');
     if (!body) return;
     if (!App.state.announcements.length) {
-        body.innerHTML = '<div class="ann-empty">📢 暂无公告</div>';
-        if (annBadge) annBadge.style.display = 'none';
+        body.innerHTML = '<div class="ann-empty">🔔 暂无通知</div>';
+        updateNotifBadge();
+        renderNotifBar();
         return;
     }
     var html = App.state.announcements.slice(0, 10).map(function(a) {
@@ -1528,24 +1623,56 @@ function renderAnnouncements() {
             this.classList.toggle('expanded');
         };
     });
-    if (annBadge) {
-        annBadge.textContent = App.state.announcements.length;
-        annBadge.style.display = '';
-    }
+    updateNotifBadge();
+    renderNotifBar();
 }
 
-if (annFloat) {
-    annFloat.onclick = function(e) {
+// 打开/关闭通知面板
+function openAnnPanel() {
+    if (!annPanel) return;
+    annPanel.classList.add('active');
+    // 打开即视为已读
+    markAllRead();
+}
+
+function closeAnnPanel() {
+    if (annPanel) annPanel.classList.remove('active');
+}
+
+if (notifBtn) {
+    notifBtn.onclick = function (e) {
         e.stopPropagation();
-        annPanel.classList.toggle('active');
+        if (annPanel && annPanel.classList.contains('active')) closeAnnPanel();
+        else openAnnPanel();
     };
 }
+
+// 点横幅也打开面板
+if (notifBar) {
+    notifBar.onclick = function () { openAnnPanel(); };
+    notifBar.onkeydown = function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAnnPanel(); }
+    };
+}
+
 var annPanelClose = document.getElementById('annPanelClose');
-if (annPanelClose) annPanelClose.onclick = function() { annPanel.classList.remove('active'); };
-document.addEventListener('click', function(e) {
-    if (annPanel && annFloat && !annPanel.contains(e.target) && e.target !== annFloat && !annFloat.contains(e.target)) {
-        annPanel.classList.remove('active');
-    }
+if (annPanelClose) annPanelClose.onclick = function (e) {
+    e.stopPropagation();
+    closeAnnPanel();
+};
+
+// 点空白处关闭
+document.addEventListener('click', function (e) {
+    if (!annPanel || !annPanel.classList.contains('active')) return;
+    if (annPanel.contains(e.target)) return;
+    if (notifBtn && notifBtn.contains(e.target)) return;
+    if (notifBar && notifBar.contains(e.target)) return;
+    closeAnnPanel();
+});
+
+// ESC 关闭
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && annPanel && annPanel.classList.contains('active')) closeAnnPanel();
 });
 
 // 页面加载时加载公告
@@ -1566,6 +1693,9 @@ window.renderVipList = renderVipList;
 window.loadProfilesForVip = loadProfilesForVip;
 window.renderAnnouncementList = renderAnnouncementList;
 window.loadMyVip = loadMyVip;
+window.renderNotifBar = renderNotifBar;
+window.updateNotifBadge = updateNotifBadge;
+window.openAnnPanel = openAnnPanel;
 window.syncTierUI = syncTierUI;
 window.vipText = vipText;
 window.silentRefreshTools = silentRefreshTools;

@@ -85,17 +85,492 @@
             syncLine = '<div class="uc-sync uc-sync-ok">✓ 收藏已云端同步</div>';
         }
 
-        var initial = (u.email || '?').charAt(0).toUpperCase();
+        // 显示名：优先昵称，没有就用邮箱前缀
+        var profile = (App.state && App.state.myProfile) || {};
+        var displayName = (profile.nickname && profile.nickname.trim()) || (u.email || '').split('@')[0] || '已登录';
+
+        var initial = displayName.charAt(0).toUpperCase();
 
         return '<div class="dash-card uc-account' + (isVip ? ' uc-is-vip' : '') + '">' +
             '<div class="uc-avatar' + (isVip ? ' uc-avatar-vip' : '') + '">' + escHTML(initial) + '</div>' +
             '<div class="uc-info">' +
-              '<div class="uc-title">' + escHTML(u.email || '已登录') + ' ' + roleTag + '</div>' +
+              '<div class="uc-title">' + escHTML(displayName) + ' ' + roleTag + '</div>' +
+              (displayName !== u.email ? '<div class="uc-sub">' + escHTML(u.email || '') + '</div>' : '') +
               vipLine + syncLine +
             '</div>' +
-            '<button type="button" class="uc-action uc-action-ghost" id="ucLogoutBtn">退出登录</button>' +
+            '<div class="uc-actions">' +
+              '<button type="button" class="uc-action uc-action-ghost" id="ucSettingsBtn">设置</button>' +
+              '<button type="button" class="uc-action uc-action-ghost" id="ucLogoutBtn">退出</button>' +
+            '</div>' +
             '</div>';
     }
+
+    // ============================================================
+    // 打开设置页（替换用户中心的内容）
+    // ============================================================
+    var backupContent = null;
+
+    async function openSettingsPage() {
+        if (!dashOverlay) return;
+
+        var content = document.getElementById('dashContent');
+        if (!content) return;
+
+        // 备份原来的内容，返回时还原
+        backupContent = content.innerHTML;
+
+        // 显示加载中
+        content.innerHTML = '<div class="dash-loading">加载中…</div>';
+
+        // 拉取 profile（昵称、注册时间）
+        var prof = null;
+        if (window.Auth && window.Auth.getProfile) {
+            try { prof = await window.Auth.getProfile(); } catch (e) {}
+        }
+        if (prof) App.state.myProfile = prof;
+
+        content.innerHTML =
+            '<div class="uc-settings-head">' +
+              '<button type="button" class="uc-back-btn" id="ucBackBtn"><i class="fas fa-arrow-left"></i> 返回</button>' +
+              '<span class="uc-settings-heading">账号设置</span>' +
+            '</div>' +
+            buildSettingsPage();
+
+        var backBtn = document.getElementById('ucBackBtn');
+        if (backBtn) {
+            backBtn.onclick = function () {
+                // 还原用户中心内容
+                if (backupContent !== null) {
+                    content.innerHTML = backupContent;
+                    // 重新绑定卡片上的按钮
+                    var loginBtn2 = document.getElementById('ucLoginBtn');
+                    if (loginBtn2) {
+                        loginBtn2.onclick = function () {
+                            closeDashboard();
+                            setTimeout(function () {
+                                if (typeof window.showAuthBox === 'function') window.showAuthBox('login');
+                            }, 250);
+                        };
+                    }
+                    var settingsBtn2 = document.getElementById('ucSettingsBtn');
+                    if (settingsBtn2) settingsBtn2.onclick = function () { openSettingsPage(); };
+                    var logoutBtn2 = document.getElementById('ucLogoutBtn');
+                    if (logoutBtn2) {
+                        logoutBtn2.onclick = function () {
+                            if (!confirm('确定退出登录？')) return;
+                            if (window.logoutAdmin) window.logoutAdmin();
+                            closeDashboard();
+                        };
+                    }
+                    var vipInfoLink2 = document.getElementById('ucVipInfo');
+                    if (vipInfoLink2) {
+                        vipInfoLink2.onclick = function () {
+                            closeDashboard();
+                            setTimeout(function () {
+                                if (typeof showVipRequiredTip === 'function') showVipRequiredTip();
+                            }, 250);
+                        };
+                    }
+                }
+            };
+        }
+
+        bindSettingsEvents();
+    }
+
+    // 昵称改了之后刷新卡片
+    function refreshAccountCard() {
+        if (!dashOverlay) return;
+        var content = document.getElementById('dashContent');
+        if (!content) return;
+        // 如果当前在设置页，不刷新
+        if (document.getElementById('ucNickInput')) return;
+
+        content.innerHTML = buildDashboard();
+        var settingsBtn = document.getElementById('ucSettingsBtn');
+        if (settingsBtn) settingsBtn.onclick = function () { openSettingsPage(); };
+        var logoutBtn = document.getElementById('ucLogoutBtn');
+        if (logoutBtn) {
+            logoutBtn.onclick = function () {
+                if (!confirm('确定退出登录？')) return;
+                if (window.logoutAdmin) window.logoutAdmin();
+                closeDashboard();
+            };
+        }
+        var loginBtn = document.getElementById('ucLoginBtn');
+        if (loginBtn) {
+            loginBtn.onclick = function () {
+                closeDashboard();
+                setTimeout(function () {
+                    if (typeof window.showAuthBox === 'function') window.showAuthBox('login');
+                }, 250);
+            };
+        }
+    }
+
+    // ============================================================
+    // 账号设置页
+    // ------------------------------------------------------------
+    // 从用户中心卡片点「设置」进入。
+    // 包含：昵称、改密码、退出所有设备、注册时间、删除账号。
+    // ============================================================
+    function buildSettingsPage() {
+        var u = (window.Auth.currentUser && window.Auth.currentUser()) || {};
+        var nickname = (App.state.myProfile && App.state.myProfile.nickname) || '';
+        var createdAt = (App.state.myProfile && App.state.myProfile.created_at) || null;
+        var joinDate = '';
+        if (createdAt) {
+            var d = new Date(createdAt);
+            if (!isNaN(d.getTime())) {
+                joinDate = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+            }
+        }
+
+        return '<div class="uc-settings">' +
+
+            // ---------- 个人资料 ----------
+            '<div class="uc-set-section">' +
+              '<div class="uc-set-title">个人资料</div>' +
+              '<div class="uc-set-row">' +
+                '<label class="uc-set-label">昵称</label>' +
+                '<div class="uc-set-control">' +
+                  '<input type="text" class="uc-set-input" id="ucNickInput" maxlength="20" ' +
+                    'placeholder="2-20 个字" value="' + escHTML(nickname) + '">' +
+                  '<button type="button" class="uc-set-btn" id="ucNickSave">保存</button>' +
+                '</div>' +
+                '<div class="uc-set-hint" id="ucNickHint">别人看到的名字，2-20 个字</div>' +
+              '</div>' +
+              '<div class="uc-set-row">' +
+                '<label class="uc-set-label">邮箱</label>' +
+                '<div class="uc-set-control"><span class="uc-set-static">' + escHTML(u.email || '') + '</span></div>' +
+              '</div>' +
+              (joinDate ? '<div class="uc-set-row">' +
+                '<label class="uc-set-label">加入时间</label>' +
+                '<div class="uc-set-control"><span class="uc-set-static">' + joinDate + '</span></div>' +
+              '</div>' : '') +
+            '</div>' +
+
+            // ---------- 账号安全 ----------
+            '<div class="uc-set-section">' +
+              '<div class="uc-set-title">账号安全</div>' +
+              '<div class="uc-set-row">' +
+                '<label class="uc-set-label">密码</label>' +
+                '<div class="uc-set-control">' +
+                  '<button type="button" class="uc-set-action" id="ucChangePwd">修改密码</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="uc-set-row">' +
+                '<label class="uc-set-label">登录设备</label>' +
+                '<div class="uc-set-control">' +
+                  '<button type="button" class="uc-set-action" id="ucSignOutAll">退出其他所有设备</button>' +
+                '</div>' +
+                '<div class="uc-set-hint">如果怀疑账号被盗用，改完密码后执行一次</div>' +
+              '</div>' +
+            '</div>' +
+
+            // ---------- 危险操作 ----------
+            '<div class="uc-set-section uc-set-danger">' +
+              '<div class="uc-set-title">危险操作</div>' +
+              '<div class="uc-set-row">' +
+                '<label class="uc-set-label">删除账号</label>' +
+                '<div class="uc-set-control">' +
+                  '<button type="button" class="uc-set-action uc-set-danger-btn" id="ucDeleteAccount">删除账号</button>' +
+                '</div>' +
+                '<div class="uc-set-hint">删除后所有数据不可恢复，收藏也会一并清除</div>' +
+              '</div>' +
+            '</div>' +
+
+            '</div>';
+    }
+
+    // ============================================================
+    // 设置页的事件绑定（打开后调用）
+    // ============================================================
+    function bindSettingsEvents() {
+        // ---------- 改昵称 ----------
+        var nickInput = document.getElementById('ucNickInput');
+        var nickSave = document.getElementById('ucNickSave');
+        var nickHint = document.getElementById('ucNickHint');
+
+        function showNickHint(text, isError) {
+            if (!nickHint) return;
+            nickHint.textContent = text;
+            nickHint.style.color = isError ? '#ef4444' : '';
+        }
+
+        if (nickSave) {
+            nickSave.onclick = async function () {
+                var n = (nickInput.value || '').trim();
+                if (n.length < 2) { showNickHint('昵称至少 2 个字', true); return; }
+                if (n.length > 20) { showNickHint('昵称最多 20 个字', true); return; }
+
+                nickSave.disabled = true;
+                nickSave.textContent = '保存中…';
+
+                var r = await window.Auth.updateNickname(n);
+
+                nickSave.disabled = false;
+                nickSave.textContent = '保存';
+
+                if (r.ok) {
+                    if (!App.state.myProfile) App.state.myProfile = {};
+                    App.state.myProfile.nickname = n;
+                    showNickHint('已保存 ✓', false);
+                    if (typeof showToast === 'function') showToast('昵称已更新', 'success');
+                    // 刷新用户中心卡片上的昵称
+                    if (typeof refreshAccountCard === 'function') refreshAccountCard();
+                } else {
+                    showNickHint(r.error || '保存失败', true);
+                }
+            };
+        }
+
+        // 回车也能保存
+        if (nickInput) {
+            nickInput.onkeydown = function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); if (nickSave) nickSave.click(); }
+            };
+        }
+
+        // ---------- 改密码 ----------
+        var pwdBtn = document.getElementById('ucChangePwd');
+        if (pwdBtn) {
+            pwdBtn.onclick = function () { showChangePasswordBox(); };
+        }
+
+        // ---------- 退出所有设备 ----------
+        var signOutAll = document.getElementById('ucSignOutAll');
+        if (signOutAll) {
+            signOutAll.onclick = async function () {
+                if (!confirm('退出其他所有设备？\n\n当前设备不受影响，其他设备需要重新登录。')) return;
+
+                signOutAll.disabled = true;
+                signOutAll.textContent = '处理中…';
+
+                var r = await window.Auth.signOutEverywhere();
+
+                signOutAll.disabled = false;
+                signOutAll.textContent = '退出其他所有设备';
+
+                if (r.ok) {
+                    if (typeof showToast === 'function') showToast('已退出其他所有设备', 'success');
+                } else {
+                    if (typeof showToast === 'function') showToast(r.error || '操作失败', 'error');
+                }
+            };
+        }
+
+        // ---------- 删除账号 ----------
+        var delBtn = document.getElementById('ucDeleteAccount');
+        if (delBtn) {
+            delBtn.onclick = function () { showDeleteAccountBox(); };
+        }
+    }
+
+    // ============================================================
+    // 改密码弹窗
+    // ============================================================
+    function showChangePasswordBox() {
+        var old = document.getElementById('_pwdBox');
+        if (old) old.remove();
+
+        var box = document.createElement('div');
+        box.id = '_pwdBox';
+        box.className = 'auth-overlay';
+        box.innerHTML =
+            '<div class="auth-card" role="dialog" aria-modal="true">' +
+              '<button class="auth-close" id="_pwdClose" aria-label="关闭"><i class="fas fa-times"></i></button>' +
+              '<div class="auth-head">' +
+                '<div class="auth-logo">🔒</div>' +
+                '<h3>修改密码</h3>' +
+                '<p>设置一个新密码，其他设备需要重新登录</p>' +
+              '</div>' +
+              '<div class="auth-body">' +
+                '<div class="auth-field"><i class="fas fa-lock"></i>' +
+                  '<input type="password" id="_pwdNew" autocomplete="new-password" placeholder="新密码（至少 6 位）"></div>' +
+                '<div class="auth-field"><i class="fas fa-lock"></i>' +
+                  '<input type="password" id="_pwdNew2" autocomplete="new-password" placeholder="再输一次"></div>' +
+                '<div class="auth-msg" id="_pwdMsg"></div>' +
+                '<button class="auth-submit" id="_pwdSubmit">确认修改</button>' +
+              '</div>' +
+            '</div>';
+
+        document.body.appendChild(box);
+
+        var msg = document.getElementById('_pwdMsg');
+        var submit = document.getElementById('_pwdSubmit');
+        var p1 = document.getElementById('_pwdNew');
+        var p2 = document.getElementById('_pwdNew2');
+
+        function fail(t) { msg.textContent = t; msg.className = 'auth-msg err'; }
+        function okay(t) { msg.textContent = t; msg.className = 'auth-msg ok'; }
+        function close() { box.remove(); }
+
+        document.getElementById('_pwdClose').onclick = close;
+        box.onclick = function (e) { if (e.target === box) close(); };
+        setTimeout(function () { p1.focus(); }, 60);
+
+        submit.onclick = async function () {
+            var v1 = p1.value || '';
+            var v2 = p2.value || '';
+
+            if (v1.length < 6) { fail('密码至少 6 位'); p1.focus(); return; }
+            if (v1 !== v2) { fail('两次输入的密码不一致'); p2.focus(); return; }
+
+            submit.disabled = true;
+            submit.textContent = '修改中…';
+
+            var r = await window.Auth.updatePassword(v1);
+
+            submit.disabled = false;
+            submit.textContent = '确认修改';
+
+            if (r.ok) {
+                okay('密码已修改 ✓');
+                if (typeof showToast === 'function') showToast('密码修改成功', 'success');
+                setTimeout(close, 1200);
+            } else {
+                fail(r.error || '修改失败');
+            }
+        };
+
+        p2.onkeydown = function (e) { if (e.key === 'Enter') submit.click(); };
+    }
+
+    // ============================================================
+    // 调用 delete_my_account() 软删除
+    // ============================================================
+    async function callDeleteAccount() {
+        if (!window.Auth || !window.Auth.getAccessToken) {
+            return { ok: false, error: '未登录' };
+        }
+
+        var token = await window.Auth.getAccessToken();
+        if (!token) return { ok: false, error: '登录已过期，请重新登录' };
+
+        // 用 supabase.js 提供的 sbFetch：
+        // 它内部处理 SUPABASE_URL、apikey，并在反代失败时自动回退直连。
+        if (typeof sbFetch !== 'function') {
+            return { ok: false, error: '数据模块未加载，请刷新页面' };
+        }
+
+        var res = await sbFetch('rpc/delete_my_account', {
+            method: 'POST',
+            headers: {
+                'apikey': typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '',
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: '{}'
+        });
+
+        if (res.ok) return { ok: true };
+
+        var errText = '';
+        try {
+            var d = await res.json();
+            errText = d.message || d.hint || ('HTTP ' + res.status);
+        } catch (e) {
+            errText = 'HTTP ' + res.status;
+        }
+
+        if (/could not find the function|does not exist/i.test(errText)) {
+            return { ok: false, error: '数据库未就绪，请先执行 migration-user-profile.sql' };
+        }
+        if (/请先登录/.test(errText)) {
+            return { ok: false, error: '登录已过期，请重新登录' };
+        }
+        return { ok: false, error: errText };
+    }
+
+    // ============================================================
+    // 删除账号弹窗
+    // ============================================================
+    function showDeleteAccountBox() {
+        var old = document.getElementById('_delBox');
+        if (old) old.remove();
+
+        var u = (window.Auth.currentUser && window.Auth.currentUser()) || {};
+
+        var box = document.createElement('div');
+        box.id = '_delBox';
+        box.className = 'auth-overlay';
+        box.innerHTML =
+            '<div class="auth-card" role="dialog" aria-modal="true">' +
+              '<button class="auth-close" id="_delClose" aria-label="关闭"><i class="fas fa-times"></i></button>' +
+              '<div class="auth-head">' +
+                '<div class="auth-logo">⚠️</div>' +
+                '<h3>删除账号</h3>' +
+              '</div>' +
+              '<div class="auth-body">' +
+                '<div class="uc-del-warn">' +
+                  '此操作<strong>不可恢复</strong>：<br>' +
+                  '· 收藏记录会被清除<br>' +
+                  '· VIP 会员资格会失效<br>' +
+                  '· 账号无法找回' +
+                '</div>' +
+                '<div class="uc-del-confirm">' +
+                  '请输入 <b>' + escHTML(u.email || '') + '</b> 确认：' +
+                '</div>' +
+                '<div class="auth-field"><i class="fas fa-envelope"></i>' +
+                  '<input type="email" id="_delEmail" placeholder="输入你的邮箱" autocomplete="off"></div>' +
+                '<div class="auth-msg" id="_delMsg"></div>' +
+                '<button class="auth-submit uc-del-btn" id="_delSubmit" disabled>确认删除</button>' +
+              '</div>' +
+            '</div>';
+
+        document.body.appendChild(box);
+
+        var msg = document.getElementById('_delMsg');
+        var submit = document.getElementById('_delSubmit');
+        var emailInput = document.getElementById('_delEmail');
+
+        function close() { box.remove(); }
+
+        document.getElementById('_delClose').onclick = close;
+        box.onclick = function (e) { if (e.target === box) close(); };
+
+        // 邮箱输入正确才启用删除按钮
+        emailInput.oninput = function () {
+            var ok = (emailInput.value || '').trim().toLowerCase() === String(u.email || '').toLowerCase();
+            submit.disabled = !ok;
+            submit.style.opacity = ok ? '' : '.5';
+        };
+
+        submit.onclick = async function () {
+            submit.disabled = true;
+            submit.textContent = '删除中…';
+            msg.textContent = '';
+            msg.className = 'auth-msg';
+
+            try {
+                var r = await callDeleteAccount();
+
+                if (r.ok) {
+                    msg.textContent = '账号已注销，即将退出…';
+                    msg.className = 'auth-msg ok';
+                    setTimeout(function () {
+                        close();
+                        if (window.logoutAdmin) window.logoutAdmin();
+                        if (typeof closeDashboard === 'function') closeDashboard();
+                    }, 1500);
+                } else {
+                    submit.disabled = false;
+                    submit.textContent = '确认删除';
+                    msg.textContent = r.error || '删除失败';
+                    msg.className = 'auth-msg err';
+                }
+            } catch (e) {
+                submit.disabled = false;
+                submit.textContent = '确认删除';
+                msg.textContent = '删除失败：' + (e && e.message ? e.message : '未知错误');
+                msg.className = 'auth-msg err';
+            }
+        };
+
+        setTimeout(function () { emailInput.focus(); }, 60);
+    }
+
 
     // 构建仪表盘 HTML
     function buildDashboard() {
@@ -193,6 +668,16 @@
         }
         document.getElementById('dashContent').innerHTML = buildDashboard();
         dashOverlay.classList.add('active');
+
+        // 异步加载 profile（昵称），加载完刷新卡片
+        if (window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn() && window.Auth.getProfile) {
+            window.Auth.getProfile().then(function (prof) {
+                if (prof) {
+                    App.state.myProfile = prof;
+                    refreshAccountCard();
+                }
+            }).catch(function () {});
+        }
         dashOverlay.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
 
@@ -205,6 +690,13 @@
                     if (typeof window.showAuthBox === 'function') window.showAuthBox('login');
                     else if (typeof window.showLoginBox === 'function') window.showLoginBox();
                 }, 250);
+            };
+        }
+
+        var settingsBtn = document.getElementById('ucSettingsBtn');
+        if (settingsBtn) {
+            settingsBtn.onclick = function () {
+                openSettingsPage();
             };
         }
 

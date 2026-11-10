@@ -1976,3 +1976,242 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     color: var(--text);
     border-left: 3px solid var(--primary);
 }
+
+/* ================================================================
+   账号设置页
+   ================================================================ */
+
+/* 卡片上的按钮组 */
+.uc-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* 设置页头部 */
+.uc-settings-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.uc-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+.uc-back-btn:hover {
+    background: rgba(var(--primary-rgb), 0.08);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.uc-settings-heading {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* 设置分组 */
+.uc-set-section {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(128, 128, 128, 0.04);
+    border: 1px solid var(--border);
+}
+
+.uc-set-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+.uc-set-row {
+    margin-bottom: 14px;
+}
+.uc-set-row:last-child { margin-bottom: 0; }
+
+.uc-set-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 6px;
+}
+
+.uc-set-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.uc-set-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-solid, #fff);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+}
+.uc-set-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.uc-set-static {
+    font-size: 13px;
+    color: var(--text);
+    word-break: break-all;
+}
+
+.uc-set-btn {
+    flex-shrink: 0;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s;
+}
+.uc-set-btn:hover { filter: brightness(1.08); }
+.uc-set-btn:disabled { opacity: .6; cursor: default; filter: none; }
+
+.uc-set-action {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+}
+.uc-set-action:hover {
+    background: rgba(var(--primary-rgb), 0.08);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.uc-set-action:disabled { opacity: .6; cursor: default; }
+
+.uc-set-hint {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 5px;
+    line-height: 1.5;
+}
+
+/* 危险操作区 */
+.uc-set-danger {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.03);
+}
+.uc-set-danger .uc-set-title { color: #ef4444; }
+
+.uc-set-danger-btn {
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+.uc-set-danger-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* 删除账号弹窗 */
+.uc-del-warn {
+    font-size: 12.5px;
+    line-height: 1.8;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    margin-bottom: 14px;
+}
+
+.uc-del-confirm {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+.uc-del-confirm b { color: var(--text); }
+
+.uc-del-btn {
+    background: #ef4444 !important;
+}
+.uc-del-btn:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+/* 加载中 */
+.dash-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-light);
+    font-size: 13px;
+}
+
+/* 登录框的「忘记密码」 */
+.auth-forgot-row {
+    text-align: right;
+    margin-top: -4px;
+    margin-bottom: 8px;
+}
+
+.auth-forgot {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 0;
+    text-decoration: none;
+    transition: color .15s;
+}
+.auth-forgot:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+.auth-forgot:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+/* 手机上按钮换行 */
+@media (max-width: 520px) {
+    .uc-actions {
+        width: 100%;
+        margin-top: 8px;
+    }
+    .uc-actions .uc-action {
+        flex: 1;
+    }
+    .uc-set-control {
+        flex-wrap: wrap;
+    }
+    .uc-set-input {
+        width: 100%;
+        flex-basis: 100%;
+    }
+    .uc-set-btn {
+        width: 100%;
+    }
+}

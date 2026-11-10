@@ -370,6 +370,10 @@ function showAuthBox(mode) {
         '<input type="password" id="_authPwd" autocomplete="current-password" placeholder="密码"></div>' +
         '<div class="auth-field auth-extra" id="_authPwd2Wrap"><i class="fas fa-lock"></i>' +
         '<input type="password" id="_authPwd2" autocomplete="new-password" placeholder="确认密码"></div>' +
+        // 忘记密码：只在登录模式显示
+        '<div class="auth-forgot-row" id="_authForgotRow">' +
+        '<button type="button" class="auth-forgot" id="_authForgot">忘记密码？</button>' +
+        '</div>' +
         '<div class="auth-msg" id="_authMsg"></div>' +
         '<button class="auth-submit" id="_authSubmit">登录</button>' +
         '<p class="auth-tip" id="_authTip"></p>' +
@@ -398,6 +402,9 @@ function showAuthBox(mode) {
         title.textContent = isReg ? '创建账号' : '欢迎回来';
         sub.textContent = isReg ? '注册后收藏自动云端同步' : '登录后可同步收藏、跨设备使用';
         pwd2Wrap.style.display = isReg ? '' : 'none';
+        // 「忘记密码」只在登录模式显示
+        var forgotRow = document.getElementById('_authForgotRow');
+        if (forgotRow) forgotRow.style.display = isReg ? 'none' : '';
         submitBtn.textContent = isReg ? '注册并登录' : '登录';
         msg.textContent = '';
         msg.className = 'auth-msg';
@@ -412,6 +419,46 @@ function showAuthBox(mode) {
 
     function fail(t) { msg.textContent = t || ''; msg.className = 'auth-msg err'; }
     function okay(t) { msg.textContent = t || ''; msg.className = 'auth-msg ok'; }
+
+    // ---------- 忘记密码 ----------
+    // 流程：点「忘记密码？」→ 输入邮箱 → 发送重置邮件 → 提示去邮箱查看
+    var forgotBtn = document.getElementById('_authForgot');
+    if (forgotBtn) {
+        forgotBtn.onclick = async function () {
+            var email = (emailEl.value || '').trim();
+            if (!email) {
+                fail('请先填写邮箱地址');
+                emailEl.focus();
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                fail('邮箱格式不正确');
+                emailEl.focus();
+                return;
+            }
+
+            forgotBtn.disabled = true;
+            forgotBtn.textContent = '发送中…';
+            msg.textContent = '';
+            msg.className = 'auth-msg';
+
+            var r = await window.Auth.resetPassword(email);
+
+            forgotBtn.disabled = false;
+            forgotBtn.textContent = '忘记密码？';
+
+            if (r.ok) {
+                okay('重置邮件已发送');
+                msg.innerHTML = '重置邮件已发送到 <b>' + email.replace(/[<>&]/g, '') + '</b><br>' +
+                    '<span style="font-size:12px;opacity:.75">请查收邮件并点击链接设置新密码<br>' +
+                    '没收到？检查垃圾箱，或等 1 分钟后重试</span>';
+                // 清空密码框，提示用户去邮箱
+                pwdEl.value = '';
+            } else {
+                fail(r.error || '发送失败，请稍后重试');
+            }
+        };
+    }
 
     function close() { box.remove(); }
     document.getElementById('_authClose').onclick = close;

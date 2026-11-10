@@ -83,9 +83,13 @@
         });
     }
 
-    function authHeaders(token) {
+    // 构造请求头
+    //   token   : 用户 JWT，可为 null
+    //   isRest  : true 表示调用 PostgREST（表数据接口），需要带 Prefer
+    function authHeaders(token, isRest) {
         var h = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY };
         if (token) h['Authorization'] = 'Bearer ' + token;
+        if (isRest) h['Prefer'] = 'return=representation';
         return h;
     }
 
@@ -305,6 +309,162 @@
         });
     }
 
+    // ============================================================
+    // 忘记密码：发送重置邮件
+    // ------------------------------------------------------------
+    // 不管邮箱存不存在都返回成功 —— 防止攻击者用它探测哪些邮箱注册过。
+    // 这是 Supabase 官方推荐的做法。
+    // ============================================================
+    function resetPassword(email) {
+        if (!email) return Promise.resolve({ ok: false, error: '请输入邮箱' });
+
+        return fetchWithRetry(SUPABASE_URL + '/auth/v1/recover', {
+            method: 'POST',
+            headers: authHeaders(null),
+            body: JSON.stringify({ email: email })
+        }).then(function (res) {
+            return res.json().catch(function () { return {}; }).then(function (d) {
+                if (res.status === 429) {
+                    return { ok: false, error: '发送太频繁，请等 1 分钟后再试' };
+                }
+                if (!res.ok) {
+                    var msg = d.error_description || d.msg || d.error || ('HTTP ' + res.status);
+                    var rcode = d.error_code || '';
+                    if (rcode === 'over_email_send_rate_limit' || /email rate limit|email_send_rate/i.test(msg)) {
+                        return { ok: false, error: '邮件发送额度已用完，请过 1 小时后再试' };
+                    }
+                    if (rcode === 'email_address_invalid' || /invalid.*email/i.test(msg)) {
+                        return { ok: false, error: '邮箱格式不正确，请检查后重试' };
+                    }
+                    // 其他错误也模糊处理，不暴露邮箱是否存在
+                    return { ok: true, sent: true };
+                }
+                return { ok: true, sent: true };
+            });
+        }).catch(function (e) {
+            return { ok: false, error: netErrorText(e) };
+        });
+    }
+
+    // ============================================================
+    // 改密码（需要已登录）
+    // ------------------------------------------------------------
+    // 改完密码后 Supabase 会保留当前 session，但其他设备会失效。
+    // 这里额外主动刷新一次 token，确保当前设备继续可用。
+    // ============================================================
+    function updatePassword(newPassword) {
+        if (!newPassword || newPassword.length < 6) {
+            return Promise.resolve({ ok: false, error: '密码至少 6 位' });
+        }
+
+        var s = readSession();
+        if (!s || !s.access_token) {
+            return Promise.resolve({ ok: false, error: '请先登录' });
+        }
+
+        return fetchWithRetry(SUPABASE_URL + '/auth/v1/user', {
+            method: 'PUT',
+            headers: authHeaders(s.access_token),
+            body: JSON.stringify({ password: newPassword })
+        }).then(function (res) {
+            return res.json().catch(function () { return {}; }).then(function (d) {
+                if (!res.ok) {
+                    var msg = d.error_description || d.msg || d.error || ('HTTP ' + res.status);
+                    if (/same.*password|should be different/i.test(msg)) {
+                        return { ok: false, error: '新密码不能和旧密码相同' };
+                    }
+                    if (/weak.*password|password.*short/i.test(msg)) {
+                        return { ok: false, error: '密码太简单，请用至少 6 位并混合字母数字' };
+                    }
+                    return { ok: false, error: msg };
+                }
+                return { ok: true };
+            });
+        }).catch(function (e) {
+            return { ok: false, error: netErrorText(e) };
+        });
+    }
+
+    // ============================================================
+    // 退出所有设备
+    // ------------------------------------------------------------
+    // Supabase 的 /auth/v1/logout?scope=others 会吊销除当前之外的所有 refresh token。
+    // ============================================================
+    function signOutEverywhere() {
+        var s = readSession();
+        if (!s || !s.access_token) {
+            return Promise.resolve({ ok: false, error: '请先登录' });
+        }
+
+        return fetchWithRetry(SUPABASE_URL + '/auth/v1/logout?scope=others', {
+            method: 'POST',
+            headers: authHeaders(s.access_token)
+        }).then(function (res) {
+            if (!res.ok && res.status !== 204) {
+                return { ok: false, error: '操作失败（HTTP ' + res.status + '）' };
+            }
+            return { ok: true };
+        }).catch(function (e) {
+            return { ok: false, error: netErrorText(e) };
+        });
+    }
+
+    // ============================================================
+    // 读取当前用户的 profile（昵称等）
+    // ============================================================
+    function getProfile() {
+        var s = readSession();
+        if (!s || !s.access_token || !s.user_id) {
+            return Promise.resolve(null);
+        }
+
+        return fetchWithRetry(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + s.user_id + '&select=id,email,nickname,created_at', {
+            method: 'GET',
+            headers: authHeaders(s.access_token)
+        }).then(function (res) {
+            if (!res.ok) return null;
+            return res.json().then(function (rows) {
+                return (Array.isArray(rows) && rows[0]) ? rows[0] : null;
+            });
+        }).catch(function () { return null; });
+    }
+
+    // ============================================================
+    // 改昵称
+    // ============================================================
+    function updateNickname(nickname) {
+        var n = String(nickname || '').trim();
+        if (n.length < 2) return Promise.resolve({ ok: false, error: '昵称至少 2 个字' });
+        if (n.length > 20) return Promise.resolve({ ok: false, error: '昵称最多 20 个字' });
+
+        var s = readSession();
+        if (!s || !s.access_token || !s.user_id) {
+            return Promise.resolve({ ok: false, error: '请先登录' });
+        }
+
+        return fetchWithRetry(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + s.user_id, {
+            method: 'PATCH',
+            headers: authHeaders(s.access_token),
+            body: JSON.stringify({ nickname: n })
+        }).then(function (res) {
+            if (!res.ok) {
+                return res.json().catch(function () { return {}; }).then(function (d) {
+                    var msg = d.message || d.hint || ('HTTP ' + res.status);
+                    if (/昵称至少/.test(msg) || /昵称最多/.test(msg)) {
+                        return { ok: false, error: msg };
+                    }
+                    if (res.status === 403 || res.status === 401) {
+                        return { ok: false, error: '没有权限，请重新登录' };
+                    }
+                    return { ok: false, error: '保存失败：' + msg };
+                });
+            }
+            return { ok: true, nickname: n };
+        }).catch(function (e) {
+            return { ok: false, error: netErrorText(e) };
+        });
+    }
+
     // ---------- 导出 ----------
     window.Auth = {
         signIn: signIn,
@@ -315,6 +475,12 @@
         currentUser: currentUser,
         isLoggedIn: isLoggedIn,
         verifyAdmin: verifyAdmin,
-        resendConfirm: resendConfirm
+        resendConfirm: resendConfirm,
+        // 账号管理
+        resetPassword: resetPassword,
+        updatePassword: updatePassword,
+        signOutEverywhere: signOutEverywhere,
+        getProfile: getProfile,
+        updateNickname: updateNickname
     };
 })();

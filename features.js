@@ -159,12 +159,20 @@ function loadMyVip(forceRefresh) {
             reject(new Error('超时'));
         }, 8000);
     });
+    // 避免 work 先完成时 timeoutPromise 的 reject 变成未处理异常
+    timeoutPromise.catch(function () {});
 
     var work = window.Auth.getAccessToken().then(function (token) {
         if (!token) throw new Error('未登录');
-        // 诊断日志：如果 VIP 状态显示不对，打开控制台看这几行
         if (window.__RUANTUI_DEBUG_VIP__) console.log('[VIP] token 长度', token.length);
-        return sbFetch('profiles?select=vip_until', {
+        // ⚠️ 必须按 id 精确过滤，不能只靠 RLS！
+        // 管理员身份下有 profiles_select_admin 策略，查询会返回全部用户的行，
+        // 取 rows[0] 拿到的是别人（通常是 null），VIP 状态就一直是「普通用户」。
+        // 实测：管理员查 profiles?select=vip_until 返回了 6 行。
+        var me = window.Auth.currentUser() || {};
+        var myId = me.id || me.user_id;
+        if (!myId) throw new Error('拿不到当前用户 id');
+        return sbFetch('profiles?id=eq.' + encodeURIComponent(myId) + '&select=vip_until', {
             method: 'GET',
             headers: {
                 'apikey': window.RuantuiSupabase.key,
@@ -221,16 +229,29 @@ function vipText() {
 }
 
 // 账号下拉菜单
-function showAccountMenu() {
+function showAccountMenu(skipWait) {
     var old = document.getElementById('_accountMenu');
     if (old) { old.remove(); return; }
 
-    // 打开菜单时后台刷新一次 VIP 状态（站长刚开通的话能立刻看到）
-    if (window.Auth && window.Auth.isLoggedIn()) {
-        loadMyVip(true).then(function () {
-            // 状态有变化时更新一下账号按钮的图标
-            updateAccountUI();
-        });
+    // ⚠️ 关键：VIP 状态是异步读的。
+    // 如果先渲染菜单、再异步刷新，第一次打开菜单时 App.state.vipInfo
+    // 还停在 {loadging:true}，vipText() 只能返回「普通用户」——
+    // 用户必须关掉再开一次才看到正确的身份。
+    // 所以这里先等状态就绪再渲染（有 8 秒超时兜底，不会卡死）。
+    if (!skipWait && window.Auth && window.Auth.isLoggedIn()) {
+        var needWait = !App.state.vipInfo || App.state.vipInfo.loading ||
+                       App.state.vipInfo.isVip === undefined;
+        if (needWait) {
+            // 显示一个轻提示，避免用户以为点击没反应
+            showToast('读取中…', 'info');
+            loadMyVip(true).then(function () {
+                updateAccountUI();
+                showAccountMenu(true);   // 状态就绪后重新渲染（skipWait 防止递归）
+            }).catch(function () {
+                showAccountMenu(true);
+            });
+            return;
+        }
     }
 
     var btn = document.getElementById('accountBtn');
@@ -271,6 +292,8 @@ function showAccountMenu() {
         } else {
             roleText = vipText();
         }
+        // 兜底：如果这里状态还没就绪，先显示邮箱，等一下再刷新
+        if (!admin && !App.state.vipInfo) roleText = '已登录';
         var roleCls = (App.state.vipInfo && App.state.vipInfo.isVip) ? 'am-role am-role-vip' : 'am-role';
         html += '<div class="am-head"><strong>' + escHTML(u.email || '已登录') + '</strong>' +
             '<small class="' + roleCls + '">' + escHTML(roleText) + '</small></div>';

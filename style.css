@@ -763,23 +763,29 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .mgmt-row-actions button { width: 26px; height: 26px; border-radius: 50%; background: transparent; color: var(--text-light); font-size: 11px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
 .mgmt-row-actions .edit-btn:hover { background: rgba(var(--primary-rgb),0.1); color: var(--primary); }
 .mgmt-row-actions .del-btn:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
-/* 置顶按钮：三种视觉状态，避免「未置顶悬停时看起来像已置顶」
-   1. 未置顶 + 默认   → 灰色
-   2. 未置顶 + hover  → 主题色（提示点了会置顶）
-   3. 已置顶 + 默认   → 主题色（.active，持续可见）
-   4. 已置顶 + hover  → 红色（提示点了会取消置顶） */
-.mgmt-row-actions .pin-btn:not(.active):hover {
-    background: rgba(var(--primary-rgb),0.1);
-    color: var(--primary);
-}
+/* 置顶按钮：图标颜色只表示状态，不随悬停改变
+   ----------------------------------------------------------------
+   为什么这么设计：
+     曾经做过「未置顶悬停时变主题色，提示点了会置顶」，
+     但主题色正好是「已置顶」的标志色 —— 用户取消置顶后
+     光标还停在图标上，看到主题色就以为没取消成功。
+     现在悬停只改背景，图标颜色永远是真实状态。
 
+   状态          图标颜色                悬停时
+   未置顶        灰 #6b7280              背景加深一点
+   已置顶        主题色 var(--primary)   背景加深一点
+   ---------------------------------------------------------------- */
 .mgmt-row-actions .pin-btn.active {
     color: var(--primary);
 }
 
+/* 悬停只改背景，不改颜色 */
+.mgmt-row-actions .pin-btn:not(.active):hover {
+    background: rgba(128, 128, 128, 0.14);
+}
+
 .mgmt-row-actions .pin-btn.active:hover {
-    background: rgba(239,68,68,0.1);
-    color: #ef4444;
+    background: rgba(var(--primary-rgb), 0.12);
 }
 
 /* 点击后的焦点：只在键盘操作时显示描边，鼠标点击不显示

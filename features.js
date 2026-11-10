@@ -162,6 +162,8 @@ function loadMyVip(forceRefresh) {
 
     var work = window.Auth.getAccessToken().then(function (token) {
         if (!token) throw new Error('未登录');
+        // 诊断日志：如果 VIP 状态显示不对，打开控制台看这几行
+        if (window.__RUANTUI_DEBUG_VIP__) console.log('[VIP] token 长度', token.length);
         return sbFetch('profiles?select=vip_until', {
             method: 'GET',
             headers: {
@@ -177,6 +179,10 @@ function loadMyVip(forceRefresh) {
     }).then(function (rows) {
         var row = Array.isArray(rows) && rows[0];
         var until = row ? row.vip_until : null;
+        if (window.__RUANTUI_DEBUG_VIP__) {
+            console.log('[VIP] profiles 返回', JSON.stringify(rows));
+            console.log('[VIP] vip_until =', until);
+        }
         var info = { loading: false, isVip: false, until: until };
         if (until) {
             var t = new Date(until).getTime();
@@ -192,6 +198,7 @@ function loadMyVip(forceRefresh) {
         return info;
     }).catch(function (e) {
         if (timeoutId) clearTimeout(timeoutId);
+        if (window.__RUANTUI_DEBUG_VIP__) console.error('[VIP] 读取失败:', e.message);
         // 读不到就当作非 VIP，但标记 error，菜单里不再显示「读取中」
         App.state.vipInfo = { loading: false, isVip: false, error: e.message };
         if (typeof updateAccountUI === 'function') updateAccountUI();
@@ -1381,14 +1388,20 @@ loadAnnouncements().then(function() { renderAnnouncements(); });
 // 只就地更新浏览量等数字，不重建列表，不影响滚动和交互。
 startAutoRefresh();
 
-// ---------- 导出管理面板里的函数 ----------
-// 管理面板的 tab 切换在另一个 IIFE 里，通过名字调用这些函数，
-// 但它们定义在当前 IIFE 内部，必须显式挂到 window 才能被访问到。
-// （历史上 VIP 标签页点了没反应就是因为漏了这一步）
+// ---------- 导出给其他模块 / 内联事件用的函数 ----------
+// features.js 整文件包在一个 IIFE 里，内部定义的函数默认对 window 不可见。
+// 任何需要在别处（另一个 IIFE、onclick、或其它脚本）调用的函数，
+// 都必须在这里显式挂到 window，否则会 undefined ——
+// 历史上 VIP 标签页点了没反应、VIP 状态一直显示「普通用户」
+// 都是因为漏了这一步。
 window.loadVipUsers = loadVipUsers;
 window.renderVipList = renderVipList;
 window.loadProfilesForVip = loadProfilesForVip;
 window.renderAnnouncementList = renderAnnouncementList;
+window.loadMyVip = loadMyVip;
+window.vipText = vipText;
+window.silentRefreshTools = silentRefreshTools;
+window.startAutoRefresh = startAutoRefresh;
 
 })();
 

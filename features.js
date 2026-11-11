@@ -102,6 +102,30 @@ function setAdminFlag(v) {
 }
 
 // 账号按钮的三种状态：未登录 / 已登录普通用户 / 已登录管理员
+// ============================================================
+// 用户显示名
+// ------------------------------------------------------------
+// 优先级：昵称 > 邮箱前缀
+//
+// 昵称来自 profiles.nickname，登录后异步加载到 App.state.myProfile。
+// 还没加载完时先用邮箱前缀兜底，加载完会重新调用 updateAccountUI()。
+// ============================================================
+function getDisplayName() {
+    var u = (window.Auth && window.Auth.currentUser && window.Auth.currentUser()) || {};
+    var profile = (App.state && App.state.myProfile) || {};
+    var nick = (profile.nickname || '').trim();
+    if (nick) return nick;
+    return (u.email || '').split('@')[0] || '已登录';
+}
+
+// 顶栏空间有限，超过 N 个字截断
+function truncName(name, max) {
+    var n = String(name || '');
+    max = max || 6;
+    if (n.length <= max) return n;
+    return n.slice(0, max) + '…';
+}
+
 function updateAccountUI() {
     var btn = document.getElementById('accountBtn');
     var label = document.getElementById('accountLabel');
@@ -118,17 +142,115 @@ function updateAccountUI() {
     var u = window.Auth.currentUser() || {};
     var admin = !!App.state.isAdmin;
     var vip = !!(App.state.vipInfo && App.state.vipInfo.isVip);
+
     btn.classList.add('account-in');
     btn.classList.toggle('account-vip', vip);
-    btn.setAttribute('title',
-        admin ? '管理员：' + (u.email || '')
-              : (vip ? 'VIP 会员：' + (u.email || '') : (u.email || '已登录')));
-    btn.setAttribute('aria-label', '账号');
-    // 按钮文案：管理员 > VIP > 我的
-    label.textContent = admin ? '管理员' : (vip ? 'VIP' : '我的');
-    btn.querySelector('i').className = admin ? 'fas fa-user-shield' : 'fas fa-user-check';
+    btn.classList.toggle('account-admin', admin);
+
+    // 显示名：昵称优先
+    var name = getDisplayName();
+
+    // hover 提示里给完整信息（顶栏放不下的都在这）
+    var titleParts = [name];
+    if (u.email) titleParts.push(u.email);
+    var roles = [];
+    if (admin) roles.push('管理员');
+    if (vip) roles.push('VIP 会员');
+    if (roles.length) titleParts.push(roles.join(' · '));
+    btn.setAttribute('title', titleParts.join('\n'));
+    btn.setAttribute('aria-label', '账号：' + name);
+
+    // 按钮文案：昵称（超 6 字截断）
+    // 手机上顶栏更窄，用 CSS 控制最大宽度 + 省略号
+    label.textContent = truncName(name, 6);
+
+    // 图标：管理员用盾牌，VIP 用皇冠，普通用勾
+    btn.querySelector('i').className = admin
+        ? 'fas fa-user-shield'
+        : (vip ? 'fas fa-crown' : 'fas fa-user-check');
 }
 window.updateAccountUI = updateAccountUI;
+
+// ============================================================
+// 首次登录：提醒设置昵称
+// ------------------------------------------------------------
+// 新用户默认昵称是邮箱前缀（如 973360882），不太好认。
+// 登录后如果是这种情况，轻轻提示一次，让用户去设置个好记的名字。
+//
+// 只提醒一次：localStorage 记标记，用户跳过后不再打扰。
+// ============================================================
+var NICK_PROMPT_KEY = 'ruantui_nick_prompted';
+
+function maybePromptNickname() {
+    try {
+        // 已经提醒过就跳过
+        if (localStorage.getItem(NICK_PROMPT_KEY)) return;
+
+        if (!window.Auth || !window.Auth.isLoggedIn()) return;
+
+        var u = window.Auth.currentUser() || {};
+        var profile = (App.state && App.state.myProfile) || {};
+        var nick = (profile.nickname || '').trim();
+        var emailPrefix = (u.email || '').split('@')[0];
+
+        // 昵称已经是自己设过的 → 不提醒
+        if (nick && nick !== emailPrefix) return;
+
+        // 如果已经在设置页/用户中心，不打扰
+        if (document.getElementById('ucNickInput')) return;
+
+        // 标记为已提醒（不管用户选什么都不再弹）
+        localStorage.setItem(NICK_PROMPT_KEY, '1');
+
+        showNickPrompt();
+    } catch (e) {}
+}
+
+function showNickPrompt() {
+    var old = document.getElementById('_nickPrompt');
+    if (old) old.remove();
+
+    var box = document.createElement('div');
+    box.id = '_nickPrompt';
+    box.className = 'nick-prompt';
+    box.innerHTML =
+        '<div class="nick-prompt-card">' +
+          '<div class="nick-prompt-icon">👋</div>' +
+          '<div class="nick-prompt-body">' +
+            '<strong>设置一个昵称吧</strong>' +
+            '<span>现在的名字是邮箱前缀，可以改成好记的</span>' +
+          '</div>' +
+          '<div class="nick-prompt-actions">' +
+            '<button type="button" class="nick-prompt-skip" id="_nickSkip">以后再说</button>' +
+            '<button type="button" class="nick-prompt-go" id="_nickGo">去设置</button>' +
+          '</div>' +
+        '</div>';
+
+    document.body.appendChild(box);
+    // 动画进入
+    requestAnimationFrame(function () { box.classList.add('show'); });
+
+    function close() {
+        box.classList.remove('show');
+        setTimeout(function () { box.remove(); }, 250);
+    }
+
+    document.getElementById('_nickSkip').onclick = close;
+    document.getElementById('_nickGo').onclick = function () {
+        close();
+        // 打开用户中心并直接进设置页
+        setTimeout(function () {
+            if (typeof window.openUserSettings === 'function') {
+                window.openUserSettings();
+            }
+        }, 200);
+    };
+
+    // 15 秒后自动消失，不赖着
+    setTimeout(function () {
+        if (document.getElementById('_nickPrompt')) close();
+    }, 15000);
+}
 
 // ============================================================
 // 当前用户的 VIP 状态
@@ -203,6 +325,8 @@ function loadMyVip(forceRefresh) {
         if (timeoutId) clearTimeout(timeoutId);
         App.state.vipInfo = info;
         if (typeof updateAccountUI === 'function') updateAccountUI();
+        // VIP 状态就绪后再决定要不要提醒设昵称
+        maybePromptNickname();
         // VIP 状态变了会影响「VIP 专属工具」的下载按钮是否锁定，
         // 所以状态到位后重渲染一次卡片列表。
         // （首次加载时卡片可能比这里先渲染，那时 vipInfo 还是空的，
@@ -302,8 +426,16 @@ function showAccountMenu(skipWait) {
         // 兜底：如果这里状态还没就绪，先显示邮箱，等一下再刷新
         if (!admin && !App.state.vipInfo) roleText = '已登录';
         var roleCls = (App.state.vipInfo && App.state.vipInfo.isVip) ? 'am-role am-role-vip' : 'am-role';
-        html += '<div class="am-head"><strong>' + escHTML(u.email || '已登录') + '</strong>' +
-            '<small class="' + roleCls + '">' + escHTML(roleText) + '</small></div>';
+        // 菜单头部：昵称（大字）+ 邮箱（小字）+ 身份标签
+        var menuName = getDisplayName();
+        var hasRealNick = menuName !== (u.email || '').split('@')[0];
+
+        html += '<div class="am-head">' +
+            '<strong class="am-name">' + escHTML(menuName) + '</strong>' +
+            (u.email ? '<span class="am-email">' + escHTML(u.email) + '</span>' : '') +
+            '<small class="' + roleCls + '">' + escHTML(roleText) + '</small>' +
+            (hasRealNick ? '' : '<button type="button" class="am-setnick" data-act="settings">设置昵称 ›</button>') +
+            '</div>';
         if (admin) html += '<button class="am-item" data-act="manage"><i class="fas fa-cog"></i> 管理面板</button>';
         html += '<button class="am-item" data-act="favs"><i class="fas fa-heart"></i> 我的收藏</button>';
         html += '<button class="am-item" data-act="settings"><i class="fas fa-gear"></i> 账号设置</button>';
@@ -2179,6 +2311,51 @@ loadAnnouncements().then(function() { renderAnnouncements(); });
 // 只就地更新浏览量等数字，不重建列表，不影响滚动和交互。
 startAutoRefresh();
 
+// ============================================================
+// 初始化：加载当前用户的 profile（昵称）
+// ------------------------------------------------------------
+// 昵称存在 profiles 表里，登录后需要单独拉一次。
+// 不拉的话顶栏只能显示邮箱前缀（getDisplayName 的兜底逻辑），
+// 用户改过的昵称就看不到 —— 这是实测发现的时序问题。
+//
+// 拿到后调用 updateAccountUI() 刷新顶栏按钮文字。
+// ============================================================
+function loadMyProfile() {
+    if (!window.Auth || !window.Auth.isLoggedIn || !window.Auth.isLoggedIn()) {
+        return Promise.resolve(null);
+    }
+    if (!window.Auth.getProfile) return Promise.resolve(null);
+
+    return window.Auth.getProfile().then(function (prof) {
+        if (prof) {
+            App.state.myProfile = prof;
+            if (typeof updateAccountUI === 'function') updateAccountUI();
+        }
+        return prof;
+    }).catch(function () { return null; });
+}
+
+// 页面加载后拉一次（延迟 300ms，等 restoreSession 先跑完）
+setTimeout(function () {
+    if (window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn()) {
+        loadMyProfile();
+    }
+}, 300);
+
+// 登录成功后也要拉：轮询检查登录态，一旦登录就拉 profile
+// （登录是用户主动触发的异步操作，没有现成的事件可监听）
+var _profileLoaded = false;
+var _profileWatcher = setInterval(function () {
+    if (_profileLoaded) { clearInterval(_profileWatcher); return; }
+    if (window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn()) {
+        _profileLoaded = true;
+        clearInterval(_profileWatcher);
+        loadMyProfile();
+    }
+}, 1000);
+// 30 秒后停止轮询，避免永久跑着
+setTimeout(function () { clearInterval(_profileWatcher); }, 30000);
+
 // ---------- 导出给其他模块 / 内联事件用的函数 ----------
 // features.js 整文件包在一个 IIFE 里，内部定义的函数默认对 window 不可见。
 // 任何需要在别处（另一个 IIFE、onclick、或其它脚本）调用的函数，
@@ -2190,6 +2367,7 @@ window.renderVipList = renderVipList;
 window.loadProfilesForVip = loadProfilesForVip;
 window.renderAnnouncementList = renderAnnouncementList;
 window.loadMyVip = loadMyVip;
+window.loadMyProfile = loadMyProfile;
 window.renderNotifBar = renderNotifBar;
 window.dismissNotif = dismissNotif;
 window.updateNotifBadge = updateNotifBadge;

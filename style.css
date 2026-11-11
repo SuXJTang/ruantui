@@ -1296,11 +1296,44 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     display: inline-flex; align-items: center; gap: 5px;
     padding: 0 12px; width: auto !important; min-width: 44px;
     font-size: 13px; font-weight: 600;
+    /* 昵称可能较长，限制最大宽度，超出用省略号 */
+    max-width: 150px;
+}
+.account-btn i { flex-shrink: 0; }
+.account-btn .account-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
 }
 .account-label { font-size: 13px; white-space: nowrap; }
 .account-btn.account-in { color: var(--primary); border-color: var(--border-glow); }
 .account-btn.account-in .account-label { color: var(--primary); }
-@media (max-width: 480px) { .account-label { display: none; } }
+
+/* 管理员：用主题色 + 盾牌图标 */
+.account-btn.account-admin {
+    color: var(--primary);
+    border-color: var(--border-glow);
+}
+.account-btn.account-admin .account-label { color: var(--primary); }
+
+/* VIP：金色（优先级高于普通，低于管理员） */
+.account-btn.account-vip .account-label { color: #d4a017; }
+.account-btn.account-vip i { color: #d4a017; }
+[data-mode="dark"] .account-btn.account-vip .account-label,
+[data-mode="dark"] .account-btn.account-vip i { color: #f5c542; }
+/* 管理员和 VIP 同时时，保持管理员色 */
+.account-btn.account-admin.account-vip .account-label,
+.account-btn.account-admin.account-vip i { color: var(--primary); }
+/* 手机上原来直接隐藏账号文字，导致看不到昵称。
+   现在改成显示，但限制更窄（最多 3-4 个字 + 省略号）。 */
+@media (max-width: 480px) {
+    .account-btn { max-width: 96px; padding: 0 8px; }
+    .account-btn .account-label { max-width: 62px; font-size: 12px; }
+}
+@media (max-width: 360px) {
+    .account-btn { max-width: 76px; }
+    .account-btn .account-label { max-width: 44px; }
+}
 
 /* 账号下拉菜单 */
 .account-menu {
@@ -2213,5 +2246,161 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     }
     .uc-set-btn {
         width: 100%;
+    }
+}
+
+/* ================================================================
+   账号菜单头部：昵称 + 邮箱 + 身份
+   ================================================================ */
+.account-menu .am-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+}
+
+/* 昵称：主要身份，大字加粗 */
+.account-menu .am-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* 邮箱：精确辨认，浅色小字 */
+.account-menu .am-email {
+    font-size: 11px;
+    color: var(--text-light);
+    opacity: .75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* 身份标签 */
+.account-menu .am-role {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+.account-menu .am-role.am-role-vip { color: #d4a017; }
+[data-mode="dark"] .account-menu .am-role.am-role-vip { color: #f5c542; }
+
+/* 昵称还是邮箱前缀时，提示去设置 */
+.account-menu .am-setnick {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+.account-menu .am-setnick:hover { text-decoration: underline; }
+
+/* ================================================================
+   首次登录：设置昵称提示（右下角轻提示）
+   ================================================================ */
+.nick-prompt {
+    position: fixed;
+    right: 20px;
+    bottom: 88px;
+    z-index: 9995;
+    max-width: 320px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity .25s ease, transform .25s ease;
+    pointer-events: none;
+}
+.nick-prompt.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.nick-prompt-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    /* 不透明背景（见 AGENTS.md 浮层铁律） */
+    background: var(--menu-bg, var(--card-solid, #fff));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+}
+
+.nick-prompt-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.nick-prompt-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.nick-prompt-body strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+}
+.nick-prompt-body span {
+    font-size: 11.5px;
+    color: var(--text-light);
+    line-height: 1.5;
+}
+
+.nick-prompt-actions {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.nick-prompt-skip,
+.nick-prompt-go {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-light);
+    transition: background .15s, color .15s, border-color .15s;
+}
+.nick-prompt-skip:hover {
+    background: rgba(128, 128, 128, 0.1);
+    color: var(--text);
+}
+.nick-prompt-go {
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+}
+.nick-prompt-go:hover { filter: brightness(1.08); }
+
+/* 手机端：提示条撑满宽度 */
+@media (max-width: 480px) {
+    .nick-prompt {
+        left: 12px;
+        right: 12px;
+        bottom: 80px;
+        max-width: none;
     }
 }

@@ -158,12 +158,24 @@ window.toggleModalText = function(btn) {
 // 点击卡片打开详情 — 全站唯一的卡片点击入口（ui.js 不再注册卡片点击监听）
 if (overlay) document.getElementById('toolGrid').addEventListener('click', function(e) {
     var card = e.target.closest('.tool-card'); if (!card) return;
+    // 受限工具（VIP / 登录专属）的「下载」按钮：真实链接在 tool_downloads 表里，
+    // 只能由详情弹窗通过 get_download_url() 拿到，所以这里和点卡片本体同路 ——
+    // 打开弹窗，不要被下面的站外链接判断拦掉。
+    var dlBtn = e.target.closest('[data-dl-tool]');
     // 「去使用」是站外链接：只记录点击并正常跳转，不要同时弹出详情
-    if (e.target.closest('.tool-visit-btn')) return;
+    if (!dlBtn && e.target.closest('.tool-visit-btn')) return;
     var id = parseInt(card.dataset.id, 10);
     var tool = App.state.tools.find(function(t) { return t.id === id; });
     if (tool) {
         openModal(tool);
+        // 从卡片的「下载」按钮进来时，自动滚到「专属下载」区域，
+        // 让用户一眼看到下载按钮，不用自己往下翻。
+        if (dlBtn) {
+            setTimeout(function () {
+                var sec = document.getElementById('_vipDownloadSection');
+                if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 350);
+        }
         // 递增浏览量 + 更新卡片计数
         // 注意：incrementView 返回的是新的浏览量数字（也可能是 undefined），
         // 用它来写 DOM，而不是用 tool.views —— 后者在「找不到对象引用」时

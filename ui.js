@@ -256,9 +256,27 @@ function renderTools(filter) {
             if (altLink && t.download && altLink === t.download) altLink = null;
         }
 
+        // ---------- VIP/登录专属工具：没有公开下载地址时的按钮 ----------
+        // 受限工具的下载地址存在 tool_downloads 表（受 RLS 保护），
+        // tools.download 是空的 —— 所以上面找不到「下载」链接，
+        // 会降级成「📋 查看详情」，对已有权限的用户体验很差。
+        //
+        // 这里单独处理：有权限时显示「下载」按钮，点击直接打开详情弹窗
+        // （真实链接只在那里面、由数据库函数 get_download_url() 返回）。
+        // 注意：不要用 href="/t/{id}" —— 那是独立的 SEO 详情页，
+        // 跳过去会离开首页，和用户的预期（就地下载）不符。
+        var hasDownloadRight = canDownload && (tier === 'vip' || tier === 'user');
+
         // 按钮区：只有一个链接时保持原样；有两个时并排显示
         var actionsHTML;
-        if (!canDownload && !primaryHref && !altLink) {
+        if (hasDownloadRight && !primaryHref) {
+            // 有权限、但工具没有官网也没有公开下载地址
+            var dlText = tier === 'vip' ? '👑 VIP 下载' : '⬇️ 下载';
+            actionsHTML = '<button class="tool-visit-btn" type="button" ' +
+                'data-dl-tool="' + escHTML(t.id) + '" ' +
+                'data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' +
+                dlText + '</button>';
+        } else if (!canDownload && !primaryHref && !altLink) {
             // 完全没权限也没官网：显示一个引导按钮
             var lockText = lockedReason === 'vip' ? '👑 开通 VIP 下载' : '🔒 登录后下载';
             actionsHTML = '<button class="tool-visit-btn tool-visit-locked" type="button" ' +

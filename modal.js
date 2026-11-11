@@ -71,6 +71,11 @@ function openModal(tool) {
 }
 
 // 拉取并渲染 VIP 专属下载链接
+// ------------------------------------------------------------
+// 关键：必须用 sbFetch（返回真正的 Response），不能用 adminFetch。
+// adminFetch 是写操作的封装，内部 Prefer: return=minimal，且返回 true
+// 而不是 Response —— 用它读数据 .then(res => res.json()) 必然抛错。
+// 这个 bug 从功能加上起就存在，导致「专属下载」区块从来没显示过。
 function loadVipDownload(toolId) {
     var box = document.getElementById('_vipDownloadSection');
     if (!box) return;
@@ -80,7 +85,7 @@ function loadVipDownload(toolId) {
         box.style.display = 'none';
         return;
     }
-    if (typeof adminFetch !== 'function') {
+    if (typeof sbFetch !== 'function') {
         box.style.display = 'none';
         return;
     }
@@ -88,32 +93,51 @@ function loadVipDownload(toolId) {
     box.style.display = '';
     box.innerHTML = '<h4>专属下载</h4><p style="font-size:12.5px;color:var(--text-light);">检查中…</p>';
 
-    // get_download_url 是数据库函数：内部判断身份，无权限时返回空集
-    adminFetch('POST', 'rpc/get_download_url', { p_tool_id: toolId })
-        .then(function (res) { return res.json(); })
-        .then(function (rows) {
-            var target = document.getElementById('_vipDownloadSection');
-            if (!target) return;   // 弹窗已关闭
-            var row = Array.isArray(rows) && rows[0];
-            if (!row || !row.url) {
-                // 没有专属链接，或当前用户没有下载权限 —— 直接隐藏这一块，
-                // 不提示「你没权限」，避免把「有这个资源」的事实暴露给普通用户
-                target.style.display = 'none';
-                return;
-            }
-            target.style.display = '';
-            target.innerHTML = '<h4>专属下载</h4>' +
-                '<div class="modal-links">' +
-                '<a href="' + escHTML(row.url) + '" class="modal-link primary" target="_blank" rel="noopener">' +
-                '<i class="fas fa-download"></i> ' +
-                (row.tier === 'vip' ? 'VIP 专属下载' : '登录下载') +
-                '</a></div>';
-        })
-        .catch(function () {
-            // 函数不存在（还没执行 migration-vip.sql）或网络问题：静默隐藏
-            var target = document.getElementById('_vipDownloadSection');
-            if (target) target.style.display = 'none';
+    // 用用户自己的 JWT 调数据库函数，由 is_vip() 判断能给什么链接
+    window.Auth.getAccessToken().then(function (token) {
+        if (!token) throw new Error('登录已过期');
+
+        return sbFetch('rpc/get_download_url', {
+            method: 'POST',
+            headers: {
+                'apikey': (typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''),
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ p_tool_id: toolId })
         });
+    }).then(function (res) {
+        if (!res.ok) {
+            return res.text().then(function (t) {
+                throw new Error('HTTP ' + res.status + (t ? '：' + t.slice(0, 100) : ''));
+            });
+        }
+        return res.json();
+    }).then(function (rows) {
+        var target = document.getElementById('_vipDownloadSection');
+        if (!target) return;   // 弹窗已关闭
+
+        var row = Array.isArray(rows) && rows[0];
+        if (!row || !row.url) {
+            // 没有专属链接，或当前用户没有下载权限 —— 直接隐藏，
+            // 不提示「你没权限」，避免暴露「有这个资源」给普通用户
+            target.style.display = 'none';
+            return;
+        }
+
+        target.style.display = '';
+        target.innerHTML = '<h4>专属下载</h4>' +
+            '<div class="modal-links">' +
+            '<a href="' + escHTML(row.url) + '" class="modal-link primary" target="_blank" rel="noopener" data-dl-id="' + escHTML(toolId) + '">' +
+            '<i class="fas fa-download"></i> ' +
+            (row.tier === 'vip' ? '👑 VIP 专属下载' : '登录下载') +
+            '</a></div>';
+    }).catch(function (e) {
+        // 函数不存在（还没执行 migration-vip.sql）或网络问题：隐藏
+        var target = document.getElementById('_vipDownloadSection');
+        if (target) target.style.display = 'none';
+        console.warn('[VIP 下载] 加载失败:', e && e.message);
+    });
 }
 
 function closeModal() {

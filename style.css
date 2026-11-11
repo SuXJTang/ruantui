@@ -2447,3 +2447,50 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 @media (max-width: 480px) {
     .brand-icon { width: 28px; height: 28px; }
 }
+
+/* ================================================================
+   品牌 Logo 用在弹窗里
+   ----------------------------------------------------------------
+   登录框原来用 🧰 emoji，和顶栏的球体 logo 不一致。
+   现在统一用内联 SVG（内容等同 favicon.svg）。
+   ================================================================ */
+.auth-logo.auth-logo-brand {
+    font-size: 0;          /* 隐藏可能残留的文本 */
+    line-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.auth-logo.auth-logo-brand svg {
+    width: 64px;
+    height: 64px;
+    display: block;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.28);
+}
+
+/* PWA 安装提示条里的 logo */
+.install-banner-icon.install-icon-brand {
+    font-size: 0;
+    line-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.install-banner-icon.install-icon-brand svg {
+    width: 36px;
+    height: 36px;
+    display: block;
+    border-radius: 9px;
+}
+
+@media (max-width: 480px) {
+    .auth-logo.auth-logo-brand svg {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+    }
+}

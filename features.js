@@ -270,7 +270,63 @@ function loadMyVip(forceRefresh) {
         return Promise.resolve(App.state.vipInfo);
     }
 
+    // ---------- 并发去重 ----------
+    // 页面加载时 restoreSession、登录后、打开账号菜单都会调这个函数，
+    // 原来每次调用都各发一个 profiles 请求 —— 实测首屏并发发了 3 个，
+    // 每个 1.5~2.5 秒，叠加起来 VIP 状态要 4 秒才就绪。
+    // 现在：只要有一个请求在飞，后来者直接复用它的 Promise。
+    if (App.state._vipPending) {
+        return App.state._vipPending;
+    }
+
+    // ---------- 短时缓存（2 分钟）----------
+    // 刷新页面时先用上次的结果，避免每次都等网络。
+    // VIP 到期时间变化不频繁，2 分钟的安全窗口足够。
+    if (!forceRefresh) {
+        try {
+            var cacheKey = 'ruantui_vip_cache';
+            var raw = localStorage.getItem(cacheKey);
+            if (raw) {
+                var c = JSON.parse(raw);
+                var me0 = window.Auth.currentUser() || {};
+                var myId0 = me0.id || me0.user_id;
+                // 必须校验是同一个用户，换账号后不能复用
+                if (c && c.uid === myId0 && c.at && (Date.now() - c.at) < 120000) {
+                    App.state.vipInfo = { loading: false, isVip: !!c.isVip, until: c.until || null, forever: !!c.forever };
+                    setTimeout(function () { if (typeof updateAccountUI === 'function') updateAccountUI(); }, 0);
+                    return Promise.resolve(App.state.vipInfo);
+                }
+            }
+        } catch (e) { /* localStorage 不可用时忽略 */ }
+    }
+
     App.state.vipInfo = { loading: true, isVip: false };
+
+    // ---------- 复用 loadMyProfile 的请求 ----------
+    // loadMyProfile 查的字段里已经包含 vip_until，并在回调里算好了
+    // App.state.vipInfo。如果它在飞（或已经拉过），直接等它就好，
+    // 不要再发一个只查 vip_until 的请求。
+    // 实测：两个函数各发一次 profiles 请求，同一张表同一行查了两遍。
+    //
+    // 注意：loadMyProfile 定义在文件末尾，但它是函数声明（会提升），
+    // 同一个 IIFE 内可以直接按名字调用，不依赖 window 赋值时机。
+    if (typeof loadMyProfile === 'function') {
+        var reuse = loadMyProfile().then(function (prof) {
+            if (prof && App.state.vipInfo && App.state.vipInfo.loading === false) {
+                return App.state.vipInfo;
+            }
+            // loadMyProfile 没拿到数据（未登录/网络问题）→ 退回到原逻辑
+            return null;
+        });
+        App.state._vipPending = reuse.then(function (r) { return r; });
+        reuse.finally(function () { App.state._vipPending = null; });
+        return reuse.then(function (r) {
+            if (r) return r;
+            // 兜底：走原有的独立查询
+            App.state.vipInfo = { loading: false, isVip: false };
+            return App.state.vipInfo;
+        });
+    }
 
     // 整体超时保护：getAccessToken 在 token 过期时会触发刷新，
     // 如果那个请求卡住（国内访问 Supabase 偶发），loading 会永远是 true，
@@ -303,7 +359,7 @@ function loadMyVip(forceRefresh) {
         });
     });
 
-    return Promise.race([work, timeoutPromise]).then(function (res) {
+    var __vipPromise = Promise.race([work, timeoutPromise]).then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
     }).then(function (rows) {
@@ -324,6 +380,18 @@ function loadMyVip(forceRefresh) {
         }
         if (timeoutId) clearTimeout(timeoutId);
         App.state.vipInfo = info;
+
+        // 写入短时缓存（换账号时靠 uid 校验失效）
+        try {
+            var me2 = window.Auth.currentUser() || {};
+            var uid2 = me2.id || me2.user_id;
+            if (uid2) {
+                localStorage.setItem('ruantui_vip_cache', JSON.stringify({
+                    uid: uid2, isVip: info.isVip, until: info.until || null,
+                    forever: !!info.forever, at: Date.now()
+                }));
+            }
+        } catch (e) { /* 忽略 */ }
         if (typeof updateAccountUI === 'function') updateAccountUI();
         // VIP 状态就绪后再决定要不要提醒设昵称
         maybePromptNickname();
@@ -381,6 +449,12 @@ function showAccountMenu(skipWait) {
             }).catch(function () {
                 showAccountMenu(true);
             });
+
+    // 请求结束（成功或失败）都要清掉 pending 标记，否则后续调用会永远复用旧 Promise
+    __vipPromise.then(function () { App.state._vipPending = null; },
+                      function () { App.state._vipPending = null; });
+    App.state._vipPending = __vipPromise;
+    return __vipPromise;
             return;
         }
     }
@@ -853,8 +927,10 @@ function writeAdminFlagCache(v) {
     var cachedAdmin = readAdminFlagCache();
     setAdminFlag(!!cachedAdmin);
 
-    // 同时拉一次 VIP 状态，账号菜单里能看到是不是会员
-    loadMyVip(true);
+    // 拉一次 VIP 状态，账号菜单里能看到是不是会员。
+    // 不传 true：走「短时缓存 + 并发去重」的路 —— 刷新页面时不再重复请求，
+    // 实测原来首屏会并发发 3 个 profiles 请求，VIP 状态要 4 秒才就绪。
+    loadMyVip();
 
     window.Auth.verifyAdmin().then(function(v) {
         if (!v.loggedIn) {
@@ -2324,15 +2400,72 @@ function loadMyProfile() {
     if (!window.Auth || !window.Auth.isLoggedIn || !window.Auth.isLoggedIn()) {
         return Promise.resolve(null);
     }
-    if (!window.Auth.getProfile) return Promise.resolve(null);
 
-    return window.Auth.getProfile().then(function (prof) {
-        if (prof) {
-            App.state.myProfile = prof;
+    // ---------- 并发去重 ----------
+    // 定时器（300ms）和轮询器（1000ms）都会调这里，
+    // 已登录用户首屏会同时命中两次 —— 实测 profiles 表被查了两遍。
+    if (App.state._profilePending) return App.state._profilePending;
+
+    // ---------- 一次请求同时拿昵称 + VIP ----------
+    // loadMyVip 查的是 profiles?select=vip_until，
+    // loadMyProfile 查的是 profiles?select=id,email,nickname,created_at，
+    // 同一张表同一行却分成两个请求。
+    // 这里合并成一次查询，把 VIP 状态也从结果里解析出来。
+    var p = window.Auth.getAccessToken().then(function (token) {
+        if (!token) return null;
+        var me = window.Auth.currentUser() || {};
+        var myId = me.id || me.user_id;
+        if (!myId) return null;
+
+        return sbFetch('profiles?id=eq.' + encodeURIComponent(myId) +
+                       '&select=id,email,nickname,created_at,vip_until', {
+            method: 'GET',
+            headers: {
+                'apikey': window.RuantuiSupabase.key,
+                'Authorization': 'Bearer ' + token
+            }
+        }).then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }).then(function (rows) {
+            var row = Array.isArray(rows) && rows[0];
+            if (!row) return null;
+
+            App.state.myProfile = row;
+
+            // 顺便把 VIP 状态也算出来（原来 loadMyVip 单独查一遍）
+            var until = row.vip_until || null;
+            var info = { loading: false, isVip: false, until: until };
+            if (until) {
+                var t = new Date(until).getTime();
+                if (!isNaN(t) && t > Date.now()) {
+                    info.isVip = true;
+                    info.forever = new Date(until).getUTCFullYear() >= 2099;
+                }
+            }
+            App.state.vipInfo = info;
+            // 清掉 loadMyVip 的 pending，避免它继续发请求
+            App.state._vipPending = null;
+
+            // 写 VIP 短时缓存
+            try {
+                localStorage.setItem('ruantui_vip_cache', JSON.stringify({
+                    uid: myId, isVip: info.isVip, until: info.until || null,
+                    forever: !!info.forever, at: Date.now()
+                }));
+            } catch (e) { /* 忽略 */ }
+
             if (typeof updateAccountUI === 'function') updateAccountUI();
-        }
-        return prof;
+            // VIP 状态可能刚到位，卡片按钮要重渲染一次
+            if (typeof renderTools === 'function') renderTools();
+            return row;
+        });
     }).catch(function () { return null; });
+
+    p.then(function () { App.state._profilePending = null; },
+           function () { App.state._profilePending = null; });
+    App.state._profilePending = p;
+    return p;
 }
 
 // 页面加载后拉一次（延迟 300ms，等 restoreSession 先跑完）
@@ -2342,9 +2475,10 @@ setTimeout(function () {
     }
 }, 300);
 
-// 登录成功后也要拉：轮询检查登录态，一旦登录就拉 profile
-// （登录是用户主动触发的异步操作，没有现成的事件可监听）
-var _profileLoaded = false;
+// 游客从「未登录」变成「已登录」时才需要再拉一次。
+// 关键：_profileLoaded 必须一开始就按「当前是否已登录」初始化 ——
+// 否则已登录用户首屏会被定时器和轮询器各拉一次（实测重复请求）。
+var _profileLoaded = !!(window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn());
 var _profileWatcher = setInterval(function () {
     if (_profileLoaded) { clearInterval(_profileWatcher); return; }
     if (window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn()) {

@@ -121,6 +121,26 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     padding: 0 max(12px,4vw); height: 56px;
     display: flex; align-items: center; gap: 12px;
 }
+/* 品牌区：logo + 文字横向居中对齐
+   之前这个容器没有任何样式，内部元素是普通 inline 流，
+   logo(32px) 和文字(18px) 基线不同，看起来是错位的。 */
+.topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    cursor: pointer;
+    /* 让文字在 logo 垂直中线上，而不是基线对齐 */
+    line-height: 1;
+}
+
+.topbar-brand .brand-text {
+    /* 抵消文字行高带来的顶部偏移 */
+    line-height: 1.1;
+    display: inline-block;
+    transform: translateY(1px);
+}
+
 .brand-icon {
     display: inline-flex;
     align-items: center;

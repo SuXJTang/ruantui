@@ -1,12 +1,11 @@
 // ============================================
-// engagement.js — 用户互动：收藏 + 浏览历史 + 评分
+// engagement.js — 用户互动：收藏 + 浏览历史
 // ============================================
 (function() {
     'use strict';
 
     var FAV_KEY = 'ruantui_favorites';
     var HISTORY_KEY = 'ruantui_history';
-    var RATING_KEY = 'ruantui_ratings';
     var MAX_HISTORY = 12;
 
     // ---------- 收藏管理 ----------
@@ -213,19 +212,6 @@
         try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch(e) {}
     }
 
-    // ---------- 评分管理 ----------
-    function getRatings() {
-        try { return JSON.parse(localStorage.getItem(RATING_KEY) || '{}'); } catch(e) { return {}; }
-    }
-    function getUserRating(id) {
-        return getRatings()[id] || 0;
-    }
-    function setUserRating(id, rating) {
-        var ratings = getRatings();
-        ratings[id] = rating;
-        try { localStorage.setItem(RATING_KEY, JSON.stringify(ratings)); } catch(e) {}
-    }
-
     // ---------- 页面加载时：已登录则自动同步 ----------
     // 放在末尾统一触发一次，避免与其他模块初始化争抢。
     function autoSyncOnLoad() {
@@ -243,19 +229,6 @@
     window.renderFavButton = function(toolId) {
         var fav = isFavorited(toolId);
         return '<button class="fav-btn ' + (fav ? 'active' : '') + '" data-fav-id="' + toolId + '" aria-label="' + (fav ? '取消收藏' : '收藏') + '" title="' + (fav ? '取消收藏' : '收藏') + '"><i class="' + (fav ? 'fas' : 'far') + ' fa-heart"></i></button>';
-    };
-
-    // ---------- 渲染评分星星 ----------
-    window.renderRatingStars = function(toolId, avgRating) {
-        var userR = getUserRating(toolId);
-        var display = avgRating || userR || 0;
-        var html = '<div class="rating-stars" data-rating-id="' + toolId + '">';
-        for (var i = 1; i <= 5; i++) {
-            html += '<i class="' + (i <= display ? 'fas' : 'far') + ' fa-star rating-star" data-star="' + i + '" data-rating-id="' + toolId + '"></i>';
-        }
-        html += '<span class="rating-num">' + (display > 0 ? display.toFixed(1) : '暂无') + '</span>';
-        html += '</div>';
-        return html;
     };
 
     // ---------- 在卡片上添加收藏按钮 ----------
@@ -320,27 +293,6 @@
         }
     });
 
-    // ---------- 评分交互（在详情弹窗中） ----------
-    document.addEventListener('click', function(e) {
-        var star = e.target.closest('.rating-star');
-        if (!star) return;
-        e.stopPropagation();
-        var id = parseInt(star.dataset.ratingId);
-        var rating = parseInt(star.dataset.star);
-        setUserRating(id, rating);
-        showToast('已评分 ' + rating + ' 星 ⭐', 'success');
-        // 更新星星显示
-        var container = star.closest('.rating-stars');
-        if (container) {
-            var stars = container.querySelectorAll('.rating-star');
-            stars.forEach(function(s, i) {
-                s.className = (i < rating ? 'fas' : 'far') + ' fa-star rating-star';
-            });
-            var num = container.querySelector('.rating-num');
-            if (num) num.textContent = rating.toFixed(1);
-        }
-    });
-
     // ---------- 添加收藏筛选标签 ----------
     function addFavoritesFilter() {
         var filterBar = document.querySelector('.filter-bar');
@@ -381,27 +333,12 @@
         window.renderTools = _wrapped;
     }
 
-    // ---------- 详情弹窗：记录浏览历史 + 显示评分 ----------
+    // ---------- 详情弹窗：记录浏览历史 ----------
     var origOpenModal = window.openModal;
     if (origOpenModal) {
         window.openModal = function(tool) {
             origOpenModal(tool);
-            if (tool) {
-                addToHistory(tool.id);
-                // 在弹窗中注入评分区域
-                setTimeout(function() {
-                    var modalBody = document.getElementById('modalBody');
-                    if (modalBody && !modalBody.querySelector('.rating-stars')) {
-                        var tagsSection = modalBody.querySelector('.modal-section:last-of-type');
-                        if (tagsSection) {
-                            var ratingSection = document.createElement('div');
-                            ratingSection.className = 'modal-section';
-                            ratingSection.innerHTML = '<h4>我的评分</h4>' + window.renderRatingStars(tool.id, tool.rating);
-                            tagsSection.parentNode.insertBefore(ratingSection, tagsSection.nextSibling);
-                        }
-                    }
-                }, 50);
-            }
+            if (tool) addToHistory(tool.id);
         };
     }
 
@@ -427,11 +364,6 @@
     favStyle.textContent = [
         '.card-fav-btn.active i{animation:heartBeat .6s ease;}',
         '@keyframes heartBeat{0%,100%{transform:scale(1)}25%{transform:scale(1.3)}50%{transform:scale(.9)}75%{transform:scale(1.15)}}',
-        '.rating-stars{display:flex;align-items:center;gap:4px;margin:8px 0;}',
-        '.rating-star{cursor:pointer;font-size:16px;color:#d1d5db;transition:all .2s;}',
-        '.rating-star:hover{transform:scale(1.2);}',
-        '.rating-star.fas{color:#f5b800;}',
-        '.rating-num{font-size:13px;color:var(--text-light);margin-left:4px;}',
         '.filter-fav .filter-count{color:#ef4444;}'
     ].join('');
     document.head.appendChild(favStyle);

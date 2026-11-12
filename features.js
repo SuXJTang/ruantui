@@ -36,7 +36,7 @@ if (sortSelect) {
         // 始终从原始顺序开始，避免多次排序累积偏差
         if (App.state._originalTools) App.state.tools = App.state._originalTools.slice();
         if (val === 'name') App.state.tools.sort(function(a, b) { return a.name.localeCompare(b.name, 'zh'); });
-        else if (val === 'popular') App.state.tools.sort(function(a, b) { return (b.views || 0) - (a.views || 0); });
+        else if (val === 'popular') App.state.tools.sort(function(a, b) { return (b.downloads || 0) - (a.downloads || 0); });
         else if (val === 'newest') App.state.tools.sort(function(a, b) { return b.id - a.id; });
         // default: 已恢复原始顺序（数据库 pinned.desc, created_at.asc），无需排序
         renderTools(App.state.currentFilter);
@@ -68,7 +68,7 @@ window.toolShareUrl = function(id) {
 window.copyToolLink = function(id) { copyToClipboard(window.toolShareUrl(id), '链接已复制'); };
 window.copyToolText = function(id) {
     var t = App.state.tools.find(function(x) { return x.id === id; });
-    if (t) copyToClipboard('🔧 ' + t.name + '\n⭐ ' + (t.rating || '?') + '/5\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.toolShareUrl(id), '已复制');
+    if (t) copyToClipboard('🔧 ' + t.name + '\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.toolShareUrl(id), '已复制');
 };
 window.downloadQR = function(id) {
     var a = document.createElement('a');
@@ -1167,7 +1167,6 @@ function openForm(tool) {
     if (tool && tool.id) loadVipDownloadUrl(tool.id);
     syncTierUI();
     _fSet('formUsage', tool ? (tool.usage || '') : '');
-    _fSet('formSlug', tool ? (tool.slug || '') : '');
     _fSet('formIconUrl', tool ? (tool.iconUrl || '') : '');
     _fSet('formIcon', tool ? (tool.icon || '') : '');
     updateIconPreview();
@@ -1210,7 +1209,6 @@ function updateIconPreview() {
     var color = _fVal('formColor') || '#3B82F6';
     var iconPreview = _fInput('iconPreview');
     if (iconPreview) iconPreview.style.background = color;
-    var slug = _fVal('formSlug').trim();
     var iconUrl = _fVal('formIconUrl').trim();
     var icon = _fVal('formIcon').trim();
     var previewImg = _fInput('previewImg');
@@ -1219,12 +1217,11 @@ function updateIconPreview() {
     previewImg.style.display = 'none';
     previewIcon.style.display = 'none';
     if (iconUrl) { previewImg.src = iconUrl; previewImg.style.display = 'inline-block'; }
-    else if (slug) { previewImg.src = 'https://cdn.simpleicons.org/' + slug + '/ffffff'; previewImg.style.display = 'inline-block'; }
     else if (icon) { previewIcon.className = 'fas ' + icon; previewIcon.style.display = 'inline-block'; }
     else { previewIcon.className = 'fas fa-cube'; previewIcon.style.display = 'inline-block'; }
 }
 
-[['formSlug', updateIconPreview], ['formIconUrl', updateIconPreview], ['formIcon', updateIconPreview], ['formColor', updateIconPreview]]
+[['formIconUrl', updateIconPreview], ['formIcon', updateIconPreview], ['formColor', updateIconPreview]]
     .forEach(function(p) { var el = _fInput(p[0]); if (el) el.oninput = p[1]; });
 
 var _fc = document.getElementById('formCancel');
@@ -1249,7 +1246,6 @@ if (toolForm) {
             download: _fVal('formDownload').trim(),
         download_tier: (_fVal('formDownloadTier') || 'free').trim(),
             usage: _fVal('formUsage').trim(),
-            slug: _fVal('formSlug').trim(),
             iconUrl: _fVal('formIconUrl').trim(),
             icon: _fVal('formIcon').trim() || 'fa-cube'
         };

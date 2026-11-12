@@ -36,15 +36,14 @@ function rebuildCategories() {
 
 function loadLinks(tool) {
     var out = [];
-    if (tool.affiliateUrl) out.push(tool.affiliateUrl);
-    if (tool.link && out.indexOf(tool.link) < 0) out.push(tool.link);
     if (tool.url && out.indexOf(tool.url) < 0) out.push(tool.url);
     if (tool.download && out.indexOf(tool.download) < 0) out.push(tool.download);
     return out;
 }
 
-// 链接解析 — 优先级：联盟链接 > 直达 > 官网（Supabase url 字段）> 下载地址
-// 数据库行只有 url（migration.sql 的 tools.url），没有 affiliateUrl/link
+// 链接解析 — 优先级：官网（Supabase url 字段）> 下载地址
+// 数据库 tools 表只有 url / download 两列，没有 affiliateUrl / link，
+// 之前这里为那两个不存在的列留了分支，属于永远走不到的死代码，已移除。
 function getToolLink(tool) {
     var all = tool ? loadLinks(tool) : [];
     return all.length ? all[0] : null;
@@ -161,11 +160,11 @@ function renderTools(filter) {
     if (sortBy === 'name') {
         filtered.sort(function(a, b) { return a.name.localeCompare(b.name, 'zh'); });
     } else if (sortBy === 'popular') {
-        filtered.sort(function(a, b) { return (b.views || 0) - (a.views || 0); });
+        // 「最热」按真实下载量排序。之前用的是 views（打开详情次数），
+        // 但那列常年是 0，排出来跟默认没区别，等于假排序。
+        filtered.sort(function(a, b) { return (b.downloads || 0) - (a.downloads || 0); });
     } else if (sortBy === 'newest') {
         filtered.sort(function(a, b) { return b.id - a.id; });
-    } else if (sortBy === 'rating') {
-        filtered.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
     }
 
     // 服务端是否已经把卡片渲染进 HTML（Worker 的 injectToolList）。
@@ -247,11 +246,8 @@ function renderTools(filter) {
         // 主按钮文案按「链接的来源字段」决定，而不是按优先级顺序猜：
         //  - 只有 download（没有官网）→ ⬇️ 下载
         //  - 有官网 url → 🌐 去官网
-        //  - 联盟链接 → 🔥 优惠直达
         var primaryHref = toolLink, primaryLabel = '🚀 去使用';
-        if (t.affiliateUrl && primaryHref === t.affiliateUrl) {
-            primaryLabel = '🔥 优惠直达';
-        } else if (t.download && primaryHref === t.download) {
+        if (t.download && primaryHref === t.download) {
             primaryLabel = '⬇️ 下载';
         } else if (t.url && primaryHref === t.url) {
             primaryLabel = '🌐 去官网';
@@ -266,7 +262,6 @@ function renderTools(filter) {
         if (altLink) {
             if (t.download && altLink === t.download) altLabel = '⬇️ 下载';
             else if (t.url && altLink === t.url) altLabel = '🌐 官网';
-            else if (t.affiliateUrl && altLink === t.affiliateUrl) altLabel = '🔥 优惠';
         }
 
         // ---------- 下载权限：free / user / vip ----------
@@ -380,6 +375,10 @@ function renderTools(filter) {
                 '<i class="fas fa-download"></i>' +
                 '<span class="tool-dl-num">' + (typeof formatCount === 'function' ? formatCount(t.downloads) : (Number(t.downloads) || 0)) + '</span>' +
               '</span>' +
+              '<span class="tool-views" title="浏览次数">' +
+                '<i class="fas fa-eye"></i>' +
+                '<span class="tool-views-num">' + (typeof formatCount === 'function' ? formatCount(t.views) : (Number(t.views) || 0)) + '</span>' +
+              '</span>' +
             '</span>' +
             '</div>' +
             '<p>' + highlightText(t.comment, App.state.currentSearch.trim()) + '</p>' +
@@ -417,30 +416,6 @@ function syncJsonLd(list) {
     } catch (e) {
         console.warn('JSON-LD 同步失败:', e);
     }
-}
-
-// 点击追踪 — 仅本地统计 + 尽力而为的服务端埋点
-// /api/click 在 GitHub Pages 部署下不存在（会 404）：任何失败都必须静默吞掉，
-// 既不能让 Promise 悬空 reject，也不能阻塞「去使用」链接的跳转。
-function trackToolClick(toolId, toolName) {
-    try {
-        var clicks = JSON.parse(localStorage.getItem('ruantui_clicks') || '{}');
-        clicks[toolId] = (clicks[toolId] || 0) + 1;
-        localStorage.setItem('ruantui_clicks', JSON.stringify(clicks));
-    } catch(e) {}
-    if (typeof fetch !== 'function') return;
-    try {
-        fetch('/api/click', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ toolId: parseInt(toolId, 10), toolName: toolName }),
-            keepalive: true
-        }).then(function(res) {
-            if (!res || !res.ok) {
-                // 404/401/5xx 等一律忽略：埋点失败不影响业务
-            }
-        }).catch(function() {});
-    } catch(e) {}
 }
 
 // 卡片点击 → 打开详情：由 modal.js 统一处理（唯一入口），这里不再注册开卡监听，
@@ -575,7 +550,6 @@ if (grid) grid.addEventListener('click', function(e) {
     if (!btn) return;
 
     var toolId = parseInt(btn.dataset.toolId, 10);
-    trackToolClick(btn.dataset.toolId, btn.dataset.toolName);
 
     // 只有「下载」按钮才计入下载次数，去官网/优惠直达不算
     if (btn.textContent.indexOf('下载') >= 0 && typeof incrementDownload === 'function') {

@@ -1,13 +1,12 @@
 // ============================================
 // analytics.js — 数据分析仪表盘
-// 热门工具排行 + 点击统计 + 收藏概览 + 浏览历史
+// 热门工具排行 + 全站下载统计 + 收藏概览 + 浏览历史
 // ============================================
 (function() {
     'use strict';
 
     var FAV_KEY = 'ruantui_favorites';
     var HISTORY_KEY = 'ruantui_history';
-    var CLICKS_KEY = 'ruantui_clicks';
     var VISIT_KEY = 'ruantui_visits';
 
     // 记录访问
@@ -21,7 +20,6 @@
     }
     recordVisit();
 
-    function getClicks() { try { return JSON.parse(localStorage.getItem(CLICKS_KEY) || '{}'); } catch(e) { return {}; } }
     function getFavorites() { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) { return []; } }
     function getHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; } }
     function getVisits() { try { return JSON.parse(localStorage.getItem(VISIT_KEY) || '{}'); } catch(e) { return {}; } }
@@ -575,16 +573,19 @@
 
     // 构建仪表盘 HTML
     function buildDashboard() {
-        var clicks = getClicks();
         var favs = getFavorites();
         var history = getHistory();
         var visits = getVisits();
 
-        // 热门工具 Top 5
-        var clickEntries = Object.keys(clicks).map(function(id) {
-            var tool = (App.state.tools || []).find(function(t) { return t.id === parseInt(id); });
-            return { id: parseInt(id), name: tool ? tool.name : '未知工具', clicks: clicks[id], category: tool ? tool.category : '' };
-        }).sort(function(a, b) { return b.clicks - a.clicks; }).slice(0, 5);
+        // 热门工具 Top 5 —— 用全站真实下载量，而不是本机点击
+        // （原先统计的是「这台浏览器点过几次」，换台设备就归零，排行榜基本是空的）
+        var clickEntries = (App.state.tools || []).filter(function(t) {
+            return (Number(t.downloads) || 0) > 0;
+        }).sort(function(a, b) {
+            return (Number(b.downloads) || 0) - (Number(a.downloads) || 0);
+        }).slice(0, 5).map(function(t) {
+            return { id: t.id, name: t.name, clicks: Number(t.downloads) || 0, category: t.category };
+        });
 
         var maxClicks = clickEntries.length > 0 ? clickEntries[0].clicks : 1;
 
@@ -596,7 +597,7 @@
                 '<div class="dash-hot-info"><span class="dash-hot-name">' + escHTML(item.name) + '</span>' +
                 '<div class="dash-hot-bar"><div class="dash-hot-fill" style="width:' + pct + '%"></div></div></div>' +
                 '<span class="dash-hot-count">' + item.clicks + '</span></div>';
-        }).join('') : '<div class="dash-empty">暂无点击数据</div>';
+        }).join('') : '<div class="dash-empty">暂无下载数据</div>';
 
         // 最近浏览
         var histTools = history.slice(0, 6).map(function(id) {
@@ -629,7 +630,7 @@
                 '<span class="dash-visit-label">' + label + '</span></div>';
         }).join('');
 
-        var totalClicks = Object.values(clicks).reduce(function(a, b) { return a + b; }, 0);
+        var totalClicks = clickEntries.reduce(function(a, b) { return a + b.clicks; }, 0);
         var totalVisits = Object.values(visits).reduce(function(a, b) { return a + b; }, 0);
 
         return '<div class="dash-grid">' +
@@ -640,7 +641,7 @@
             // 2. 统计卡片
             '<div class="dash-card dash-stats">' +
             '<div class="dash-stat-item"><i class="fas fa-eye"></i><div><strong>' + totalVisits + '</strong><span>本机访问</span></div></div>' +
-            '<div class="dash-stat-item"><i class="fas fa-mouse-pointer"></i><div><strong>' + totalClicks + '</strong><span>本机点击</span></div></div>' +
+            '<div class="dash-stat-item"><i class="fas fa-download"></i><div><strong>' + totalClicks + '</strong><span>全站下载</span></div></div>' +
             '<div class="dash-stat-item"><i class="fas fa-heart"></i><div><strong>' + favs.length + '</strong><span>收藏数</span></div></div>' +
             '<div class="dash-stat-item"><i class="fas fa-clock"></i><div><strong>' + history.length + '</strong><span>浏览记录</span></div></div>' +
             '</div>' +

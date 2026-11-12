@@ -1770,6 +1770,20 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-size: 11px;
 }
 
+/* 浏览次数：跟下载次数并排，颜色比下载浅一档，避免两个数字抢焦点 */
+.tool-views {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 8px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.tool-views i {
+    font-size: 11px;
+}
+
 /* 数字变化时轻微脉冲，让「+1」能被感知 */
 @keyframes countPulse {
     0%   { transform: scale(1); }

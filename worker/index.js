@@ -4,11 +4,11 @@
 // v3.2.0 起，管理权限改为 Supabase Auth 账号登录 + 数据库 RLS 白名单，
 // 前端带用户 JWT 直连 Supabase 读写。Worker 不再参与权限控制与数据代理。
 //
-// 目前仅剩两个职责：
-//   1. 静态资源服务（ASSETS binding），带 SPA 回退
-//   2. POST /api/click —— 公开的点击埋点，无鉴权、不落库，只写 Workers Logs
+// 目前仅剩一个职责：
+//   静态资源服务（ASSETS binding），带 SPA 回退
 //
-// 旧的 /api/admin/* 已全部返回 410 Gone。
+// 旧的 /api/click 埋点（只打日志不落库）与 /api/admin/* 均已移除：
+// /api/admin/* 返回 410 Gone，/api/click 已无调用方。
 
 // 允许的前端来源（CORS 白名单）
 var ALLOWED_ORIGINS = [
@@ -63,7 +63,7 @@ function errorResponse(msg, status, cors) {
     return jsonResponse({ error: msg }, status || 400, cors);
 }
 
-// 空响应（用于 /api/click 的 204，避免多余体积）
+// 空响应（204，避免多余体积），供 OPTIONS 预检等场景使用
 function emptyResponse(status, cors) {
     return new Response(null, { status: status, headers: withCORS({}, cors) });
 }
@@ -71,31 +71,10 @@ function emptyResponse(status, cors) {
 // ------------------------------------------------------------------
 // 注：v3.2.0 起管理权限改为 Supabase Auth 账号登录 + 数据库 RLS 白名单，
 // 下面的登录限流 / 密码哈希比对 / token 签发等旧逻辑已被整体移除。
-// Worker 现在只保留 /api/click 一个公开埋点接口。
+// Worker 不再提供任何写接口；统计口径统一走 Supabase 的
+// increment_tool_download / increment_tool_view RPC。
+// （原 /api/click 埋点只打日志不落库，前端调用也已移除，故一并删除）
 // ------------------------------------------------------------------
-
-// ------------------------------------------------------------------
-// /api/click —— 公开的埋点 ping（ui.js trackToolClick 调用）
-// 不触碰 Supabase：写入需要 SECURITY DEFINER RPC，migration.sql 未定义
-// 点击表，而 increment_tool_view 的语义是「打开详情」，不能挪用来记外链点击。
-// 这里只做输入校验并在 Workers Logs 留一行结构化日志，供后续接入 Analytics。
-// ------------------------------------------------------------------
-async function handleClick(request, cors) {
-    var body;
-    try {
-        body = await request.json();
-    } catch (e) {
-        return emptyResponse(204, cors);
-    }
-    var toolId = body && body.toolId;
-    // 只接受正整数 toolId；其余一律静默丢弃（客户端用 .catch 吞掉任何错误）
-    if (typeof toolId !== 'number' || !Number.isSafeInteger(toolId) || toolId <= 0) {
-        return emptyResponse(204, cors);
-    }
-    var toolName = (typeof body.toolName === 'string') ? body.toolName.slice(0, 100) : '';
-    console.log(JSON.stringify({ evt: 'tool_click', toolId: toolId, toolName: toolName, ts: Date.now() }));
-    return emptyResponse(204, cors);
-}
 
 // API 路由处理
 async function handleRequest(request, env) {
@@ -112,13 +91,6 @@ async function handleRequest(request, env) {
     var cors = getCORSHeaders(request);
 
     try {
-        // /api/click —— 公开埋点，无需鉴权；放在 token 校验之前。
-        // 刻意不限制 HTTP 方法：这是 fire-and-forget 的公开 ping，
-        // 任何方法都应得到 204 而不是 401，避免客户端把它当成鉴权失败去重试。
-        if (path === '/api/click') {
-            return handleClick(request, cors);
-        }
-
         // POST /api/admin/login —— 已废弃（v3.2.0）
         //
         // 管理权限已改为 Supabase Auth 账号登录 + 数据库 RLS 的 admins 白名单，
@@ -689,17 +661,15 @@ async function injectToolMeta(htmlRes, toolId, url, ctx) {
     html = html.replace(/<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/i, '<meta name="twitter:description" content="' + d + '">');
     html = html.replace(/<meta\s+name="twitter:image"\s+content="[^"]*"\s*\/?>/i, '<meta name="twitter:image" content="' + im + '">');
 
-    // 每条工具页注入 SoftwareApplication 结构化数据，搜索结果里能显示评分
-    var rating = Number(tool.rating) || 0;
-    var ratingBlock = rating > 0
-        ? ',"aggregateRating":{"@type":"AggregateRating","ratingValue":"' + rating + '","bestRating":"5","worstRating":"1","ratingCount":"1"}'
-        : '';
+    // SoftwareApplication 结构化数据。
+    // 注意：这里刻意不输出 aggregateRating —— 站内没有真实的用户评分数据，
+    // 拿一个固定值冒充评分会被 Google 判为结构化数据作弊，反而影响收录。
     var ld = '{"@context":"https://schema.org","@type":"SoftwareApplication","name":"' + n +
         '","applicationCategory":"' + escHTML(tool.category || 'Utility') + '"' +
         ',"operatingSystem":"Android, iOS, Windows, macOS, Linux, Web"' +
         ',"description":"' + escHTML(desc) + '"' +
         ',"url":"' + u + '"' +
-        ',"image":"' + im + '"' + ratingBlock + '}';
+        ',"image":"' + im + '"}';
     html = html.replace('</head>',
         '<script type="application/ld+json">' + ld + '</script>\n' +
         '<script>window.__RUANTUI_TOOL_ID__=' + tool.id + ';</script>\n</head>');

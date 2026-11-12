@@ -10,11 +10,8 @@ function openModal(tool) {
     var tagsArr = Array.isArray(tool.tags) ? tool.tags : [];
     var tagsHTML = tagsArr.map(function(t) { return '<span class="modal-tag">' + escHTML(t) + '</span>'; }).join('');
     var links = [];
-    // 联盟链接优先
-    if (tool.affiliateUrl) links.push('<a href="' + escHTML(tool.affiliateUrl) + '" class="modal-link affiliate" target="_blank" rel="noopener" data-aff-id="' + escHTML(tool.id) + '"><i class="fas fa-fire"></i> 优惠购买</a>');
     if (tool.url) links.push('<a href="' + escHTML(tool.url) + '" class="modal-link primary" target="_blank" rel="noopener"><i class="fas fa-globe"></i> 官网</a>');
     if (tool.download) links.push('<a href="' + escHTML(tool.download) + '" class="modal-link" target="_blank" rel="noopener" data-dl-id="' + escHTML(tool.id) + '"><i class="fas fa-download"></i> 下载</a>');
-    if (tool.link && tool.link !== tool.url && tool.link !== tool.affiliateUrl) links.push('<a href="' + escHTML(tool.link) + '" class="modal-link" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> 直达</a>');
 
     // 分享地址走独立页面路径 /t/{id}（Worker 已在服务端注入该工具的 meta），
     // 没有 toolShareUrl 时退回同形式，保证单独引用也不会坏。
@@ -196,12 +193,8 @@ if (overlay) document.getElementById('toolGrid').addEventListener('click', funct
 if (document.getElementById('modalClose')) document.getElementById('modalClose').addEventListener('click', closeModal);
 if (overlay) {
     overlay.addEventListener('click', function(e) { if (!e.target.closest('.modal')) closeModal(); });
-    // 优惠购买埋点（替代原先内联 onclick 字符串：名字含引号会把属性截断成语法错误）
+    // 详情页里的「下载」也计入下载次数（与卡片按钮同一份统计）
     overlay.addEventListener('click', function(e) {
-        var a = e.target.closest('.modal-link[data-aff-id]');
-        if (a) trackToolClick(a.dataset.affId, '');
-
-        // 详情页里的「下载」也计入下载次数（与卡片按钮同一份统计）
         var dl = e.target.closest('.modal-link[data-dl-id]');
         if (dl && typeof incrementDownload === 'function') {
             incrementDownload(parseInt(dl.dataset.dlId, 10)).catch(function () {});

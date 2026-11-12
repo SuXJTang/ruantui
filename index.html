@@ -38,16 +38,16 @@
 <!-- ============================================================
      缓存版本号约定 —— 同一版本号，只改两处
      ------------------------------------------------------------
-     下方所有同源静态资源的 ?v=84 必须一致，且与 sw.js 里的
-     CACHE_VERSION（'v18'）代表同一个发布版本。发版时：
-       1) 把本文件下面所有 ?v=84 全改成新号（如 ?v=84）
-       2) 把 sw.js 的 CACHE_VERSION 同时改成对应的 'v19'
+     下方所有同源静态资源的 ?v=NN 必须一致，且与 sw.js 里的
+     CACHE_VERSION（当前 'v94'）代表同一个发布版本。发版时：
+        1) 把本文件下面所有 ?v=86 全改成新号
+        2) 把 sw.js 的 CACHE_VERSION 同时改成对应的 'v95'
      两步必须同时做，否则 SW 缓存与页面 URL 会对不上。
      详见 README「缓存版本号」一节。
      ============================================================ -->
-<link rel="preload" href="style.css?v=85" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="style.css?v=85"></noscript>
-    <link rel="stylesheet" href="style.css?v=85">
+<link rel="preload" href="style.css?v=86" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css?v=86"></noscript>
+    <link rel="stylesheet" href="style.css?v=86">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 广告位占位骨架：只在 .ad-container 还未被 adsense.js 标记为 .ad-active 时显示，
          替代原先挂到 .adsbygoogle <ins> 上的样式（那会污染 Google 的广告单元与广告拦截检测）。 -->
@@ -278,9 +278,8 @@
     <select class="sort-select" id="sortSelect" aria-label="排序方式">
         <option value="default">默认排序</option>
         <option value="name">名称 A-Z</option>
-        <option value="popular">🔥 热门</option>
+        <option value="popular">🔥 最热（下载量）</option>
         <option value="newest">最新添加</option>
-        <option value="rating">⭐ 评分</option>
     </select>
 </div>
 <div id="resultCount" class="result-count" style="display:none;"></div>
@@ -356,7 +355,7 @@
                 <div class="form-row"><div class="form-group"><label>名称 *</label><input type="text" id="formName" required placeholder="如 VS Code"></div><div class="form-group"><label>分类 *</label><input type="text" id="formCategory" required placeholder="如 开发工具"></div></div>
                 <div class="form-group"><label>标签（逗号分隔）</label><input type="text" id="formTags" placeholder="如 日常必备, 免费"></div>
                 <div class="form-section">图标</div>
-                <div class="form-group"><div class="form-input-row"><input type="text" id="formSlug" placeholder="品牌 slug"><input type="url" id="formIconUrl" placeholder="或图片 URL"></div><div class="form-hint">填品牌标识自动加载图标，或填图片链接</div></div>
+                <div class="form-group"><label>图标</label><input type="url" id="formIconUrl" placeholder="图片地址，如 img/tools/xxx.svg"><div class="form-hint">填图片链接；留空则自动用名称首字做图标</div></div>
                 <div class="form-group"><label>FontAwesome 图标（可选）</label><input type="text" id="formIcon" placeholder="如 fa-camera、fa-film"></div>
                 <div class="form-group"><label>底色</label><div class="icon-picker-group"><input type="color" id="formColor" value="#3B82F6"><div class="icon-preview-box" id="iconPreview" style="background:#3B82F6;"><img src="" id="previewImg"><i class="fas fa-cube" id="previewIcon"></i></div></div></div>
                 <div class="form-section">内容</div>
@@ -514,22 +513,22 @@
     <div class="ann-panel-body" id="annPanelBody"><div class="ann-loading">加载中...</div></div>
 </div>
 
-<script defer src="shared.js?v=85"></script>
-<script defer src="supabase.js?v=85"></script>
-<script defer src="auth.js?v=85"></script>
-<script defer src="data.js?v=85"></script>
-<script defer src="ui.js?v=85"></script>
-<script defer src="modal.js?v=85"></script>
-<script defer src="apikey-config.js?v=85"></script>
-<script defer src="features.js?v=85"></script>
-<script defer src="theme.js?v=85"></script>
-<script defer src="particles.js?v=85"></script>
-<script defer src="effects.js?v=85"></script>
-<script defer src="interactions.js?v=85"></script>
-<script defer src="engagement.js?v=85"></script>
-<script defer src="mobile.js?v=85"></script>
-<script defer src="analytics.js?v=85"></script>
-<script defer src="adsense.js?v=85"></script>
+<script defer src="shared.js?v=86"></script>
+<script defer src="supabase.js?v=86"></script>
+<script defer src="auth.js?v=86"></script>
+<script defer src="data.js?v=86"></script>
+<script defer src="ui.js?v=86"></script>
+<script defer src="modal.js?v=86"></script>
+<script defer src="apikey-config.js?v=86"></script>
+<script defer src="features.js?v=86"></script>
+<script defer src="theme.js?v=86"></script>
+<script defer src="particles.js?v=86"></script>
+<script defer src="effects.js?v=86"></script>
+<script defer src="interactions.js?v=86"></script>
+<script defer src="engagement.js?v=86"></script>
+<script defer src="mobile.js?v=86"></script>
+<script defer src="analytics.js?v=86"></script>
+<script defer src="adsense.js?v=86"></script>
 <button id="backTop" aria-label="回到顶部" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </body>
 </html>

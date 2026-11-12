@@ -88,9 +88,9 @@ function normalizeIconUrl(u) {
 //   弹窗等按需出现的场景仍用 lazy。
 function renderIconHTML(tool, opts) {
     var eager = opts && opts.eager;
-    var rawSrc = tool.iconUrl || (tool.slug ? 'https://cdn.simpleicons.org/' + tool.slug + '/ffffff' : '');
+    var rawSrc = tool.iconUrl || '';
     var imgSrc = escHTML(normalizeIconUrl(rawSrc));
-    var hasImg = tool.iconUrl || tool.slug;
+    var hasImg = !!tool.iconUrl;
 
     // 兜底：图标加载失败时用工具名首字（中文）或首字母（英文）顶上。
     // 早期版本这里是 <i class="fa-cube">，但 FontAwesome 的 cube 图标和「空白方块」

@@ -12,7 +12,7 @@
 //   4. 预缓存清单改为页面真实依赖的前端资源；去掉 sitemap.xml / robots.txt
 //      （搜索引擎抓取用，不是页面依赖，首次安装时多两次无谓请求）。
 var CACHE_PREFIX = 'ruantui';
-var CACHE_VERSION = 'v92';  // 与 index.html 的 ?v=84 同属一次发布，详见 README「缓存版本号」
+var CACHE_VERSION = 'v93';  // 与 index.html 的 ?v=85 同属一次发布，详见 README「缓存版本号」
 var CACHE = CACHE_PREFIX + '-' + CACHE_VERSION;
 // 离线回退页：优先 ./，再退到 ./index.html（GitHub Pages 目录会自动解析到 index.html）
 var OFFLINE_URLS = ['./', './index.html'];

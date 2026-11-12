@@ -91,12 +91,23 @@ function renderIconHTML(tool, opts) {
     var rawSrc = tool.iconUrl || (tool.slug ? 'https://cdn.simpleicons.org/' + tool.slug + '/ffffff' : '');
     var imgSrc = escHTML(normalizeIconUrl(rawSrc));
     var hasImg = tool.iconUrl || tool.slug;
+
+    // 兜底：图标加载失败时用工具名首字（中文）或首字母（英文）顶上。
+    // 早期版本这里是 <i class="fa-cube">，但 FontAwesome 的 cube 图标和「空白方块」
+    // 在 40px 卡片里几乎分不出来，用户反馈"图标是空的"。首字明显得多。
+    // 颜色用工具自己的 color，和卡片图标底色保持一致。
+    var name = String(tool.name || '').trim();
+    var initial = name ? name.charAt(0).toUpperCase() : '?';
+    var fallbackHTML = '<span class="tool-icon-initial" aria-hidden="true">' + escHTML(initial) + '</span>';
+
     if (hasImg) {
         return '<img src="' + imgSrc + '" alt="' + escHTML(tool.name) + '"' +
             (eager ? '' : ' loading="lazy"') +
-            ' decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-block\'"><i class="' + escHTML(tool.icon || 'fa-cube') + '" style="display:none;"></i>';
+            ' decoding="async" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+            fallbackHTML.replace('class="tool-icon-initial"', 'class="tool-icon-initial" style="display:none"');
     }
-    return '<i class="' + escHTML(tool.icon || 'fa-cube') + '"></i>';
+    // 没有配图：直接用首字
+    return fallbackHTML;
 }
 
 // 剪贴板工具

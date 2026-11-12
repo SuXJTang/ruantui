@@ -78,7 +78,7 @@ Supabase 已开放注册，但注册后：
 
 | # | 任务 | 说明 | 预计 |
 |---|---|---|---|
-| 1.1 | 工具扩充到 30+ | 从原 `migration.sql` 的 25 条挑回适用的 + 新增 | 数天 |
+| 1.1 | 工具扩充到 30+ | 从 `db/archive/migration.sql` 的 25 条挑回适用的 + 新增 | 数天 |
 | 1.2 | 补齐 `url` 字段 | 现有 9 条官网全空 | 1 小时 |
 | 1.3 | 分类配图标 / 配色 | 影视 / 听书 / 机场 / 云手机 各配图标 | 半天 |
 | 1.4 | 给每条工具定下载策略 | 标记哪些是「免费可下载」、哪些是「VIP 专属」 | 半天 |
@@ -381,8 +381,10 @@ WHERE id = '用户UID';
 | `README.md` | 项目说明与配置指南 |
 | `CHANGELOG.md` | 版本变更记录 |
 | `ROADMAP.md` | 本文档 —— 迭代路线 |
-| `migration.sql` | 建表脚本（含历史数据，注意已弃用的 RLS 策略） |
-| `migration-auth.sql` | Supabase Auth 权限迁移脚本 |
+| `db/README.md` | **数据库迁移执行顺序（从这里开始看）** |
+| `db/migration-*.sql` | 各功能的迁移脚本：VIP / 下载门槛 / 下载计数 / 公告增强 / 用户中心 |
+| `db/archive/migration.sql` | 早期建表脚本（含历史示例数据，注意已弃用的 RLS 策略） |
+| `db/archive/setup-admin.sql` | 管理员白名单（需替换成自己的 UID） |
 | `.github/workflows/deploy.yml` | 自动部署 |
 | `.github/workflows/keep-alive.yml` | 数据库保活 |
 | `.assetsignore` | 部署时排除的文件 |

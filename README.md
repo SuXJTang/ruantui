@@ -55,8 +55,11 @@ ruantui/
 ├── manifest.json          # PWA 配置
 ├── sitemap.xml            # 搜索引擎站点地图
 ├── robots.txt             # 爬虫规则
-├── icon.svg               # 站点 / PWA 图标（唯一图标源文件）
-├── migration.sql          # Supabase 建表脚本
+├── favicon.svg            # 站点 / PWA 图标（唯一图标源文件）
+├── db/                    # 数据库迁移脚本（见 db/README.md 的执行顺序）
+│   ├── README.md          # ← 迁移说明与执行顺序，从这里开始看
+│   ├── migration-*.sql    # 各功能的迁移脚本
+│   └── archive/           # 早期脚本（已在生产执行过，仅留档）
 ├── wrangler.jsonc         # Cloudflare Workers 部署配置
 ├── .dev.vars.example      # Worker 环境变量模板
 ├── .assetsignore          # 部署到 Worker 时不上传的文件（gitignore 语法）
@@ -161,9 +164,12 @@ wrangler dev
 1. **建管理员账号**：Supabase Dashboard → Authentication → Users → **Add user**
    - 填邮箱和强密码，勾选 **Auto Confirm User**
 2. **复制该用户的 UID**（形如 `8cb3a0dc-1ee1-4f19-a4b0-474e3957ac8f`）
-3. **执行 `migration-auth.sql`**：把里面 `<管理员UID>` 换成你的 UID，
+3. **执行 `db/archive/setup-admin.sql`**：把里面 `<管理员UID>` 换成你的 UID，
    然后粘贴到 SQL Editor 运行
 4. 打开网站 → 点「管理」→ 用该账号登录
+
+> 完整的建库流程（从零搭一个 Supabase 项目）见 [`db/README.md`](db/README.md)，
+> 里面有 11 个迁移脚本的执行顺序，不能跳步。
 
 执行后可用这条 SQL 自检：
 
@@ -186,12 +192,14 @@ SELECT * FROM admins;   -- 应该有你那一行
 | 能否区分身份 | 否 | 是（能知道是谁改的） |
 | 泄露后果 | 永久可登录 | 可单独停用某个账号 |
 
-### 关于 `migration.sql`
+### 关于 `db/archive/migration.sql`
 
-`migration.sql` 是**早期的建表脚本**，其中预置的 25 条示例数据（VS Code、Figma 等）
+`db/archive/migration.sql` 是**早期的建表脚本**，其中预置的 25 条示例数据（VS Code、Figma 等）
 与当前数据库中实际的内容**不是同一批**。如果是从零重建数据库，可以执行它来创建表结构，
-但**务必用 `migration-auth.sql` 覆盖其中的写策略**（旧的是 x-admin-token 方案，已弃用），
+但**务必再跑 `db/archive/setup-admin.sql` 建立管理员白名单**（旧的 x-admin-token 方案已弃用），
 并且不要直接导入那 25 条示例数据。
+
+完整的执行顺序见 [`db/README.md`](db/README.md)。
 
 分类没有硬编码在代码里，由数据库每行的 `category` 字段动态生成筛选标签。
 
@@ -204,7 +212,7 @@ SELECT * FROM admins;   -- 应该有你那一行
 ### 静态资源公开范围（`.assetsignore`）
 `wrangler.jsonc` 的 `assets.directory` 是仓库根目录，**默认会把整个仓库上传成公开资源**。
 排除清单写在仓库根的 **`.assetsignore`**（gitignore 语法），已排除 `worker/index.js`
-（Worker 源码）、`migration.sql`（完整库结构与 RLS 策略）、`wrangler.jsonc`、
+（Worker 源码）、`*.sql`（全部数据库脚本，含库结构与 RLS 策略）、`wrangler.jsonc`、
 `README.md` / `CHANGELOG.md` 以及所有根目录隐藏文件/目录。
 
 > Wrangler 的 `assets` 配置**没有** `ignore` 字段，写进去只会得到一条

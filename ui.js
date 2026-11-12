@@ -50,7 +50,57 @@ function getToolLink(tool) {
     return all.length ? all[0] : null;
 }
 
-// 模糊搜索 — 支持拼音首字母匹配
+
+// ---------- 拼音搜索 ----------
+// 中文没法直接子序列匹配，所以内置一份常用字拼音表。
+// 只收录工具名 / 分类 / 标签里出现的字，够用且体积小（约 2KB）。
+// 新增工具时如果名字里有生僻字，把这行加到 PINYIN_MAP 里即可：
+//   '某': 'mou',
+var PINYIN_MAP = {"可":"ke","影":"ying","视":"shi","好":"hao","看":"kan","飞":"fei","鸟":"niao","听":"ting","书":"shu","点":"dian","音":"yin","乐":"le","网":"wang","猫":"mao","仓":"cang","云":"yun","手":"shou","机":"ji","聚":"ju","合":"he","软":"ruan","推":"tui","工":"gong","具":"ju","艾":"ai","优":"you","酷":"ku","爱":"ai","奇":"qi","艺":"yi","腾":"teng","讯":"xun","频":"pin","播":"bo","放":"fang","器":"qi","电":"dian","台":"tai","广":"guang","剧":"ju","追":"zhui","番":"fan","院":"yuan","媒":"mei","体":"ti","资":"zi","源":"yuan","下":"xia","载":"zai","搜":"sou","索":"suo","引":"yin","擎":"qing","浏":"liu","览":"lan","文":"wen","件":"jian","管":"guan","理":"li","压":"ya","缩":"suo","解":"jie","图":"tu","片":"pian","编":"bian","辑":"ji","绘":"hui","画":"hua","设":"she","计":"ji","剪":"jian","映":"ying","录":"lu","屏":"ping","截":"jie","翻":"fan","译":"yi","词":"ci","典":"dian","笔":"bi","记":"ji","盘":"pan","存":"cun","储":"chu","安":"an","全":"quan","杀":"sha","毒":"du","加":"jia","密":"mi","梯":"ti","子":"zi","代":"dai","节":"jie","络":"luo","流":"liu","量":"liang","效":"xiao","率":"lv","办":"ban","公":"gong","档":"dang","表":"biao","格":"ge","演":"yan","示":"shi","白":"bai","板":"ban","待":"dai","事":"shi","项":"xiang","脑":"nao","思":"si","维":"wei","导":"dao","程":"cheng","码":"ma","开":"kai","发":"fa","调":"tiao","试":"shi","库":"ku","在":"zai","线":"xian","离":"li","缓":"huan","冷":"leng","门":"men","老":"lao","字":"zi","幕":"mu","短":"duan","评":"ping","有":"you","声":"sheng","本":"ben","地":"di","入":"ru","免":"mian","费":"fei","自":"zi","定":"ding","义":"yi","接":"jie","口":"kou","多":"duo","路":"lu","游":"you","戏":"xi","挂":"gua","棉":"mian","花":"hua","测":"ce","跨":"kua","备":"bei","平":"ping","隐":"yin","私":"si","歌":"ge","场":"chang","无":"wu","告":"gao","椒":"jiao","盐":"yan","高":"gao","质":"zhi","红":"hong","果":"guo","版":"ban","第":"di","三":"san","方":"fang","海":"hai","内":"nei","外":"wai","投":"tou","直":"zhi","价":"jia","用":"yong"};
+
+// 把中文串转成拼音全拼和首字母两种形式
+//   "可可影视" → { full: "kekeyingshi", initials: "kkys" }
+function toPinyin(text) {
+    if (!text) return { full: '', initials: '' };
+    var full = '', initials = '';
+    var s = String(text);
+    for (var i = 0; i < s.length; i++) {
+        var ch = s[i];
+        var py = PINYIN_MAP[ch];
+        if (py) {
+            full += py;
+            initials += py[0];
+        } else {
+            // 非中文（英文/数字/符号）原样保留，转小写
+            var low = ch.toLowerCase();
+            full += low;
+            initials += low;
+        }
+    }
+    return { full: full, initials: initials };
+}
+
+// 拼音匹配：查询是拼音（全拼或首字母）时返回 true
+function pinyinMatch(text, query) {
+    if (!text || !query) return false;
+    var q = String(query).toLowerCase().trim();
+    // 只有纯字母才走拼音逻辑（中文查询走原有的直接匹配）
+    if (!/^[a-z]+$/.test(q)) return false;
+
+    var py = toPinyin(text);
+    // 全拼包含 / 前缀
+    if (py.full.indexOf(q) >= 0) return true;
+    // 首字母包含
+    if (py.initials.indexOf(q) >= 0) return true;
+    // 首字母子序列（"kys" 能匹配 "kkys"）
+    var qi = 0;
+    for (var i = 0; i < py.initials.length && qi < q.length; i++) {
+        if (py.initials[i] === q[qi]) qi++;
+    }
+    return qi === q.length;
+}
+
+// 模糊搜索 — 字符级子序列匹配（拼音见上面的 pinyinMatch）
 function fuzzyMatch(text, query) {
     if (!text) return false;
     text = String(text).toLowerCase();
@@ -95,9 +145,13 @@ function renderTools(filter) {
         if (!q) return true;
         // 搜索名称、标签、评语、分类
         return fuzzyMatch(t.name, q) ||
+            pinyinMatch(t.name, q) ||
             fuzzyMatch(t.comment, q) ||
             fuzzyMatch(t.category, q) ||
-            (Array.isArray(t.tags) && t.tags.some(function(tag) { return fuzzyMatch(tag, q); })) ||
+            pinyinMatch(t.category, q) ||
+            (Array.isArray(t.tags) && t.tags.some(function(tag) {
+                return fuzzyMatch(tag, q) || pinyinMatch(tag, q);
+            })) ||
             (t.detail && fuzzyMatch(t.detail, q));
     });
 
@@ -591,6 +645,8 @@ if (searchInput) {
         }
         clearTimeout(window._st);
         window._st = setTimeout(function() { renderTools(App.state.currentFilter); }, 250);
+window.pinyinMatch = pinyinMatch;
+window.toPinyin = toPinyin;
     });
     // Ctrl+K 快捷搜索
     document.addEventListener('keydown', function(e) {

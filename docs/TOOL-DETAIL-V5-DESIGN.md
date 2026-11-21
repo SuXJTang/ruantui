@@ -97,9 +97,12 @@
 
 | 文件 | 改动 |
 |---|---|
-| `modal.js` | `openModal()` 重写为左右两栏模板；新增 `modalActions` / `modalInfo` / `modalShare` 三块 |
-| `style.css` | 新增 `.modal-detail` 及子块（`.detail-grid` `.detail-main` `.detail-side` `.action-card` `.info-list`），旧 `.modal-*` 保留给其它弹窗（管理面板/表单） |
-| `index.html` | 详情弹窗的 `.modal` 加 `modal-detail` 类；其余弹窗不动 |
+| `modal.js` | `openModal()` 重写为左右两栏模板；新增 `detailActionsHTML` / `detailInfoHTML` 两个渲染函数 |
+| `style.css` | 新增 `.modal-detail` 及子块（`.detail-head` `.detail-grid` `.detail-main` `.detail-side` `.action-card` `.info-card` `.share-card`），只在详情弹窗上生效 |
+| `index.html` | 详情弹窗的 `.modal` 加 `modal-detail` 类；其余弹窗（管理面板 / 表单 / QQ / 反馈 / 赞赏）不动 |
+| `engagement.js` | 导出 `window.getFavorites` 与 `window.updateFavCount`（弹窗收藏后要同步筛选栏计数） |
+
+> 旧的 `.modal-header` `.modal-section` `.modal-text` `.modal-link` `.share-body` `.share-actions` `.share-act-btn` 在改造后**已无任何 JS/HTML 引用**（全项目 grep 确认），只是还留在 `style.css` 里。管理面板与表单弹窗并不使用这些类名，可以后续单独清理。仍被使用的只有 `.modal-tag` `.modal-tags` `.modal-toggle` —— 不要删。
 
 **约束（来自 AGENTS.md）**：
 - 不改 `incrementDownload` / `incrementView` / `loadVipDownload` 的调用时机
@@ -117,3 +120,19 @@
 5. 统计：点「下载」后 `downloads` +1；打开弹窗后 `views` +1
 6. 暗色：面板实色、信息卡与正文对比度正常
 7. `node --check modal.js`、CSS 括号配对、类名守恒（旧类名不删，只新增）
+
+---
+
+## 七、独立复核结论（2026-11-21）
+
+改动完成后做了两轮独立只读复核（Claude Code 因本地网关不可用未参与，改由隔离子代理执行），结论与处理：
+
+| 发现 | 判断 | 处理 |
+|---|---|---|
+| `modal.js` 收藏时调 `getFavorites`，但它只在 engagement.js 的 IIFE 内，没挂 window → 弹窗里收藏后筛选栏计数不更新 | **真 bug**（`typeof` 守卫让它静默跳过） | 已导出 `window.getFavorites`，并补上一直只有调用、没有实现的 `window.updateFavCount` |
+| tier=user/vip 且未登录时，旧版会直接把下载链接渲染出来 | 旧版是**漏洞**，不是被丢失的能力 | 新版按 tier 加锁并给「登录后下载 / 开通 VIP」引导，属行为修正 |
+| `window.downloadQR`（保存二维码）改造后无人调用 | 死代码 | 保留未删（无副作用），记录在此待清理 |
+| 旧 `.modal-*` 类名在改造后已无 JS/HTML 引用 | 死 CSS | 本轮不删（AGENTS.md 要求删 CSS 逐项确认），记录待清理 |
+| 弹窗内下载数点完不刷新（旧版靠 `.tool-dl-num`） | 体验回归 | 头部下载数加 `data-dl-stat`，点击下载后用返回值刷新 |
+
+复核确认无重复事件绑定；`incrementDownload` 全站仅一个调用点，不会重复计数。

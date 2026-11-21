@@ -371,9 +371,15 @@
     ].join('');
     document.head.appendChild(favStyle);
 
-    // ---------- 导出给 ui.js 用 ----------
+    // ---------- 导出给外部用 ----------
     // ui.js 渲染卡片时要判断「这个工具是否已收藏」来决定红心是实心还是空心，
-    // 但它在另一个 IIFE 里，必须挂到 window 才能访问。
+    // modal.js 收藏后要同步筛选栏计数 —— 都在别的 IIFE 里，必须挂到 window。
     window.isFavorited = isFavorited;
     window.toggleFavorite = toggleFavorite;
+    window.getFavorites = getFavorites;
+    // 筛选栏「收藏 N」的统一更新入口（以前只有调用方，没有实现）
+    window.updateFavCount = function (n) {
+        var el = document.querySelector('.filter-fav .filter-count');
+        if (el) el.textContent = n;
+    };
 })();

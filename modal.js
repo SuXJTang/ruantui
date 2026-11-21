@@ -144,7 +144,7 @@ function openModal(tool) {
                 '<div class="detail-meta">' +
                     '<span class="tool-cat">' + escHTML(tool.category) + '</span>' +
                     (Number(tool.rating) > 0 ? '<span class="detail-stat"><i class="fas fa-star"></i>' + Number(tool.rating).toFixed(1) + '</span>' : '') +
-                    '<span class="detail-stat"><i class="fas fa-download"></i>' + (typeof formatCount === 'function' ? formatCount(tool.downloads) : (Number(tool.downloads) || 0)) + '</span>' +
+                    '<span class="detail-stat" data-dl-stat><i class="fas fa-download"></i>' + (typeof formatCount === 'function' ? formatCount(tool.downloads) : (Number(tool.downloads) || 0)) + '</span>' +
                     (tool.views !== null && tool.views !== undefined ? '<span class="detail-stat"><i class="fas fa-eye"></i>' + (typeof formatCount === 'function' ? formatCount(tool.views) : tool.views) + '</span>' : '') +
                 '</div>' +
             '</div>' +
@@ -370,7 +370,13 @@ if (overlay) {
     overlay.addEventListener('click', function(e) {
         var dl = e.target.closest('[data-dl-id]');
         if (dl && typeof incrementDownload === 'function') {
-            incrementDownload(parseInt(dl.dataset.dlId, 10)).catch(function () {});
+            incrementDownload(parseInt(dl.dataset.dlId, 10)).then(function (n) {
+                // 顺手把弹窗头部的下载数刷新掉，否则点完还显示旧值
+                var stat = document.querySelector('.detail-stat[data-dl-stat]');
+                if (stat && !isNaN(Number(n)) && typeof formatCount === 'function') {
+                    stat.innerHTML = '<i class="fas fa-download"></i>' + formatCount(n);
+                }
+            }).catch(function () {});
         }
     });
 }

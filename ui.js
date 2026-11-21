@@ -630,6 +630,19 @@ if (filterBar) filterBar.addEventListener('click', function(e) {
     btn.classList.add('active');
     App.state.currentFilter = btn.dataset.filter;
     renderTools(App.state.currentFilter);
+    // 手机上用户在页面中部点了分类，列表变了但视野没动，会以为「没反应」。
+    // 窄屏且已经滚过卡片区顶部时，平滑滚回卡片起点（留出 sticky 顶栏的高度）。
+    if (window.innerWidth <= 768) {
+        var gridEl = document.getElementById('toolGrid');
+        if (gridEl) {
+            var top = gridEl.getBoundingClientRect().top + window.pageYOffset;
+            var bar = document.querySelector('.topbar');
+            var offset = (bar ? bar.offsetHeight : 56) + 8;
+            if (window.pageYOffset > top - offset - 40) {
+                window.scrollTo({ top: Math.max(0, top - offset), behavior: 'smooth' });
+            }
+        }
+    }
 });
 
 // 排序切换 — onchange 由 features.js 负责（它会先恢复原始顺序再排序）。

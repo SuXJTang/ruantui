@@ -2812,3 +2812,123 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     .stat { padding: 4px 10px; }
     .stat strong { font-size: 13.5px; }
 }
+
+/* ================================================================
+   移动端专项优化（v4.1）
+   ----------------------------------------------------------------
+   放在文件最末尾，覆盖前面所有 @media (max-width:768/560/480) 的零散调整。
+   针对真机实测发现的问题逐条修：
+     1. 搜索框 11px 字 + 162px 宽 → iOS 聚焦会自动放大整页，且几乎没法打字
+     2. 顶栏图标 28px → 触控目标远小于 44px 的可点下限
+     3. 卡片描述被 min-height 撑成固定 3 行，1 行文案的卡留一大片空白
+     4. 回到顶部按钮压在页脚按钮上
+     5. iPhone 底部横条会盖住页脚
+   ================================================================ */
+
+/* iOS 输入框字号必须 ≥16px，否则聚焦时浏览器强制放大页面且不会自动缩回 */
+@media (max-width: 768px) {
+    .topbar-search input { font-size: 16px; }
+    /* 搜索框里的提示字跟着放大一点，但不影响输入尺寸 */
+    .topbar-search input::placeholder { font-size: 13px; }
+    /* 移动端为了省 GPU 关掉了 backdrop-filter（见「移动端性能优化」），
+       半透明顶栏就失去模糊垫底，卡片会直接透出来 —— 这里改用实色。 */
+    .topbar, [data-mode="dark"] .topbar { background: var(--s0); }
+    /* ⌘K 提示只对键盘用户有意义 */
+    .topbar-search::after { display: none; }
+    /* 平板/手机不再需要「同排 3 行等高」的占位（卡片本身被 grid 拉平），
+       留着只会让 1 行文案的卡片中间空一大块 */
+    .tool-body p { min-height: 0 !important; }
+}
+
+@media (max-width: 560px) {
+    /* ---------- 顶栏：搜索框优先，图标恢复可点尺寸 ---------- */
+    .topbar-inner { height: 58px; gap: 6px; padding: 0 10px; }
+    .topbar-brand { gap: 0; }
+    .brand-icon { width: 30px; height: 30px; }
+    .topbar-search { max-width: none; flex: 1 1 auto; min-width: 0; }
+    .topbar-search input {
+        height: 40px; padding: 0 12px 0 34px;
+        font-size: 16px;               /* 防 iOS 聚焦缩放 */
+        border-color: var(--line-2);
+    }
+    [data-mode="dark"] .topbar-search input { background: #1B2130; border-color: rgba(255,255,255,.12); }
+    [data-mode="dark"] .topbar-search input:focus { background: #222A3A; }
+    .topbar-search i { left: 13px; font-size: 14px; }
+    .topbar-search::after { display: none; }   /* ⌘K 提示在触屏上没有意义 */
+
+    .topbar-right { gap: 0; }
+    .header-btn {
+        width: 40px; height: 40px;      /* ≥ 40px 触控区 */
+        font-size: 16px;
+    }
+    .header-btn::after { content: none; }       /* 触屏没有 hover，标题气泡别占合成层 */
+    /* 账号按钮在窄屏只留图标，「登录」两个字会挤掉搜索框 */
+    .account-btn { width: 40px; padding: 0; gap: 0; }
+    .account-btn .account-label { display: none; }
+    /* 分享面板在手机上意义很小（用户直接用系统分享），但占掉 40px 顶栏宽度，
+       这里隐藏它，把空间让给搜索框。详情弹窗里仍保留「分享此工具」。 */
+    #shareBtn { display: none; }
+    .notif-btn { position: relative; }
+
+    /* ---------- 筛选栏：排序框收窄 ---------- */
+    .filter-row { gap: 8px; }
+    .filter-bar { padding-right: 20px; }
+    .filter-tag { padding: 8px 13px; font-size: 12.5px; }
+    .filter-tag i { display: none; }   /* 窄屏去掉分类图标，只留文字 + 计数，一行能多放 2 个 */
+    .sort-select {
+        padding: 8px 22px 8px 10px; font-size: 11.5px;
+        background-position: right 8px center;
+        max-width: 96px;
+    }
+
+    /* ---------- 卡片：去掉 3 行占位，收紧留白 ---------- */
+    .tool-card {
+        padding: 13px;
+        column-gap: 12px;
+        row-gap: 10px;
+    }
+    .tool-body h3 { font-size: 15px; margin-bottom: 3px; }
+    .tool-body p {
+        min-height: 0 !important;   /* 覆盖 1743 行的「3 行等高对齐」，单列不需要 */
+        max-height: calc(1.62em * 2);
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+    .tool-icon { width: 52px; height: 52px; border-radius: 15px; }
+    .tool-icon img { width: 30px; height: 30px; }
+    .tool-tag { padding: 3px 8px; font-size: 10px; }
+    .tool-actions { padding-top: 0; }
+    .tool-visit-btn { padding: 10px 14px; font-size: 12.5px; }
+    .tool-visit-btn.tool-visit-alt { min-width: 74px; flex: 0 0 auto; }
+
+    /* ---------- 页脚：给回顶按钮和安全区留出空间 ---------- */
+    .footer {
+        padding: 26px 16px calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+    .footer-actions { gap: 8px; }
+    .footer-btn { padding: 8px 14px; font-size: 12px; }
+
+    #backTop {
+        right: 14px;
+        bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        width: 44px; height: 44px;
+        font-size: 16px;
+    }
+
+    /* ---------- 弹窗：贴底 + 安全区 ---------- */
+    .overlay { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .modal-body { padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+    /* 关闭按钮在拇指区，放大到 44px 才稳 */
+    .modal-close { width: 44px; height: 44px; top: 10px; right: 10px; font-size: 16px; }
+
+    /* 安装提示条：补底部安全区，避免被 iPhone 横条切掉 */
+    .install-banner { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
+@media (max-width: 380px) {
+    .topbar-search input { font-size: 16px; }
+    .header-btn { width: 36px; }
+    .tool-icon { width: 46px; height: 46px; border-radius: 13px; }
+    .tool-icon img { width: 26px; height: 26px; }
+    .filter-tag { padding: 7px 11px; font-size: 12px; }
+}

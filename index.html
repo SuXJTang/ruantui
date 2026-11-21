@@ -40,14 +40,14 @@
      ------------------------------------------------------------
      下方所有同源静态资源的 ?v=NN 必须一致，且与 sw.js 里的
      CACHE_VERSION（当前 'v94'）代表同一个发布版本。发版时：
-        1) 把本文件下面所有 ?v=88 全改成新号
+        1) 把本文件下面所有 ?v=89 全改成新号
         2) 把 sw.js 的 CACHE_VERSION 同时改成对应的 'v95'
      两步必须同时做，否则 SW 缓存与页面 URL 会对不上。
      详见 README「缓存版本号」一节。
      ============================================================ -->
-<link rel="preload" href="style.css?v=88" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="style.css?v=88"></noscript>
-    <link rel="stylesheet" href="style.css?v=88">
+<link rel="preload" href="style.css?v=89" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css?v=89"></noscript>
+    <link rel="stylesheet" href="style.css?v=89">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 广告位占位骨架：只在 .ad-container 还未被 adsense.js 标记为 .ad-active 时显示，
          替代原先挂到 .adsbygoogle <ins> 上的样式（那会污染 Google 的广告单元与广告拦截检测）。 -->
@@ -195,7 +195,7 @@
         </div>
         <div class="topbar-search">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="搜索工具名称、标签..." aria-label="搜索工具">
+            <input type="text" id="searchInput" placeholder="搜索工具" aria-label="搜索工具">
         </div>
         <div class="topbar-right">
             <div class="theme-palette" role="radiogroup" aria-label="主题色">
@@ -515,22 +515,22 @@
     <div class="ann-panel-body" id="annPanelBody"><div class="ann-loading">加载中...</div></div>
 </div>
 
-<script defer src="shared.js?v=88"></script>
-<script defer src="supabase.js?v=88"></script>
-<script defer src="auth.js?v=88"></script>
-<script defer src="data.js?v=88"></script>
-<script defer src="ui.js?v=88"></script>
-<script defer src="modal.js?v=88"></script>
-<script defer src="apikey-config.js?v=88"></script>
-<script defer src="features.js?v=88"></script>
-<script defer src="theme.js?v=88"></script>
-<script defer src="particles.js?v=88"></script>
-<script defer src="effects.js?v=88"></script>
-<script defer src="interactions.js?v=88"></script>
-<script defer src="engagement.js?v=88"></script>
-<script defer src="mobile.js?v=88"></script>
-<script defer src="analytics.js?v=88"></script>
-<script defer src="adsense.js?v=88"></script>
+<script defer src="shared.js?v=89"></script>
+<script defer src="supabase.js?v=89"></script>
+<script defer src="auth.js?v=89"></script>
+<script defer src="data.js?v=89"></script>
+<script defer src="ui.js?v=89"></script>
+<script defer src="modal.js?v=89"></script>
+<script defer src="apikey-config.js?v=89"></script>
+<script defer src="features.js?v=89"></script>
+<script defer src="theme.js?v=89"></script>
+<script defer src="particles.js?v=89"></script>
+<script defer src="effects.js?v=89"></script>
+<script defer src="interactions.js?v=89"></script>
+<script defer src="engagement.js?v=89"></script>
+<script defer src="mobile.js?v=89"></script>
+<script defer src="analytics.js?v=89"></script>
+<script defer src="adsense.js?v=89"></script>
 <button id="backTop" aria-label="回到顶部" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </body>
 </html>

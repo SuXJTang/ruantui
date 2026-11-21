@@ -110,11 +110,11 @@ ruantui/
 | 位置 | 内容 | 本次值 |
 |------|------|--------|
 | `index.html` | 所有 `style.css?v=` / `*.js?v=` | `v=88` |
-| `sw.js` | `CACHE_VERSION` | `'v96'` |
+| `sw.js` | `CACHE_VERSION` | `'v97'` |
 
 发版流程：
 
-1. 把 `index.html` 里**全部** `?v=88` 统一改成新号——新值必须全局一致，
+1. 把 `index.html` 里**全部** `?v=89` 统一改成新号——新值必须全局一致，
    不要一个文件一个号（旧版本正是这样：`shared.js?v=2` … `adsense.js?v=5`，极易漂移）。
 2. 把 `sw.js` 的 `CACHE_VERSION` 同时递增（例如 `'v97'`）。
 

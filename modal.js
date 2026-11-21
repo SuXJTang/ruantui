@@ -88,7 +88,24 @@ function detailActionsHTML(tool) {
 }
 
 // 右栏「工具信息」
+// 累计下载 / 浏览次数 加一条相对全站最大值的迷你条，
+// 让「3 次」和「12 万次」在视觉上立刻能分出量级
+function heatBarHTML(val, max) {
+    var v = Number(val) || 0;
+    // 0 不画条：2% 的最小宽度在浅底上就是一条脏线，不如留空
+    if (v <= 0) return '';
+    var p = Math.max(6, Math.min(100, Math.round(v / (max || 1) * 100)));
+    return '<span class="heat"><i style="width:' + p + '%"></i></span>';
+}
+
 function detailInfoHTML(tool) {
+    var allTools = (window.App && App.state && App.state.tools) || [];
+    var maxDl = 1, maxVw = 1;
+    allTools.forEach(function (t) {
+        if ((Number(t.downloads) || 0) > maxDl) maxDl = Number(t.downloads);
+        if ((Number(t.views) || 0) > maxVw) maxVw = Number(t.views);
+    });
+
     var rows = [];
     rows.push(['分类', escHTML(tool.category || '—')]);
 
@@ -96,9 +113,9 @@ function detailInfoHTML(tool) {
     if (rating > 0) {
         rows.push(['评分', '<span class="detail-rating">★ ' + rating.toFixed(1) + '</span>']);
     }
-    rows.push(['累计下载', (typeof formatCount === 'function' ? formatCount(tool.downloads) : (Number(tool.downloads) || 0)) + ' 次']);
+    rows.push(['累计下载', heatBarHTML(tool.downloads, maxDl) + (typeof formatCount === 'function' ? formatCount(tool.downloads) : (Number(tool.downloads) || 0)) + ' 次']);
     if (tool.views !== null && tool.views !== undefined) {
-        rows.push(['浏览次数', (typeof formatCount === 'function' ? formatCount(tool.views) : tool.views) + ' 次']);
+        rows.push(['浏览次数', heatBarHTML(tool.views, maxVw) + (typeof formatCount === 'function' ? formatCount(tool.views) : tool.views) + ' 次']);
     }
     var ym = fmtMonths(tool.created_at);
     if (ym) rows.push(['收录时间', ym]);

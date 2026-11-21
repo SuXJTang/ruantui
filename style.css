@@ -3173,3 +3173,113 @@ body.modal-open #backTop { opacity: 0 !important; pointer-events: none !importan
 [data-mode="dark"] .modal-detail .detail-head {
     background: radial-gradient(60% 120% at 0% 0%, rgba(var(--primary-rgb),.12), transparent 70%), var(--s3);
 }
+
+/* ================================================================
+   动效层 v6（motion.js 配合）
+   ----------------------------------------------------------------
+   所有「先隐藏、再动画出现」的规则都挂在 html.motion-on 下：
+   脚本没跑 / 报错时页面保持完全可见，绝不会出现空白卡片。
+   ================================================================ */
+
+/* ---------- 1. 点击涟漪 ---------- */
+.ripple {
+    position: absolute; border-radius: 50%; pointer-events: none;
+    background: rgba(255,255,255,.42);
+    transform: scale(0); opacity: .85;
+    animation: rippleOut .62s cubic-bezier(.22,.85,.28,1) forwards;
+}
+/* 浅色/透明底上的按钮用主色涟漪，否则白点看不见 */
+.filter-tag .ripple, .footer-btn .ripple, .share-reco .ripple,
+.sort-select .ripple, .data-retry-btn .ripple { background: rgba(var(--primary-rgb),.26); }
+@keyframes rippleOut {
+    to { transform: scale(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ripple { animation-duration: .01ms; }
+}
+
+/* ---------- 2. 卡片按视口入场 ---------- */
+html.motion-on .tool-card:not(.in-view) {
+    opacity: 0;
+    animation: none;
+}
+html.motion-on .tool-card.in-view {
+    animation: cardIn .5s var(--ease) both;
+}
+
+/* ---------- 3. 顶栏滚动收缩 ---------- */
+.topbar-inner { transition: height .26s var(--ease); }
+.topbar.compact .topbar-inner { height: 52px; }
+.topbar.compact { box-shadow: 0 8px 24px -18px rgba(15,23,42,.55); }
+[data-mode="dark"] .topbar.compact { box-shadow: 0 10px 28px -20px rgba(0,0,0,.9); }
+.topbar.compact .brand-icon { width: 30px; height: 30px; }
+
+/* ---------- 4. 分类分布条（可视化） ---------- */
+.cat-bar {
+    display: flex; gap: 3px;
+    height: 8px; margin: 2px 0 20px;
+    position: relative;
+    opacity: 0; transform: scaleX(.96);
+    transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+.cat-bar.built { opacity: 1; transform: scaleX(1); }
+.cat-seg {
+    flex: 1 1 0; min-width: 8px; height: 8px;
+    padding: 0; border: none; border-radius: 999px;
+    background: linear-gradient(90deg,
+        hsl(calc(var(--seg) * 1deg) 82% 58%),
+        hsl(calc((var(--seg) + 26) * 1deg) 82% 52%));
+    cursor: pointer; position: relative;
+    transition: filter .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
+    transform-origin: center bottom;
+}
+.cat-seg:hover, .cat-seg:focus-visible {
+    filter: brightness(1.12) saturate(1.1);
+    transform: translateY(-2px) scaleY(1.9);
+    box-shadow: 0 6px 14px -6px rgba(0,0,0,.45);
+    outline: none;
+}
+.cat-seg:active { transform: translateY(0) scaleY(1.3); }
+.cat-seg-label {
+    position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+    padding: 4px 9px; border-radius: 8px;
+    background: var(--menu-bg); color: var(--ink1);
+    border: 1px solid var(--line); box-shadow: var(--shadow-md);
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s var(--ease), transform .18s var(--ease);
+}
+.cat-seg:hover .cat-seg-label,
+.cat-seg:focus-visible .cat-seg-label {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+}
+@media (max-width: 560px) {
+    .cat-bar { height: 6px; margin-bottom: 16px; gap: 2px; }
+    .cat-seg { height: 6px; }
+    .cat-seg-label { display: none; }   /* 触屏没有 hover，标签只会闪一下 */
+}
+
+/* ---------- 5. 详情面板：数值热度条 ---------- */
+.heat {
+    display: inline-block; width: 52px; height: 4px;
+    border-radius: 2px; background: var(--s2);
+    margin-right: 7px; vertical-align: middle;
+    overflow: hidden;
+}
+.heat i {
+    display: block; height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transform-origin: left center;
+    animation: heatGrow .7s var(--ease) both;
+}
+@keyframes heatGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ---------- 6. 减少动态效果：全部收敛 ---------- */
+@media (prefers-reduced-motion: reduce) {
+    html.motion-on .tool-card:not(.in-view) { opacity: 1; }
+    html.motion-on .tool-card.in-view { animation: none; }
+    .cat-bar { transition: none; opacity: 1; transform: none; }
+    .heat i { animation: none; }
+    .topbar-inner { transition: none; }
+}

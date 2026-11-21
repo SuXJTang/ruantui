@@ -29,6 +29,10 @@ var CAT_ICONS = {
 };
 function catIcon(name) { return '<i class="fas ' + (CAT_ICONS[name] || 'fa-cube') + '"></i>'; }
 
+// 少数工具的 logo 本身就是白色主体（ok影视 的白色立方体），
+// 落在浅色图标底上会糊成一片，这里给它们指定一个深色底。
+var DARK_ICON_BG = { 36: '#2B3446' };
+
 function rebuildCategories() {
     if (!filterBar) return;
     var list = Array.isArray(App.state.tools) ? App.state.tools : [];
@@ -388,7 +392,7 @@ function renderTools(filter) {
 
         card.innerHTML =
             favBtnHTML +
-            '<div class="tool-icon" style="background:' + safeColor(t.color) + '">' + iconHTML + '</div>' +
+            '<div class="tool-icon" style="background:' + safeColor(DARK_ICON_BG[t.id] || t.color) + '">' + iconHTML + '</div>' +
             '<div class="tool-body">' +
             '<h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + nameHTML + '</h3>' +
             '<div class="tool-meta">' +

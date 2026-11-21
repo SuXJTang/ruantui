@@ -86,11 +86,31 @@ function normalizeIconUrl(u) {
 //   卡片列表用 eager —— 用户必然会滚动浏览，懒加载反而在快速滚动时看到空白方块，
 //   而全部图标加起来只有几十 KB，预加载的代价可以忽略。
 //   弹窗等按需出现的场景仍用 lazy。
+// 图标本地镜像
+// ----------------------------------------------------------------
+// 数据库里有 9 条工具的 icon_url 指向第三方站点（apic.tvzhe.com / music.caij.xyz 等）。
+// 这些外链在国内网络下经常慢或直接挂掉，用户看到的就是「没 logo」。
+// 这里按工具 id 给一份自托管副本，渲染时优先使用。
+// 维护提示：等管理面板把这些工具的 icon_url 改成 /img/tools/xxx 之后，
+// 本表可以整段删掉，不带任何副作用。
+var LOCAL_ICON_MAP = {
+    33: '/img/tools/feiniao.png',        // 飞鸟听书
+    36: '/img/tools/oktvzhe.png',        // ok影视
+    37: '/img/tools/yscang.png',         // 影视仓
+    39: '/img/tools/vmos.png',           // VMOS 云手机
+    57: '/img/tools/mianhua.png',        // 棉花音乐
+    58: '/img/tools/agentsanywhere.png', // Agents Anywhere
+    60: '/img/tools/lyrico.svg',         // Lyrico
+    61: '/img/tools/clashplus.png',      // Clash Plus
+    63: '/img/tools/saltplayer.png'      // Salt Player
+};
+
 function renderIconHTML(tool, opts) {
     var eager = opts && opts.eager;
-    var rawSrc = tool.iconUrl || '';
+    var localSrc = LOCAL_ICON_MAP[tool.id] || '';
+    var rawSrc = localSrc || tool.iconUrl || '';
     var imgSrc = escHTML(normalizeIconUrl(rawSrc));
-    var hasImg = !!tool.iconUrl;
+    var hasImg = !!rawSrc;
 
     // 兜底：图标加载失败时用工具名首字（中文）或首字母（英文）顶上。
     // 早期版本这里是 <i class="fa-cube">，但 FontAwesome 的 cube 图标和「空白方块」

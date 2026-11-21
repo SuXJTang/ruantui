@@ -603,7 +603,12 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: linear-gradient(150deg, rgba(255,255,255,.28), transparent 58%);
     pointer-events: none;
 }
-.tool-icon img { width: 34px; height: 34px; object-fit: contain; position: relative; z-index: 2; }
+.tool-icon img {
+    width: 34px; height: 34px; object-fit: contain; position: relative; z-index: 2;
+    /* 白系图标（如 ok影视 的白色立方体）落在浅色图标底上会糊成一片，
+       给所有图标加一层极淡的投影，白图标也能看出轮廓 */
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.28));
+}
 .tool-icon i { font-size: 26px; color: #fff; position: relative; z-index: 2; }
 /* 图标加载失败 / 没配图时的首字兜底。背景色由卡片内联 style 提供。 */
 .tool-icon-initial {

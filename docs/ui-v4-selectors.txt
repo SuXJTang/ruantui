@@ -1,0 +1,542 @@
+#backTop
+#backTop.visible
+#backTop.visible::after
+#backTop.visible:hover
+#backTop:hover
+#cursorGlow
+#cursorGlow.on
+#pageLoader
+#pageLoader.hidden
+#scrollProgress
+#tc
+#tc > div
+*
+.account-btn
+.account-btn .account-label
+.account-btn i
+.account-btn.account-admin
+.account-btn.account-admin .account-label
+.account-btn.account-admin.account-vip .account-label
+.account-btn.account-admin.account-vip i
+.account-btn.account-in
+.account-btn.account-in .account-label
+.account-btn.account-vip .account-label
+.account-btn.account-vip i
+.account-label
+.account-menu
+.account-menu .am-danger
+.account-menu .am-danger i
+.account-menu .am-email
+.account-menu .am-head
+.account-menu .am-head .am-role-vip
+.account-menu .am-head small
+.account-menu .am-head strong
+.account-menu .am-item
+.account-menu .am-item i
+.account-menu .am-item:hover
+.account-menu .am-name
+.account-menu .am-primary
+.account-menu .am-primary i
+.account-menu .am-primary:hover
+.account-menu .am-role
+.account-menu .am-role.am-role-vip
+.account-menu .am-setnick
+.account-menu .am-setnick:hover
+.ad-bottom
+.ad-bottom.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"]))
+.ad-container
+.ad-container .adsbygoogle
+.ad-container.ad-active
+.ad-container.ad-active::before
+.ad-container.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"]))
+.ad-container::before
+.ad-container:not(:has(ins.adsbygoogle[data-ad-status="filled"]))
+.ad-container:not(:has(ins.adsbygoogle[data-ad-status="filled"])) > *
+.ad-container:not(:has(ins.adsbygoogle[data-ad-status="filled"]))::before
+.ad-inline
+.ad-inline:not(:has(ins.adsbygoogle[data-ad-status="filled"]))
+.ad-top
+.ad-top.ad-active:not(:has(ins.adsbygoogle[data-ad-status="filled"]))
+.ai-btn
+.ai-btn-ta
+.ai-btn::after
+.ai-btn:active
+.ai-btn:hover
+.ai-btn:hover::after
+.ann-empty
+.ann-float-badge
+.ann-form-tip
+.ann-item
+.ann-item-content
+.ann-item-content.expanded
+.ann-item-header
+.ann-item-time
+.ann-item-title
+.ann-item-type
+.ann-item-type.add
+.ann-item-type.delete
+.ann-item-type.fix
+.ann-item-type.manual
+.ann-item-type.update
+.ann-item:hover
+.ann-item:last-child
+.ann-loading
+.ann-panel
+.ann-panel-body
+.ann-panel-body::-webkit-scrollbar
+.ann-panel-body::-webkit-scrollbar-thumb
+.ann-panel-close
+.ann-panel-close:hover
+.ann-panel-header
+.ann-panel-header h4
+.ann-panel.active
+.ann-prio
+.ann-prio-important
+.ann-prio-list
+.ann-prio-urgent
+.ann-time
+.ann-time-expired
+.ann-time-scheduled
+.auth-card
+.auth-close
+.auth-close:hover
+.auth-field
+.auth-field i
+.auth-field input
+.auth-field input:focus
+.auth-forgot
+.auth-forgot-row
+.auth-forgot:disabled
+.auth-forgot:hover
+.auth-head
+.auth-head h3
+.auth-head p
+.auth-logo
+.auth-logo.auth-logo-brand
+.auth-logo.auth-logo-brand svg
+.auth-msg
+.auth-msg.err
+.auth-msg.ok
+.auth-overlay
+.auth-resend
+.auth-resend:disabled
+.auth-resend:hover:not(:disabled)
+.auth-submit
+.auth-submit:active:not(:disabled)
+.auth-submit:disabled
+.auth-submit:hover:not(:disabled)
+.auth-tab
+.auth-tab.active
+.auth-tabs
+.auth-tip
+.brand-icon
+.brand-icon:hover
+.brand-logo-svg
+.brand-text
+.burst-dot
+.card-fav-btn
+.card-fav-btn i
+.card-fav-btn.active
+.card-fav-btn.active i
+.card-fav-btn:hover
+.container
+.dash-card.uc-account
+.dash-card.uc-account.uc-is-vip
+.dash-loading
+.data-error
+.data-error h3
+.data-error i
+.data-error p
+.data-retry-btn
+.data-retry-btn:hover
+.donate-qr
+.donate-qr-item
+.donate-qr-item img
+.donate-qr-item span
+.donate-qr-row
+.emoji-pop
+.fb-icon
+.fb-option
+.fb-option .fa-chevron-right
+.fb-option small
+.fb-option strong
+.fb-option:hover
+.filter-bar
+.filter-count
+.filter-row
+.filter-tag
+.filter-tag.active
+.filter-tag.active span
+.filter-tag.active::after
+.filter-tag::after
+.filter-tag:active
+.filter-tag:hover
+.footer
+.footer p
+.footer-actions
+.footer-btn
+.footer-btn:hover
+.footer-sub
+.form-actions
+.form-cancel
+.form-cancel:hover
+.form-group
+.form-group input
+.form-group input:focus
+.form-group label
+.form-group select
+.form-group select:focus
+.form-group textarea
+.form-group textarea:focus
+.form-hint
+.form-input-row
+.form-input-row input
+.form-input-row textarea
+.form-row
+.form-row .form-group
+.form-section
+.form-section:first-of-type
+.form-submit
+.form-submit:hover
+.form-title
+.grid
+.grid > *
+.grid-empty
+.grid-empty i
+.grid-empty p
+.header-btn
+.header-btn.account-btn.account-vip
+.header-btn.account-btn.account-vip .account-label
+.header-btn.account-btn.account-vip i
+.header-btn::after
+.header-btn:hover
+.header-btn:hover::after
+.icon-picker-group
+.icon-picker-group input[type="color"]
+.icon-preview-box
+.icon-preview-box i
+.icon-preview-box img
+.input-with-icon
+.install-banner-icon.install-icon-brand
+.install-banner-icon.install-icon-brand svg
+.install-btn
+.install-btn:hover
+.loader-orb
+.mgmt-add-btn
+.mgmt-add-btn:hover
+.mgmt-btn
+.mgmt-btn:hover
+.mgmt-header
+.mgmt-header h2
+.mgmt-header-right
+.mgmt-list
+.mgmt-list::-webkit-scrollbar
+.mgmt-list::-webkit-scrollbar-thumb
+.mgmt-list::-webkit-scrollbar-track
+.mgmt-logout
+.mgmt-logout:hover
+.mgmt-row
+.mgmt-row-actions
+.mgmt-row-actions .del-btn:hover
+.mgmt-row-actions .edit-btn:hover
+.mgmt-row-actions .pin-btn
+.mgmt-row-actions .pin-btn.active
+.mgmt-row-actions .pin-btn.active:hover
+.mgmt-row-actions .pin-btn:focus
+.mgmt-row-actions .pin-btn:focus-visible
+.mgmt-row-actions .pin-btn:not(.active):hover
+.mgmt-row-actions button
+.mgmt-row-icon
+.mgmt-row-icon i
+.mgmt-row-icon img
+.mgmt-row-info
+.mgmt-row-info h4
+.mgmt-row-info h4 span
+.mgmt-row-info p
+.mgmt-row:hover
+.mgmt-search
+.mgmt-search i
+.mgmt-search input
+.mgmt-search input:focus
+.mgmt-tab
+.mgmt-tab-content
+.mgmt-tab-content.active
+.mgmt-tab.active
+.mgmt-tab:hover
+.mgmt-tabs
+.modal
+.modal-body
+.modal-close
+.modal-close:hover
+.modal-form
+.modal-form .form-close
+.modal-form .modal-body
+.modal-header
+.modal-hinfo
+.modal-hinfo h2
+.modal-hmeta
+.modal-icon
+.modal-icon i
+.modal-icon img
+.modal-lg
+.modal-lg .modal-body
+.modal-link
+.modal-link.affiliate
+.modal-link.affiliate:hover
+.modal-link.primary
+.modal-link.primary:hover
+.modal-link:hover
+.modal-links
+.modal-section
+.modal-section h4
+.modal-section p
+.modal-share
+.modal-tag
+.modal-tags
+.modal-text
+.modal-text.collapsed
+.modal-toggle
+.modal-toggle i
+.modal-toggle:hover
+.modal-views
+.nick-prompt
+.nick-prompt-actions
+.nick-prompt-body
+.nick-prompt-body span
+.nick-prompt-body strong
+.nick-prompt-card
+.nick-prompt-go
+.nick-prompt-go:hover
+.nick-prompt-icon
+.nick-prompt-skip
+.nick-prompt-skip:hover
+.nick-prompt.show
+.notif-bar
+.notif-bar-arrow
+.notif-bar-close
+.notif-bar-close:hover
+.notif-bar-icon
+.notif-bar-inner
+.notif-bar-text
+.notif-bar-text.scrolling
+.notif-bar-track
+.notif-bar.hiding
+.notif-bar.important .notif-bar-icon
+.notif-bar.important .notif-bar-inner
+.notif-bar.urgent .notif-bar-icon
+.notif-bar.urgent .notif-bar-inner
+.notif-bar.urgent .notif-bar-text
+.notif-bar:hover .notif-bar-inner
+.notif-btn
+.notif-btn.has-unread i
+.notif-dot
+.overlay
+.overlay.active
+.overlay.active .modal
+.petal
+.pinned-badge
+.profile
+.profile-avatar
+.profile-avatar::after
+.profile-bio
+.profile-info h1
+.profile-inner
+.profile-stats
+.profile-stats strong
+.qq-box
+.qq-box span
+.qq-box strong
+.qq-copy
+.qq-join
+.result-count
+.result-count::before
+.share-act-btn
+.share-act-btn i
+.share-act-btn:hover
+.share-actions
+.share-body
+.share-copy-btn
+.share-icon
+.share-option
+.share-option:hover
+.share-panel
+.share-panel-arrow
+.share-panel-body
+.share-panel.active
+.share-qr
+.share-qr-col
+.share-qr-img
+.share-qr-label
+.share-qr-row
+.share-qr-row span
+.share-text small
+.share-text strong
+.share-url-row
+.share-url-row input
+.shooting-star
+.sk-body
+.sk-icon
+.sk-line
+.sk-line-1
+.sk-line-2
+.sk-line-3
+.skeleton-card
+.sort-select
+.sort-select:focus
+.sort-select:hover
+.star
+.theme-palette
+.theme-swatch
+.theme-swatch.active
+.theme-swatch:hover
+.theme-swatch[data-target=aurora]
+.theme-swatch[data-target=crimson]
+.theme-swatch[data-target=forest]
+.theme-swatch[data-target=ocean]
+.theme-swatch[data-target=sunrise]
+.theme-toggle i
+.theme-toggle:hover i
+.tool-actions
+.tool-actions .tool-visit-btn
+.tool-body
+.tool-body h3
+.tool-body p
+.tool-card
+.tool-card::after
+.tool-card::before
+.tool-card:active
+.tool-card:hover
+.tool-card:hover .card-fav-btn
+.tool-card:hover .tool-icon
+.tool-card:hover .tool-visit-btn
+.tool-card:hover::after
+.tool-cat
+.tool-dl
+.tool-dl i
+.tool-dl-num.pulse
+.tool-extra
+.tool-extra::before
+.tool-icon
+.tool-icon i
+.tool-icon img
+.tool-icon-initial
+.tool-icon::after
+.tool-meta
+.tool-metrics
+.tool-tag
+.tool-tag:hover
+.tool-tags
+.tool-views
+.tool-views i
+.tool-visit-btn
+.tool-visit-btn.tool-visit-alt
+.tool-visit-btn.tool-visit-alt:hover
+.tool-visit-btn.tool-visit-locked
+.tool-visit-btn.tool-visit-locked:hover
+.tool-visit-btn:hover
+.topbar
+.topbar-brand
+.topbar-brand .brand-text
+.topbar-inner
+.topbar-right
+.topbar-search
+.topbar-search i
+.topbar-search input
+.topbar-search input:focus
+.topbar-search:focus-within
+.topbar-search:focus-within i
+.typing-cursor::after
+.uc-action
+.uc-action-ghost
+.uc-action-ghost:hover
+.uc-action:hover
+.uc-actions
+.uc-actions .uc-action
+.uc-avatar
+.uc-avatar-guest
+.uc-avatar-vip
+.uc-back-btn
+.uc-back-btn:hover
+.uc-del-btn
+.uc-del-btn:disabled
+.uc-del-confirm
+.uc-del-confirm b
+.uc-del-warn
+.uc-info
+.uc-set-action
+.uc-set-action:disabled
+.uc-set-action:hover
+.uc-set-btn
+.uc-set-btn:disabled
+.uc-set-btn:hover
+.uc-set-control
+.uc-set-danger
+.uc-set-danger .uc-set-title
+.uc-set-danger-btn
+.uc-set-danger-btn:hover
+.uc-set-hint
+.uc-set-input
+.uc-set-input:focus
+.uc-set-label
+.uc-set-row
+.uc-set-row:last-child
+.uc-set-section
+.uc-set-static
+.uc-set-title
+.uc-settings-head
+.uc-settings-heading
+.uc-sub
+.uc-sync
+.uc-sync-ok
+.uc-sync-warn
+.uc-tag
+.uc-tag-admin
+.uc-tag-normal
+.uc-tag-vip
+.uc-title
+.uc-vip-line
+.uc-vip-none
+.uc-vip-none a
+.uc-vip-none a:hover
+.vip-badge
+.vip-badge.vip-expired
+.vip-badge.vip-normal
+.vip-badge.vip-vip
+.vip-row
+.vip-row:last-child
+40%
+70%
+90%
+93%
+96%
+::-webkit-scrollbar
+::-webkit-scrollbar-thumb
+::-webkit-scrollbar-thumb:hover
+::-webkit-scrollbar-track
+:root
+[data-mode="dark"]
+[data-mode="dark"] .account-btn.account-vip .account-label
+[data-mode="dark"] .account-btn.account-vip i
+[data-mode="dark"] .account-menu .am-head .am-role-vip
+[data-mode="dark"] .account-menu .am-role.am-role-vip
+[data-mode="dark"] .card-fav-btn
+[data-mode="dark"] .card-fav-btn.active
+[data-mode="dark"] .card-fav-btn:hover
+[data-mode="dark"] .header-btn.account-btn.account-vip
+[data-mode="dark"] .header-btn.account-btn.account-vip .account-label
+[data-mode="dark"] .header-btn.account-btn.account-vip i
+[data-mode="dark"] .tool-card::before
+[data-mode="dark"] .tool-visit-btn.tool-visit-locked
+[data-mode="dark"] .topbar
+[data-mode="dark"] .uc-tag-vip
+[data-mode="dark"] .uc-vip-line
+[data-parallax]
+[data-theme="aurora"]
+[data-theme="crimson"]
+[data-theme="forest"]
+[data-theme="ocean"]
+a
+body
+body::before
+button
+html

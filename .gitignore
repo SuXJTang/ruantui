@@ -24,5 +24,8 @@ desktop.ini
 # 含真实管理员 UID 的一次性配置脚本，不入库
 setup-admin.sql
 
-# wrangler dry-run ����
+# wrangler dry-run 日志
 tmp/
+
+# UI v4 改造前的样式快照（本地留底，不入库）
+.style-v3-backup.css

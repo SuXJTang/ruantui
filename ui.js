@@ -11,15 +11,33 @@ var AD_CONFIG = {
     enabled: true
 };
 
+// 分类 → FontAwesome 图标（v4 筛选栏用）
+var CAT_ICONS = {
+    '影视工具': 'fa-film',
+    '听书工具': 'fa-headphones',
+    '机场':     'fa-plane-departure',
+    '云手机':   'fa-mobile-screen-button',
+    'AI 工具':  'fa-wand-magic-sparkles',
+    'AI工具':   'fa-wand-magic-sparkles',
+    '影音工具': 'fa-music',
+    '效率工具': 'fa-bolt',
+    '网络工具': 'fa-globe',
+    '系统工具': 'fa-microchip',
+    '开发工具': 'fa-code',
+    '安全工具': 'fa-shield-halved',
+    '设计工具': 'fa-pen-nib'
+};
+function catIcon(name) { return '<i class="fas ' + (CAT_ICONS[name] || 'fa-cube') + '"></i>'; }
+
 function rebuildCategories() {
     if (!filterBar) return;
     var list = Array.isArray(App.state.tools) ? App.state.tools : [];
     var cats = [...new Set(list.map(function(t) { return t.category; }))];
-    filterBar.innerHTML = '<button class="filter-tag active" data-filter="all"><span>全部</span> <em class="filter-count">' + list.length + '</em></button>';
+    filterBar.innerHTML = '<button class="filter-tag active" data-filter="all"><i class="fas fa-layer-group"></i><span>全部</span> <em class="filter-count">' + list.length + '</em></button>';
     cats.forEach(function(c) {
         var count = list.filter(function(t) { return t.category === c; }).length;
         var b = document.createElement('button'); b.className = 'filter-tag'; b.dataset.filter = c;
-        b.innerHTML = '<span>' + escHTML(c) + '</span> <em class="filter-count">' + count + '</em>';
+        b.innerHTML = catIcon(c) + '<span>' + escHTML(c) + '</span> <em class="filter-count">' + count + '</em>';
         filterBar.appendChild(b);
     });
     var active = null;
@@ -236,9 +254,16 @@ function renderTools(filter) {
 
         var iconHTML = renderIconHTML(t, { eager: true });  // 卡片图标立即加载，避免滚动时空白
         var tagsArr = Array.isArray(t.tags) ? t.tags : [];
-        var tagsHTML = tagsArr.map(function(tag) {
+        // 卡片上最多展示 3 个标签，其余折叠成 +N：避免标签把卡片撑高、破坏等高网格
+        var MAX_TAGS = 3;
+        var shownTags = tagsArr.slice(0, MAX_TAGS);
+        var tagsHTML = shownTags.map(function(tag) {
             return '<span class="tool-tag">' + highlightText(tag, App.state.currentSearch.trim()) + '</span>';
         }).join('');
+        if (tagsArr.length > MAX_TAGS) {
+            tagsHTML += '<span class="tool-tag tool-tag-more" title="' +
+                escHTML(tagsArr.slice(MAX_TAGS).join('、')) + '">+' + (tagsArr.length - MAX_TAGS) + '</span>';
+        }
         var isPinned = t.pinned;
         var toolLink = getToolLink(t);
         var allLinks = loadLinks(t);

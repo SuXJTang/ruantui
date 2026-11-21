@@ -291,6 +291,9 @@
             document.body.appendChild(heart);
             setTimeout(function() { heart.remove(); }, 900);
         }
+        // 收藏数徽标要同步：否则筛选栏一直显示旧数字
+        var favCountEl = document.querySelector('.filter-fav .filter-count');
+        if (favCountEl) favCountEl.textContent = getFavorites().length;
     });
 
     // ---------- 添加收藏筛选标签 ----------

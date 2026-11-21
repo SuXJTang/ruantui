@@ -2932,3 +2932,244 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     .tool-icon img { width: 26px; height: 26px; }
     .filter-tag { padding: 7px 11px; font-size: 12px; }
 }
+
+/* ================================================================
+   工具详情面板 v5（桌面双栏）
+   ----------------------------------------------------------------
+   设计文档：docs/TOOL-DETAIL-V5-DESIGN.md
+   结构：.modal-detail > .modal-body > .detail-head + .detail-grid
+           .detail-grid > .detail-main（正文） + .detail-side（操作/信息/二维码）
+   只在详情弹窗上挂 .modal-detail，管理面板/表单弹窗仍用旧的 .modal 规格。
+   ================================================================ */
+.modal.modal-detail {
+    max-width: min(940px, 92vw) !important;
+    min-width: 0 !important;
+    max-height: 88vh;
+    overflow: hidden;              /* 滚动交给 .modal-body，右栏才能 sticky */
+    padding: 0;
+}
+.modal-detail .modal-body { padding: 0; max-height: 88vh; overflow-y: auto; }
+.modal-detail .modal-close { top: 16px; right: 16px; }
+
+/* ---------- 头部 ---------- */
+.detail-head {
+    display: flex; align-items: center; gap: 18px;
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--line);
+    background:
+        radial-gradient(60% 120% at 0% 0%, rgba(var(--primary-rgb),.10), transparent 70%),
+        var(--s3);
+}
+.detail-icon {
+    width: 76px; height: 76px; border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+    box-shadow: 0 14px 30px -14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.4);
+}
+.detail-icon img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.28)); }
+.detail-icon i { font-size: 34px; color: #fff; }
+.detail-icon .tool-icon-initial { font-size: 32px; }
+.detail-headinfo { min-width: 0; flex: 1; padding-right: 40px; }
+.detail-headinfo h2 {
+    font-size: 26px; font-weight: 800; letter-spacing: -.6px; line-height: 1.2;
+    color: var(--ink1);
+}
+.detail-meta {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 10px; font-size: 12.5px; color: var(--ink2);
+}
+.detail-stat {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-variant-numeric: tabular-nums;
+    padding: 3px 10px; border-radius: var(--r-full);
+    background: var(--s2); color: var(--ink2);
+}
+.detail-stat i { font-size: 10.5px; opacity: .8; }
+.detail-stat i.fa-star { color: #F5B942; opacity: 1; }
+
+/* ---------- 双栏 ---------- */
+.detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 316px;
+}
+.detail-main { padding: 24px 28px 30px; min-width: 0; }
+.detail-side {
+    padding: 24px 22px 26px;
+    border-left: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(var(--primary-rgb),.035), transparent 240px);
+    align-self: start;
+    position: sticky; top: 0;
+}
+
+/* ---------- 正文块 ---------- */
+.detail-block { margin-bottom: 22px; }
+.detail-block:last-child { margin-bottom: 0; }
+.detail-block h4 {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--ink3);
+    margin-bottom: 9px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+}
+.detail-text {
+    font-size: 14.5px; line-height: 1.85; color: var(--ink1);
+    white-space: pre-wrap; word-break: break-word;
+}
+/* 折叠只在窄屏生效；桌面空间足够，不该让用户点两次「展开全文」 */
+.detail-text.collapsed { display: block; }
+@media (min-width: 901px) {
+    .detail-block .modal-toggle { display: none; }
+}
+@media (max-width: 900px) {
+    .detail-text.collapsed {
+        display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+/* ---------- 右栏：操作卡 ---------- */
+.action-card, .info-card, .share-card {
+    background: var(--s1);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+}
+.action-card { border-color: rgba(var(--primary-rgb),.22); }
+.action-card.flash { animation: actionFlash 1.2s var(--ease); }
+@keyframes actionFlash {
+    0%, 100% { box-shadow: var(--shadow); }
+    30%      { box-shadow: 0 0 0 3px rgba(var(--primary-rgb),.28), 0 12px 28px -14px rgba(var(--primary-rgb),.7); }
+}
+
+.detail-btn-col { display: flex; flex-direction: column; gap: 8px; }
+.detail-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; padding: 0 16px; border-radius: var(--r-sm);
+    font-size: 13.5px; font-weight: 650; color: var(--ink1);
+    background: var(--s2); border: 1px solid transparent;
+    text-decoration: none; width: 100%;
+    transition: all .2s var(--ease);
+    position: relative; overflow: hidden;
+}
+.detail-btn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.detail-btn.primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff; box-shadow: 0 10px 22px -12px rgba(var(--primary-rgb),.9);
+}
+.detail-btn.primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.detail-btn-arrow { margin-left: auto; font-size: 11px; opacity: .8; transition: transform .2s var(--ease); }
+.detail-btn.primary:hover .detail-btn-arrow { transform: translateX(3px); }
+.detail-btn:hover { background: var(--s2); }
+.detail-btn.primary:hover { background: linear-gradient(135deg, var(--primary), var(--accent)); }
+.detail-btn.locked {
+    background: linear-gradient(135deg, #B8860B, #D4A017);
+    color: #fff; border: none; cursor: pointer;
+    box-shadow: 0 10px 22px -12px rgba(212,160,23,.8);
+}
+.detail-btn.vip {
+    background: linear-gradient(135deg, #B8860B, #D4A017);
+    color: #fff; margin-top: 8px;
+}
+.detail-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.detail-btn.ghost {
+    background: transparent; border-color: var(--line-2); color: var(--ink2);
+    font-weight: 600; height: 40px; font-size: 12.5px;
+}
+.detail-btn.ghost:hover { border-color: rgba(var(--primary-rgb),.5); color: var(--primary); }
+.detail-btn.ghost.active { border-color: rgba(239,68,68,.45); color: #ef4444; background: rgba(239,68,68,.07); }
+
+.detail-empty-tip {
+    display: flex; align-items: flex-start; gap: 7px;
+    font-size: 11.5px; line-height: 1.6; color: var(--ink3);
+    padding: 0 2px 8px; margin-bottom: 2px;
+}
+.detail-empty-tip i { margin-top: 2px; opacity: .8; }
+.detail-vip-loading { font-size: 12px; color: var(--ink3); padding: 8px 2px; }
+.detail-vip-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--ink3); margin: 12px 0 0; }
+
+/* ---------- 右栏：信息卡 ---------- */
+.info-card h4, .share-card h4 {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--ink3); margin-bottom: 10px;
+}
+.info-list { display: flex; flex-direction: column; gap: 0; }
+.info-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    padding: 6px 0; border-bottom: 1px dashed var(--line);
+    font-size: 12.5px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row dt { color: var(--ink3); flex-shrink: 0; }
+.info-row dd { color: var(--ink1); font-weight: 600; text-align: right; }
+.detail-rating { color: #D99B0B; font-weight: 700; }
+
+/* ---------- 右栏：二维码卡 ---------- */
+.share-card { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.share-card .share-qr-col { flex-direction: row; align-items: center; gap: 12px; }
+.share-card .share-qr-img { width: 72px; height: 72px; padding: 4px; background: #fff; border-radius: 10px; border: 1px solid var(--line); flex-shrink: 0; }
+.share-card .share-qr-label { font-size: 11.5px; color: var(--ink3); line-height: 1.5; white-space: nowrap; }
+.share-reco {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    flex: 1; height: 40px; border-radius: var(--r-sm);
+    background: var(--s2); color: var(--ink2);
+    font-size: 12px; font-weight: 600;
+    transition: all .2s var(--ease);
+}
+.share-reco:hover { background: rgba(var(--primary-rgb),.10); color: var(--primary); }
+.share-qr-fallback { font-size: 12px; color: var(--primary); text-decoration: underline; max-width: 96px; }
+
+/* ---------- 窄屏：单列，操作卡上移 ---------- */
+@media (max-width: 900px) {
+    .modal.modal-detail { max-width: 94vw !important; max-height: 90vh; }
+    .modal-detail .modal-body { max-height: 90vh; }
+    .detail-head { padding: 20px 18px 16px; gap: 14px; }
+    .detail-icon { width: 60px; height: 60px; border-radius: 17px; }
+    .detail-icon img { width: 34px; height: 34px; }
+    .detail-headinfo { padding-right: 34px; }
+    .detail-headinfo h2 { font-size: 21px; }
+    .detail-grid { grid-template-columns: minmax(0, 1fr); }
+    /* 单列时把右栏「拆开」：操作按钮提到正文前，信息卡与二维码排到正文后。
+       注意用 display:contents —— 否则整个 aside 只能整体上移，
+       会把信息卡和二维码也顶到正文前面，手机上正文要滑半天才看得到。 */
+    .detail-side {
+        display: contents;
+    }
+    .action-card { order: 1; margin: 16px 18px 0; }
+    .detail-main { order: 2; padding: 18px; }
+    .info-card { order: 3; margin: 0 18px 12px; }
+    .share-card { order: 4; margin: 0 18px 20px; }
+    .detail-block { margin-bottom: 18px; }
+    .detail-text { font-size: 14px; line-height: 1.8; }
+    .share-card .share-qr-col { flex-direction: column; align-items: flex-start; }
+    .share-card .share-qr-label { max-width: none; }
+}
+@media (max-width: 560px) {
+    .modal.modal-detail { max-width: none !important; max-height: 94vh; }
+    .info-row { padding: 5px 0; font-size: 12px; }
+    .action-card { margin: 14px 16px 0; padding: 12px; }
+    .info-card, .share-card { margin-left: 16px; margin-right: 16px; }
+    .modal-detail .modal-body { max-height: 94vh; }
+    .detail-head { padding: 18px 16px 14px; }
+    .detail-headinfo h2 { font-size: 19px; }
+    .detail-meta { gap: 6px; margin-top: 8px; }
+    .detail-stat { padding: 2px 8px; font-size: 11.5px; }
+    .detail-side { padding: 16px; }
+    .detail-main { padding: 16px; }
+    .detail-btn-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* 弹窗打开时隐藏「回到顶部」按钮：它是 fixed 的，会浮在弹窗内容上 */
+body.modal-open #backTop { opacity: 0 !important; pointer-events: none !important; }
+
+/* 暗色下详情面板（--s3）比卡片（--s1）更亮，卡片看起来像「凹陷」；
+   给右栏卡片叠一层白，让它们从面板里浮起来 */
+[data-mode="dark"] .modal-detail .action-card,
+[data-mode="dark"] .modal-detail .info-card,
+[data-mode="dark"] .modal-detail .share-card {
+    background: rgba(255,255,255,.035);
+    border-color: rgba(255,255,255,.085);
+}
+[data-mode="dark"] .modal-detail .detail-head {
+    background: radial-gradient(60% 120% at 0% 0%, rgba(var(--primary-rgb),.12), transparent 70%), var(--s3);
+}

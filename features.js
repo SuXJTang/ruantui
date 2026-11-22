@@ -2554,6 +2554,41 @@ if (installBtn) installBtn.style.display = 'none';
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(function(reg) {
         console.log('SW registered');
+
+        // v7 新版本提示条：仅当「已有旧版本在控制页面」时提示，
+        // 首次安装（controller 为空）不打扰用户。
+        function showSwUpdateToast() {
+            if (document.querySelector('.v7-sw-toast')) return;
+            var toast = document.createElement('div');
+            toast.className = 'v7-sw-toast';
+            toast.textContent = '有新版本 · 点击刷新';
+            toast.setAttribute('role', 'button');
+            toast.setAttribute('tabindex', '0');
+            toast.addEventListener('click', function() { location.reload(); });
+            toast.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); location.reload(); }
+            });
+            document.body.appendChild(toast);
+            // 下一帧再加 show，保证 opacity 过渡真正触发
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() { toast.classList.add('show'); });
+            });
+            // 12 秒自动淡出（用户可能正在阅读，别一直挂着）
+            setTimeout(function() {
+                toast.classList.remove('show');
+                setTimeout(function() { toast.remove(); }, 260);
+            }, 12000);
+        }
+
+        reg.addEventListener('updatefound', function() {
+            var worker = reg.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', function() {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                    showSwUpdateToast();
+                }
+            });
+        });
     }).catch(function() {});
 }
 

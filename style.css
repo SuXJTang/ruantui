@@ -3296,3 +3296,81 @@ html.motion-on .tool-card.in-view {
     background: var(--s3); color: var(--ink2);
     font-size: 13px; border-radius: inherit;
 }
+
+/* ================================================================
+   动效 v7（实施清单：docs/MOTION-V7-IMPL.md）
+   ================================================================ */
+
+/* ---------- 1. 骨架屏 → 内容过渡 ---------- */
+/* 类名由 ui.js 的 renderTools() 在替换前 180ms 加到 #toolGrid(.grid) 上 */
+.grid.v7-sk-fade .skeleton-card,
+.grid.v7-sk-fade .skeleton-card::after {
+    opacity: 0; transition: opacity .18s ease;
+}
+
+/* ---------- 2. 详情面板分段入场 ---------- */
+/* 用 :where() 压到零特异性，避免盖掉 .action-card.flash 等已有的 animation 规则。
+   头部实际类名是 .detail-head（不是清单里写的 .modal-head）。 */
+@keyframes v7FadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+:where(.overlay.active .modal-detail) :where(.detail-head) {
+    animation: v7FadeUp .28s var(--ease) both; animation-delay: 0ms;
+}
+:where(.overlay.active .modal-detail) :where(.action-card) {
+    animation: v7FadeUp .28s var(--ease) both; animation-delay: 40ms;
+}
+:where(.overlay.active .modal-detail) :where(.detail-main) {
+    animation: v7FadeUp .28s var(--ease) both; animation-delay: 80ms;
+}
+:where(.overlay.active .modal-detail) :where(.info-card) {
+    animation: v7FadeUp .28s var(--ease) both; animation-delay: 120ms;
+}
+:where(.overlay.active .modal-detail) :where(.share-card) {
+    animation: v7FadeUp .28s var(--ease) both; animation-delay: 160ms;
+}
+
+/* ---------- 3. Service Worker 新版本提示条 ---------- */
+/* DOM 由 features.js 的 showSwUpdateToast() 创建 */
+.v7-sw-toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 999;
+    background: var(--s3); border: 1px solid var(--border); color: var(--ink1);
+    padding: 10px 16px; border-radius: 99px; font-size: 13px; cursor: pointer;
+    box-shadow: 0 8px 28px rgba(0,0,0,.28); opacity: 0;
+    transition: opacity .2s;
+}
+.v7-sw-toast.show { opacity: 1; }
+
+/* ---------- 4. 卡片图标轻微视差 ---------- */
+/* 保留原有的 scale/translateY，只叠加 icon 的反向位移（--dx/--dy 来自 effects.js） */
+@media (hover: hover) and (pointer: fine) {
+    .tool-card:hover .tool-icon {
+        transform: scale(1.06) translateY(-1px)
+                   translate(calc(var(--dx, 0) * -3px), calc(var(--dy, 0) * -3px));
+    }
+}
+
+/* ---------- 减少动态效果：v7 新增动效全部关闭 ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .grid.v7-sk-fade .skeleton-card,
+    .grid.v7-sk-fade .skeleton-card::after { opacity: 1; transition: none; }
+    :where(.overlay.active .modal-detail) :where(.detail-head),
+    :where(.overlay.active .modal-detail) :where(.action-card),
+    :where(.overlay.active .modal-detail) :where(.detail-main),
+    :where(.overlay.active .modal-detail) :where(.info-card),
+    :where(.overlay.active .modal-detail) :where(.share-card) { animation: none; }
+    .v7-sw-toast { transition: none; }
+    /* .tool-icon 的 transform 已在文件上方的基础规则里被 !important 关掉 */
+}
+
+/* 移动端：.detail-side 用 display:contents 重排（style.css 的 max-width:900px 段），
+   分区块入场会按 order 乱序，这里整段关闭。 */
+@media (max-width: 900px) {
+    :where(.overlay.active .modal-detail) :where(.detail-head),
+    :where(.overlay.active .modal-detail) :where(.action-card),
+    :where(.overlay.active .modal-detail) :where(.detail-main),
+    :where(.overlay.active .modal-detail) :where(.info-card),
+    :where(.overlay.active .modal-detail) :where(.share-card) { animation: none; }
+}

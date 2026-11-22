@@ -39,6 +39,9 @@
             var rect = hover.rect;
             card.style.setProperty('--mx', (e.clientX - rect.left) + 'px');
             card.style.setProperty('--my', (e.clientY - rect.top) + 'px');
+            // v7 图标视差：归一化到 -1 ~ 1，style.css 里按 -3px 反向位移
+            card.style.setProperty('--dx', ((e.clientX - rect.left) / rect.width - 0.5) * 2);
+            card.style.setProperty('--dy', ((e.clientY - rect.top) / rect.height - 0.5) * 2);
             var rx = ((e.clientY - rect.top) / rect.height - 0.5) * -6; // -3° ~ 3°
             var ry = ((e.clientX - rect.left) / rect.width - 0.5) * 6;
             card.style.setProperty('--rx', rx.toFixed(2) + 'deg');

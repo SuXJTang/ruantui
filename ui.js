@@ -155,7 +155,11 @@ function highlightText(text, query) {
         escHTML(text.substring(idx + query.length));
 }
 
-function renderTools(filter) {
+// v7 骨架屏淡出：数据到达后先让骨架淡出 180ms 再替换 DOM。
+// 快速切分类/连续刷新时清掉上一个 timer，避免多个延时渲染互相覆盖。
+var skFadeTimer = null;
+
+function renderTools(filter, skipSkFade) {
     // 注意：这里不能因为 tools 为空就提前 return —— 空/失败状态也要渲染提示界面。
     if (!grid) return;
     if (!Array.isArray(App.state.tools)) App.state.tools = [];
@@ -197,11 +201,28 @@ function renderTools(filter) {
     if (App.state.loading) {
         // 有 SSR 卡片就不显示骨架屏，直接让用户先看到内容
         if (hasSSR) return;
+        if (skFadeTimer) { clearTimeout(skFadeTimer); skFadeTimer = null; }
+        grid.classList.remove('v7-sk-fade');
         grid.innerHTML = '';
         var sk = '';
         for (var i = 0; i < 8; i++) sk += '<div class="skeleton-card"><div class="sk-icon"></div><div class="sk-body"><div class="sk-line sk-line-1"></div><div class="sk-line sk-line-2"></div><div class="sk-line sk-line-3"></div></div></div>';
         grid.innerHTML = sk; return;
     }
+
+    // v7 骨架屏 → 内容过渡：网格里还是骨架卡时，先淡出 180ms 再替换。
+    // skipSkFade 只给下面的延时回调使用，否则回调再次命中骨架会无限延时。
+    if (!skipSkFade && grid.querySelector('.skeleton-card') &&
+        !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+        if (skFadeTimer) clearTimeout(skFadeTimer);
+        grid.classList.add('v7-sk-fade');
+        skFadeTimer = setTimeout(function() {
+            skFadeTimer = null;
+            renderTools(filter, true);
+        }, 180);
+        return;
+    }
+    if (skFadeTimer) { clearTimeout(skFadeTimer); skFadeTimer = null; }
+    grid.classList.remove('v7-sk-fade');
 
     // 搜索结果计数
     var resultBar = document.getElementById('resultCount');

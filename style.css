@@ -49,7 +49,9 @@
 :root {
     /* 品牌色 + 派生 */
     --primary: #FF7D20; --primary-rgb: 255,125,32;
-    --accent: #FF3D6E;  --accent-rgb: 255,61,110;
+    /* 只留一个强调色：accent 不再独立，全部跟随 primary。
+       （原来是 #FF3D6E 粉红，和橙主色并存 = 两套品牌色） */
+    --accent: var(--primary); --accent-rgb: var(--primary-rgb);
 
     /* 四级表面：页面 / 卡片 / 输入框等次级块 / 浮层（浮层必须不透明） */
     --s0: #F5F7FB; --s1: #FFFFFF; --s2: #EDF1F8; --s3: #FFFFFF;
@@ -67,7 +69,7 @@
     /* 描边 */
     --line: rgba(15,23,42,.07); --line-2: rgba(15,23,42,.13);
     --border: var(--line);
-    --border-glow: rgba(var(--primary-rgb),.28);
+    --border-glow: var(--line-2);
 
     /* 圆角 */
     --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 20px; --r-xl: 28px; --r-full: 999px;
@@ -77,20 +79,21 @@
     --shadow: 0 1px 2px rgba(15,23,42,.05);
     --shadow-md: 0 6px 20px -8px rgba(15,23,42,.16);
     --shadow-lg: 0 28px 56px -20px rgba(15,23,42,.28);
-    --shadow-glow: 0 0 0 1px rgba(var(--primary-rgb),.12), 0 14px 34px -14px rgba(var(--primary-rgb),.42);
+    /* 发光改为中性阴影：彩色光晕是「AI 感」的主要来源之一 */
+    --shadow-glow: 0 1px 2px rgba(15,23,42,.06), 0 10px 24px -16px rgba(15,23,42,.30);
 
     /* 动效 */
     --ease: cubic-bezier(.22,.85,.28,1);
     --transition: all .25s var(--ease);
     --glass-blur: saturate(180%) blur(20px);
-    --neon-glow: 0 0 18px rgba(var(--primary-rgb),.28);
+    --neon-glow: none;
 }
 
 /* 5 套主题：只改品牌色两项 + 页面底色微调 */
-[data-theme="ocean"]   { --primary:#1F7AE0; --primary-rgb:31,122,224;  --accent:#00B4D8; --accent-rgb:0,180,216;  --s0:#F1F6FC; --s2:#E7EFF9; }
-[data-theme="aurora"]  { --primary:#8B5CF6; --primary-rgb:139,92,246;  --accent:#EC4899; --accent-rgb:236,72,153; --s0:#F6F4FC; --s2:#EEEBF8; }
-[data-theme="forest"]  { --primary:#16A34A; --primary-rgb:22,163,74;   --accent:#84CC16; --accent-rgb:132,204,22; --s0:#F3F8F4; --s2:#E9F2EB; }
-[data-theme="crimson"] { --primary:#E11D48; --primary-rgb:225,29,72;   --accent:#F97316; --accent-rgb:249,115,22; --s0:#FCF4F6; --s2:#F8E9ED; }
+[data-theme="ocean"]   { --primary:#1F7AE0; --primary-rgb:31,122,224;  --accent:var(--primary); --accent-rgb:var(--primary-rgb);  --s0:#F1F6FC; --s2:#E7EFF9; }
+[data-theme="aurora"]  { --primary:#8B5CF6; --primary-rgb:139,92,246;  --accent:var(--primary); --accent-rgb:var(--primary-rgb); --s0:#F6F4FC; --s2:#EEEBF8; }
+[data-theme="forest"]  { --primary:#16A34A; --primary-rgb:22,163,74;   --accent:var(--primary); --accent-rgb:var(--primary-rgb); --s0:#F3F8F4; --s2:#E9F2EB; }
+[data-theme="crimson"] { --primary:#E11D48; --primary-rgb:225,29,72;   --accent:var(--primary); --accent-rgb:var(--primary-rgb); --s0:#FCF4F6; --s2:#F8E9ED; }
 
 [data-mode="dark"] {
     /* 暗色：底色更深更冷，卡片比底色亮一档；
@@ -107,12 +110,12 @@
 
     --line: rgba(255,255,255,.075); --line-2: rgba(255,255,255,.145);
     --border: var(--line);
-    --border-glow: rgba(var(--primary-rgb),.34);
+    --border-glow: var(--line-2);
 
     --shadow: 0 2px 6px rgba(0,0,0,.45);
     --shadow-md: 0 10px 28px -10px rgba(0,0,0,.62);
     --shadow-lg: 0 28px 60px -20px rgba(0,0,0,.78);
-    --shadow-glow: 0 0 0 1px rgba(var(--primary-rgb),.20), 0 14px 36px -14px rgba(var(--primary-rgb),.48);
+    --shadow-glow: 0 2px 6px rgba(0,0,0,.45), 0 12px 30px -18px rgba(0,0,0,.7);
 }
 
 /* ----------------------------------------------------------------
@@ -271,6 +274,9 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     padding: 0;
 }
 .theme-swatch:hover { transform: scale(1.32); }
+/* 5 个彩色圆点并排是另一处杂色来源：未选中的灰掉，只让当前主题显示真色 */
+.theme-swatch:not(.active) { filter: grayscale(1); opacity: .45; }
+.theme-swatch:not(.active):hover { opacity: .8; }
 .theme-swatch.active { border-color: var(--s1); box-shadow: 0 0 0 2px var(--ink1); }
 .theme-swatch[data-target=sunrise] { background: linear-gradient(135deg,#FF7D20 50%,#FF3D6E 50%); }
 .theme-swatch[data-target=ocean]   { background: linear-gradient(135deg,#1F7AE0 50%,#00B4D8 50%); }
@@ -769,7 +775,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     border-radius: var(--r-lg);
 }
 .data-error i {
-    font-size: 44px; color: #f59e0b; opacity: .85;
+    font-size: 44px; color: #b8860b; opacity: .85;
     margin-bottom: 16px; display: block;
 }
 .data-error h3 { font-size: 16px; color: var(--ink1); margin: 0 0 10px; }
@@ -969,7 +975,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .modal-link.primary:hover { filter: brightness(1.07); box-shadow: 0 14px 28px -14px rgba(var(--primary-rgb),1); }
 .modal-link.affiliate {
-    background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff;
+    /* 金→红渐变改成单金：渐变是杂色，语义（付费）靠颜色本身够了 */
+    background: #b8860b; color: #fff;
     box-shadow: 0 10px 20px -12px rgba(245,158,11,.8);
 }
 .modal-link.affiliate:hover { filter: brightness(1.07); }
@@ -1591,10 +1598,10 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .account-btn.account-admin .account-label { color: var(--primary); }
 
 /* VIP：金色（优先级高于普通，低于管理员） */
-.account-btn.account-vip .account-label { color: #d4a017; }
-.account-btn.account-vip i { color: #d4a017; }
+.account-btn.account-vip .account-label { color: #b8860b; }
+.account-btn.account-vip i { color: #b8860b; }
 [data-mode="dark"] .account-btn.account-vip .account-label,
-[data-mode="dark"] .account-btn.account-vip i { color: #f5c542; }
+[data-mode="dark"] .account-btn.account-vip i { color: #d4a017; }
 /* 管理员和 VIP 同时时，保持管理员色 */
 .account-btn.account-admin.account-vip .account-label,
 .account-btn.account-admin.account-vip i { color: var(--primary); }
@@ -1820,13 +1827,13 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
    ================================================================ */
 /* 顶栏账号按钮：VIP 用户用金色描边 + 金色图标 */
 .header-btn.account-btn.account-vip {
-    color: #e0a500;
+    color: #b8860b;
 }
 .header-btn.account-btn.account-vip i {
-    color: #e0a500;
+    color: #b8860b;
 }
 .header-btn.account-btn.account-vip .account-label {
-    color: #e0a500;
+    color: #b8860b;
     font-weight: 700;
 }
 
@@ -1838,7 +1845,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 [data-mode="dark"] .account-menu .am-head .am-role-vip { color: #f5c542 !important; }
 [data-mode="dark"] .header-btn.account-btn.account-vip,
 [data-mode="dark"] .header-btn.account-btn.account-vip i,
-[data-mode="dark"] .header-btn.account-btn.account-vip .account-label { color: #f5c542; }
+[data-mode="dark"] .header-btn.account-btn.account-vip .account-label { color: #d4a017; }
 
 /* ================================================================
    下载权限：被锁定的下载按钮
@@ -1922,7 +1929,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .uc-tag-admin  { background: rgba(var(--primary-rgb),0.14); color: var(--primary); }
 .uc-tag-vip    { background: rgba(212,160,23,0.16); color: #b8860b; }
 .uc-tag-normal { background: rgba(128,128,128,0.14); color: var(--text-light); }
-[data-mode="dark"] .uc-tag-vip { background: rgba(245,197,66,0.18); color: #f5c542; }
+[data-mode="dark"] .uc-tag-vip { background: rgba(245,197,66,0.18); color: #d4a017; }
 
 .uc-vip-line {
     font-size: 13px;
@@ -1930,7 +1937,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     color: #b8860b;
     font-weight: 600;
 }
-[data-mode="dark"] .uc-vip-line { color: #f5c542; }
+[data-mode="dark"] .uc-vip-line { color: #d4a017; }
 .uc-vip-none { color: var(--text-light); font-weight: 400; }
 .uc-vip-none a { color: var(--primary); text-decoration: none; }
 .uc-vip-none a:hover { text-decoration: underline; }
@@ -2580,8 +2587,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     color: var(--text-light);
     margin-top: 2px;
 }
-.account-menu .am-role.am-role-vip { color: #d4a017; }
-[data-mode="dark"] .account-menu .am-role.am-role-vip { color: #f5c542; }
+.account-menu .am-role.am-role-vip { color: #b8860b; }
+[data-mode="dark"] .account-menu .am-role.am-role-vip { color: #d4a017; }
 
 /* 昵称还是邮箱前缀时，提示去设置 */
 .account-menu .am-setnick {
@@ -3226,13 +3233,26 @@ html.motion-on .tool-card.in-view {
 .cat-seg {
     flex: 1 1 0; min-width: 8px; height: 8px;
     padding: 0; border: none; border-radius: 999px;
-    background: linear-gradient(90deg,
-        hsl(calc(var(--seg) * 1deg) 82% 58%),
-        hsl(calc((var(--seg) + 26) * 1deg) 82% 52%));
+    /* 原来是 10 段彩虹（每段一个色相），是页面上最抢眼的杂色来源。
+       现在统一用品牌色，靠透明度递减区分顺序。 */
+    background: var(--primary);
     cursor: pointer; position: relative;
     transition: filter .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
     transform-origin: center bottom;
 }
+/* 分布条顺序感靠透明度，不再靠色相 */
+.cat-seg:nth-child(1) { opacity: 1; }
+.cat-seg:nth-child(2) { opacity: .88; }
+.cat-seg:nth-child(3) { opacity: .78; }
+.cat-seg:nth-child(4) { opacity: .68; }
+.cat-seg:nth-child(5) { opacity: .58; }
+.cat-seg:nth-child(6) { opacity: .50; }
+.cat-seg:nth-child(7) { opacity: .42; }
+.cat-seg:nth-child(8) { opacity: .34; }
+.cat-seg:nth-child(9) { opacity: .27; }
+.cat-seg:nth-child(n+10) { opacity: .20; }
+.cat-seg:hover, .cat-seg:focus-visible { opacity: 1; }
+
 .cat-seg:hover, .cat-seg:focus-visible {
     filter: brightness(1.12) saturate(1.1);
     transform: translateY(-2px) scaleY(1.9);

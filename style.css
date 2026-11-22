@@ -3374,3 +3374,36 @@ html.motion-on .tool-card.in-view {
     :where(.overlay.active .modal-detail) :where(.info-card),
     :where(.overlay.active .modal-detail) :where(.share-card) { animation: none; }
 }
+
+/* ================================================================
+   触控热区 v7.1
+   规范：图标视觉 16px 时热区 ≥40px，底线 28px；相邻热区留间隙防误触。
+   原则：只扩热区，不改视觉尺寸 —— 用绝对定位伪元素，不参与布局。
+   ================================================================ */
+
+/* 1. 分类分布条 .cat-seg：视觉只有 8px（移动端 6px），此前几乎点不中。
+   上下各扩 12px → 32px 热区；左右不扩，避免相邻段互相抢点击。 */
+.cat-seg::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 32px;
+    transform: translateY(-50%);
+}
+
+/* 2. 卡片收藏按钮：32×32 → 40×40 热区，视觉不变 */
+.card-fav-btn::after {
+    content: "";
+    position: absolute;
+    left: -4px; right: -4px; top: -4px; bottom: -4px;
+    border-radius: 50%;
+}
+
+/* 3. 触屏设备上把实心按钮补到 40px（桌面保持紧凑，鼠标 34px 够用） */
+@media (pointer: coarse) {
+    .filter-tag { padding-top: 11px; padding-bottom: 11px; }
+    .footer-btn { padding-top: 11px; padding-bottom: 11px; }
+    .sort-select { min-height: 40px; }
+    .install-banner-close { min-width: 32px; min-height: 32px; }
+    .install-banner-btn { padding-top: 10px; padding-bottom: 10px; }
+}

@@ -378,7 +378,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: linear-gradient(135deg, var(--primary), var(--accent));
     display: flex; align-items: center; justify-content: center;
     font-size: 28px; flex-shrink: 0;
-    box-shadow: 0 10px 30px -10px rgba(var(--primary-rgb),.65), inset 0 0 0 3px var(--s1);
+    box-shadow: 0 6px 16px -10px rgba(15,23,42,.30), inset 0 0 0 3px var(--s1);
 }
 .profile-avatar::after {
     content: ''; position: absolute; inset: -6px; border-radius: 50%;
@@ -498,7 +498,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .filter-tag.active {
     color: #fff; border-color: transparent; font-weight: 700;
     background: linear-gradient(135deg, var(--primary), var(--accent));
-    box-shadow: 0 8px 20px -10px rgba(var(--primary-rgb),.85);
+    box-shadow: 0 8px 20px -10px rgba(15,23,42,.32);
 }
 .filter-tag.active i { opacity: 1; }
 .filter-count {
@@ -585,9 +585,9 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-card:hover {
     transform: translateY(-4px);
     border-color: rgba(var(--primary-rgb),.30);
-    box-shadow: 0 22px 44px -26px rgba(15,23,42,.45),
-                0 0 0 1px rgba(var(--primary-rgb),.10),
-                0 14px 34px -20px rgba(var(--primary-rgb),.55);
+    /* 三层（含彩色光晕）→ 两层中性：光晕是 AI 感的主要来源 */
+    box-shadow: 0 12px 28px -18px rgba(15,23,42,.26),
+                0 0 0 1px rgba(var(--primary-rgb),.12);
 }
 .tool-card:active { transform: translateY(-1px) scale(.995); }
 /* 卡片内所有直接子元素要压在光斑之上 —— 但收藏按钮是绝对定位，必须排除 */
@@ -598,12 +598,12 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; position: relative; overflow: hidden;
     align-self: flex-start; margin-bottom: 2px; z-index: 1;
-    box-shadow: 0 10px 22px -12px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.45);
+    box-shadow: 0 4px 10px -6px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.35);
     transition: transform .3s var(--ease), box-shadow .3s var(--ease);
 }
 .tool-card:hover .tool-icon {
     transform: scale(1.06) translateY(-1px);
-    box-shadow: 0 14px 28px -14px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.5);
+    box-shadow: 0 7px 16px -9px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.4);
 }
 .tool-icon::after {
     content: ''; position: absolute; inset: 0; border-radius: inherit;
@@ -639,11 +639,11 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     padding: 2px 7px; border-radius: 5px; letter-spacing: .4px;
     background: linear-gradient(135deg, var(--primary), var(--accent));
     color: #fff; flex-shrink: 0;
-    box-shadow: 0 3px 8px -3px rgba(var(--primary-rgb),.8);
+    box-shadow: 0 3px 8px -3px rgba(15,23,42,.32);
 }
 @keyframes pinnedPulse {
-    0%, 100% { box-shadow: 0 3px 8px -3px rgba(var(--primary-rgb),.8); }
-    50%      { box-shadow: 0 3px 14px -2px rgba(var(--primary-rgb),1); }
+    0%, 100% { box-shadow: 0 3px 8px -3px rgba(15,23,42,.32); }
+    50%      { box-shadow: 0 3px 14px -2px rgba(15,23,42,.32); }
 }
 .tool-meta {
     display: flex; align-items: center; justify-content: space-between;
@@ -711,7 +711,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     border-radius: var(--r-full); border: none; color: #fff;
     background: linear-gradient(135deg, var(--primary), var(--accent));
     position: relative; z-index: 2; overflow: hidden;
-    box-shadow: 0 10px 20px -12px rgba(var(--primary-rgb),.9);
+    box-shadow: 0 10px 20px -12px rgba(15,23,42,.32);
     transition: transform .22s var(--ease), box-shadow .22s var(--ease), filter .22s var(--ease);
 }
 /* 流光：一道斜向白光扫过 */
@@ -726,7 +726,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-visit-btn:hover::after { left: 125%; }
 .tool-visit-btn:hover {
     transform: translateY(-1px); filter: brightness(1.06);
-    box-shadow: 0 14px 26px -14px rgba(var(--primary-rgb),1);
+    box-shadow: 0 14px 26px -14px rgba(15,23,42,.32);
 }
 .tool-visit-btn:active { transform: translateY(0) scale(.985); }
 
@@ -788,7 +788,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     border: none; border-radius: var(--r-full); cursor: pointer;
     transition: transform .2s var(--ease), box-shadow .2s var(--ease);
 }
-.data-retry-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -10px rgba(var(--primary-rgb),.9); }
+.data-retry-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -10px rgba(15,23,42,.32); }
 
 /* ----------------------------------------------------------------
    骨架屏（数据加载中）
@@ -891,7 +891,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     overflow-y: auto; overflow-x: hidden; position: relative;
     transform: translateY(18px) scale(.97);
     transition: transform .38s var(--ease);
-    box-shadow: 0 40px 80px -32px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset;
+    /* 顶层元素：保留最重阴影，这是唯一允许「重」的地方 */
+    box-shadow: 0 32px 64px -28px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.04) inset;
 }
 .overlay.active .modal { transform: translateY(0) scale(1); }
 .modal-lg { max-width: 720px !important; min-width: 500px; }
@@ -918,7 +919,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     width: 62px; height: 62px; border-radius: 18px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; overflow: hidden;
-    box-shadow: 0 10px 24px -12px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.4);
+    box-shadow: 0 5px 12px -7px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.32);
 }
 .modal-icon img { width: 32px; height: 32px; object-fit: contain; }
 .modal-icon i { font-size: 26px; color: #fff; }
@@ -972,13 +973,13 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .modal-link.primary {
     background: linear-gradient(135deg, var(--primary), var(--accent));
-    color: #fff; box-shadow: 0 10px 22px -12px rgba(var(--primary-rgb),.9);
+    color: #fff; box-shadow: 0 10px 22px -12px rgba(15,23,42,.32);
 }
-.modal-link.primary:hover { filter: brightness(1.07); box-shadow: 0 14px 28px -14px rgba(var(--primary-rgb),1); }
+.modal-link.primary:hover { filter: brightness(1.07); box-shadow: 0 14px 28px -14px rgba(15,23,42,.32); }
 .modal-link.affiliate {
     /* 金→红渐变改成单金：渐变是杂色，语义（付费）靠颜色本身够了 */
     background: #b8860b; color: #fff;
-    box-shadow: 0 10px 20px -12px rgba(245,158,11,.8);
+    box-shadow: 0 6px 14px -8px rgba(15,23,42,.28);
 }
 .modal-link.affiliate:hover { filter: brightness(1.07); }
 .modal-share { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 6px; }
@@ -2071,7 +2072,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-weight: 700;
     line-height: 15px;
     text-align: center;
-    box-shadow: 0 1px 4px rgba(239,68,68,0.5);
+    box-shadow: 0 1px 3px rgba(15,23,42,.24);
     /* 未读时的呼吸动画 */
     animation: notifDotPulse 2s ease-in-out infinite;
     pointer-events: none;
@@ -2735,7 +2736,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     height: 64px;
     display: block;
     border-radius: 16px;
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.28);
+    box-shadow: 0 5px 14px -8px rgba(15,23,42,.30);
 }
 
 /* PWA 安装提示条里的 logo */
@@ -2972,7 +2973,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     width: 76px; height: 76px; border-radius: 22px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; overflow: hidden;
-    box-shadow: 0 14px 30px -14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.4);
+    box-shadow: 0 6px 14px -8px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.32);
 }
 .detail-icon img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.28)); }
 .detail-icon i { font-size: 34px; color: #fff; }
@@ -3047,7 +3048,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .action-card.flash { animation: actionFlash 1.2s var(--ease); }
 @keyframes actionFlash {
     0%, 100% { box-shadow: var(--shadow); }
-    30%      { box-shadow: 0 0 0 3px rgba(var(--primary-rgb),.28), 0 12px 28px -14px rgba(var(--primary-rgb),.7); }
+    30%      { box-shadow: 0 0 0 2px rgba(var(--primary-rgb),.18); }
 }
 
 .detail-btn-col { display: flex; flex-direction: column; gap: 8px; }
@@ -3063,7 +3064,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .detail-btn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .detail-btn.primary {
     background: linear-gradient(135deg, var(--primary), var(--accent));
-    color: #fff; box-shadow: 0 10px 22px -12px rgba(var(--primary-rgb),.9);
+    color: #fff; box-shadow: 0 10px 22px -12px rgba(15,23,42,.32);
 }
 .detail-btn.primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
 .detail-btn-arrow { margin-left: auto; font-size: 11.5px; opacity: .8; transition: transform .2s var(--ease); }
@@ -3073,7 +3074,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .detail-btn.locked {
     background: linear-gradient(135deg, #B8860B, #D4A017);
     color: #fff; border: none; cursor: pointer;
-    box-shadow: 0 10px 22px -12px rgba(212,160,23,.8);
+    box-shadow: 0 6px 14px -9px rgba(15,23,42,.28);
 }
 .detail-btn.vip {
     background: linear-gradient(135deg, #B8860B, #D4A017);
@@ -3259,7 +3260,7 @@ html.motion-on .tool-card.in-view {
 .cat-seg:hover, .cat-seg:focus-visible {
     filter: brightness(1.12) saturate(1.1);
     transform: translateY(-2px) scaleY(1.9);
-    box-shadow: 0 6px 14px -6px rgba(0,0,0,.45);
+    box-shadow: 0 4px 10px -6px rgba(15,23,42,.28);
     outline: none;
 }
 .cat-seg:active { transform: translateY(0) scaleY(1.3); }

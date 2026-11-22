@@ -348,7 +348,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .share-text strong { display: block; font-size: 13px; }
 .share-text small { font-size: 11.5px; color: var(--text-light); }
 .share-qr-row { display: flex; align-items: center; gap: 10px; padding: 4px 10px; }
-.share-qr { width: 48px; height: 48px; padding: 4px; background: #fff; border-radius: 6px; border: 1px solid var(--border); }
+.share-qr { width: 48px; height: 48px; padding: 4px; background: #fff; border-radius: 8px; border: 1px solid var(--border); }
 .share-qr-row span { font-size: 13px; color: var(--text-light); }
 .share-url-row { display: flex; gap: 6px; }
 .share-url-row input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: rgba(128,128,128,0.03); color: var(--text); font-size: 13px; }
@@ -560,7 +560,8 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     box-shadow: var(--shadow);
     cursor: pointer;
     animation: cardIn .5s var(--ease) backwards;
-    transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
+    /* v8：transform 走弹簧曲线（末端轻微过冲），颜色/阴影仍用顺滑缓出 */
+    transition: transform .34s var(--ease-spring), box-shadow .3s var(--ease-out-soft), border-color .3s var(--ease-out-soft);
 }
 /* 鼠标跟随光斑 */
 .tool-card::before {
@@ -676,7 +677,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .tool-tags { display: flex; gap: 5px; flex-wrap: wrap; }
 .tool-tag {
     font-size: 11.5px; font-weight: 500;
-    padding: 3px 9px; border-radius: 6px;
+    padding: 3px 9px; border-radius: 8px;
     background: var(--s2); color: var(--ink2);
     transition: all .2s var(--ease); cursor: default;
     white-space: nowrap;
@@ -810,7 +811,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: var(--s2);
 }
 .sk-body { width: 100%; display: flex; flex-direction: column; gap: 9px; }
-.sk-line { height: 11px; border-radius: 6px; background: var(--s2); }
+.sk-line { height: 11px; border-radius: 8px; background: var(--s2); }
 .sk-line-1 { width: 46%; height: 14px; }
 .sk-line-2 { width: 100%; }
 .sk-line-3 { width: 72%; }
@@ -1026,10 +1027,10 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .mgmt-list { display: flex; flex-direction: column; gap: 5px; max-height: 55vh; overflow-y: auto; padding-right: 4px; }
 .mgmt-list::-webkit-scrollbar { width: 4px; }
 .mgmt-list::-webkit-scrollbar-track { background: transparent; }
-.mgmt-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.mgmt-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
 .mgmt-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-xs); border: 1px solid var(--border); min-height: 44px; }
 .mgmt-row:hover { background: rgba(128,128,128,0.04); }
-.mgmt-row-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mgmt-row-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .mgmt-row-icon img { width: 15px; height: 15px; object-fit: contain; }
 .mgmt-row-icon i { font-size: 13px; color: #fff; }
 .mgmt-row-info { flex: 1; min-width: 0; overflow: hidden; }
@@ -1128,11 +1129,11 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .form-input-row input, .form-input-row textarea { flex: 1; }
 .input-with-icon { display: flex; gap: 6px; align-items: center; }
 .icon-picker-group { display: flex; gap: 8px; align-items: center; }
-.icon-picker-group input[type="color"] { flex: 1; height: 38px; padding: 3px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: none; }
+.icon-picker-group input[type="color"] { flex: 1; height: 38px; padding: 3px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: none; }
 .icon-preview-box { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border); transition: background .2s; }
 .icon-preview-box img { width: 20px; height: 20px; object-fit: contain; display: none; }
 .icon-preview-box i { font-size: 16px; color: #fff; display: none; }
-.ai-btn { width: 32px; border-radius: 6px; border: 1px solid var(--border); background: linear-gradient(135deg, rgba(var(--primary-rgb),0.06), rgba(var(--accent-rgb),0.12)); color: var(--primary); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .25s; position: relative; }
+.ai-btn { width: 32px; border-radius: 8px; border: 1px solid var(--border); background: linear-gradient(135deg, rgba(var(--primary-rgb),0.06), rgba(var(--accent-rgb),0.12)); color: var(--primary); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .25s; position: relative; }
 .ai-btn:hover { border-color: var(--primary); background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; transform: scale(1.05); box-shadow: 0 2px 8px rgba(var(--primary-rgb),0.2); }
 .ai-btn:active { transform: scale(.9); }
 .ai-btn::after { content: 'AI'; position: absolute; bottom: -14px; font-size: 11.5px; font-weight: 700; color: var(--primary); opacity: 0; transition: opacity .2s; }
@@ -1205,13 +1206,13 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .ann-panel-close:hover { background: rgba(128,128,128,0.1); }
 .ann-panel-body { padding: 8px 0; overflow-y: auto; flex: 1; }
 .ann-panel-body::-webkit-scrollbar { width: 3px; }
-.ann-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.ann-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
 .ann-item { padding: 12px 16px; border-bottom: 1px solid var(--border); transition: background .2s; }
 .ann-item:last-child { border-bottom: none; }
 .ann-item:hover { background: rgba(128,128,128,0.03); }
 .ann-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .ann-item-title { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ann-item-type { font-size: 11.5px; font-weight: 700; padding: 1px 7px; border-radius: 4px; flex-shrink: 0; line-height: 1.6; }
+.ann-item-type { font-size: 11.5px; font-weight: 700; padding: 1px 7px; border-radius: 8px; flex-shrink: 0; line-height: 1.6; }
 .ann-item-type.manual  { background: rgba(var(--primary-rgb),0.1); color: var(--primary); }
 .ann-item-type.update  { background: rgba(59,130,246,0.1); color: #3B82F6; }
 .ann-item-type.fix     { background: rgba(239,68,68,0.1); color: #ef4444; }
@@ -1626,7 +1627,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
        用半透明会让下面的卡片文字透出来，完全看不清菜单内容。 */
     background: var(--menu-bg);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 16px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
     animation: amIn .18s ease;
 }
@@ -1639,7 +1640,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .account-menu .am-item {
     display: flex; align-items: center; gap: 10px; width: 100%;
     padding: 10px 12px; border: none; background: transparent;
-    border-radius: 9px; font-size: 13px; font-weight: 500;
+    border-radius: 8px; font-size: 13px; font-weight: 500;
     color: var(--text); text-align: left; cursor: pointer; transition: background .18s;
 }
 .account-menu .am-item:hover { background: rgba(128,128,128,0.10); }
@@ -1684,7 +1685,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     background: rgba(128,128,128,0.08); border-radius: 12px;
 }
 .auth-tab {
-    flex: 1; padding: 8px 0; border: none; border-radius: 9px;
+    flex: 1; padding: 8px 0; border: none; border-radius: 8px;
     background: transparent; color: var(--text-light);
     font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
 }
@@ -1726,7 +1727,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 .auth-resend {
     display: block; width: 100%;
     margin: 2px 0 8px; padding: 9px 0;
-    border: 1.5px dashed var(--border); border-radius: 10px;
+    border: 1.5px dashed var(--border); border-radius: 12px;
     background: transparent; color: var(--text);
     font-size: 13px; font-weight: 600; cursor: pointer;
     transition: all .2s;
@@ -1754,7 +1755,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
    ================================================================ */
 .vip-row {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 10px;
+    padding: 10px 12px; border-radius: 12px;
     border: 1px solid var(--border); margin-bottom: 8px;
     background: var(--card-solid);
 }
@@ -2283,7 +2284,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-size: 11.5px;
     font-weight: 700;
     padding: 1px 6px;
-    border-radius: 4px;
+    border-radius: 8px;
     margin-left: 4px;
     vertical-align: middle;
 }
@@ -2469,7 +2470,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     font-size: 13px;
     line-height: 1.8;
     padding: 12px 14px;
-    border-radius: 10px;
+    border-radius: 12px;
     background: rgba(239, 68, 68, 0.08);
     color: #ef4444;
     margin-bottom: 14px;
@@ -2631,7 +2632,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     align-items: center;
     gap: 10px;
     padding: 12px 14px;
-    border-radius: 14px;
+    border-radius: 16px;
     /* 不透明背景（见 AGENTS.md 浮层铁律） */
     background: var(--menu-bg, var(--card-solid, #fff));
     border: 1px solid var(--border);
@@ -2707,7 +2708,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     width: 100%;
     height: 100%;
     display: block;
-    border-radius: 9px;
+    border-radius: 8px;
 }
 
 @media (max-width: 480px) {
@@ -2750,14 +2751,14 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
     width: 36px;
     height: 36px;
     display: block;
-    border-radius: 9px;
+    border-radius: 8px;
 }
 
 @media (max-width: 480px) {
     .auth-logo.auth-logo-brand svg {
         width: 56px;
         height: 56px;
-        border-radius: 14px;
+        border-radius: 16px;
     }
 }
 
@@ -2809,7 +2810,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
    避免 560 块的 56px 图标压过旧的 480 断点（Claude 复核发现的冲突点） */
 @media (max-width: 480px) {
     .tool-card { padding: 12px; column-gap: 11px; row-gap: 10px; }
-    .tool-icon { width: 48px; height: 48px; border-radius: 14px; }
+    .tool-icon { width: 48px; height: 48px; border-radius: 16px; }
     .tool-icon img { width: 26px; height: 26px; }
     .tool-icon i { font-size: 20px; }
     .tool-body h3 { font-size: 13px; }
@@ -3114,7 +3115,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 /* ---------- 右栏：二维码卡 ---------- */
 .share-card { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
 .share-card .share-qr-col { flex-direction: row; align-items: center; gap: 12px; }
-.share-card .share-qr-img { width: 72px; height: 72px; padding: 4px; background: #fff; border-radius: 10px; border: 1px solid var(--line); flex-shrink: 0; }
+.share-card .share-qr-img { width: 72px; height: 72px; padding: 4px; background: #fff; border-radius: 12px; border: 1px solid var(--line); flex-shrink: 0; }
 .share-card .share-qr-label { font-size: 11.5px; color: var(--ink3); line-height: 1.5; white-space: nowrap; }
 .share-reco {
     display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -3210,8 +3211,10 @@ html.motion-on .tool-card:not(.in-view) {
     opacity: 0;
     animation: none;
 }
+/* fill-mode 必须是 backwards 不能是 both：
+   both 会让动画结束后继续锁住 transform，:hover 的 translateY(-4px) 永远不生效 */
 html.motion-on .tool-card.in-view {
-    animation: cardIn .5s var(--ease) both;
+    animation: cardIn .52s var(--ease-out-soft) backwards;
 }
 
 /* ---------- 3. 顶栏滚动收缩 ---------- */
@@ -3339,7 +3342,7 @@ html.motion-on .tool-card.in-view {
     animation: v7FadeUp .28s var(--ease) both; animation-delay: 0ms;
 }
 :where(.overlay.active .modal-detail) :where(.action-card) {
-    animation: v7FadeUp .28s var(--ease) both; animation-delay: 40ms;
+    animation: v7FadeUp .34s var(--ease-spring) both; animation-delay: 40ms;
 }
 :where(.overlay.active .modal-detail) :where(.detail-main) {
     animation: v7FadeUp .28s var(--ease) both; animation-delay: 80ms;
@@ -3426,4 +3429,60 @@ html.motion-on .tool-card.in-view {
     .sort-select { min-height: 40px; }
     .install-banner-close { min-width: 32px; min-height: 32px; }
     .install-banner-btn { padding-top: 10px; padding-bottom: 10px; }
+}
+
+/* ================================================================
+   v8 · 连续曲率圆角 + 弹簧曲线
+   ----------------------------------------------------------------
+   普通圆角是「直线接圆弧」，曲率突变；连续曲率圆角从头缓缓过渡，
+   视觉上更接近苹果那种顺滑感。
+   ================================================================ */
+
+:root {
+    --ease-out-soft: cubic-bezier(.16, 1, .3, 1);          /* 顺滑缓出，无过冲 */
+    --ease-spring: cubic-bezier(.34, 1.42, .64, 1);        /* 轻回弹 */
+    --ease-spring-strong: cubic-bezier(.34, 1.7, .64, 1);  /* 明显回弹（小控件） */
+}
+
+/* 连续曲率圆角：Chrome 139+ 支持，Safari 尚在测试；不支持的浏览器自动忽略整块 */
+@supports (corner-shape: squircle) {
+    .tool-card,
+    .filter-tag,
+    .tool-visit-btn,
+    .pinned-badge,
+    .tool-cat,
+    .modal,
+    .action-card,
+    .info-card,
+    .share-card,
+    .topbar-search input,
+    .sort-select,
+    .footer-btn {
+        corner-shape: squircle;
+    }
+}
+
+/* 弹簧：关键交互的 transform 用它，末尾轻微过冲（原来用 ease，结尾急停） */
+.theme-swatch {
+    transition: transform .32s var(--ease-spring-strong), opacity .2s var(--ease-out-soft);
+}
+.filter-tag {
+    transition: transform .3s var(--ease-spring), background .22s var(--ease-out-soft),
+                color .22s var(--ease-out-soft), border-color .22s var(--ease-out-soft);
+}
+.tool-visit-btn {
+    transition: transform .3s var(--ease-spring), box-shadow .26s var(--ease-out-soft),
+                filter .22s var(--ease-out-soft);
+}
+.card-fav-btn {
+    transition: transform .34s var(--ease-spring-strong), background .2s, color .2s;
+}
+.brand-icon, .back-top {
+    transition: transform .34s var(--ease-spring), box-shadow .28s var(--ease-out-soft);
+}
+
+/* 横向滚动的筛选栏：iOS 惯性滚动 + 不把回弹传给整页 */
+.filter-bar {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
 }

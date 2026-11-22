@@ -8,6 +8,7 @@
 // ============================================
 var overlay = document.getElementById('modalOverlay');
 var modalBody = document.getElementById('modalBody');
+var currentToolId = null;   // 异步补查详情时用来校验「还是同一个工具吗」
 
 // 收录时间 → YYYY-MM
 function fmtMonths(iso) {
@@ -145,11 +146,12 @@ function detailBodyHTML(tool) {
     }
 
     return blockHTML('详细介绍', tool.detail || tool.comment, '') +
+           '<div class="detail-load-tip"></div>' +
            blockHTML('使用说明', tool.usage, '📖 ') +
            (tagsHTML ? '<section class="detail-block"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></section>' : '');
 }
 
-// 列表接口不再带 detail / usage（省 40 多 KB），详情打开时才补查这一条
+// 列表接口不带 detail（每条几百字），详情打开后补查这一条
 function fetchToolDetail(id) {
     if (typeof sbFetch !== 'function') return Promise.resolve(null);
     return sbFetch('tools?id=eq.' + encodeURIComponent(id) + '&select=detail,usage&limit=1', {
@@ -167,6 +169,7 @@ function fetchToolDetail(id) {
 
 function openModal(tool) {
     if (!tool || !modalBody) return;
+    currentToolId = tool.id;
     var iconHTML = renderIconHTML(tool);
     // 分享地址走独立页面路径 /t/{id}（Worker 已在服务端注入该工具的 meta），
     // 没有 toolShareUrl 时退回同形式，保证单独引用也不会坏。
@@ -262,14 +265,21 @@ function openModal(tool) {
         };
     }
 
-    // 列表接口不再返回 detail / usage，这里补查一条并就地替换左栏
+    // 列表接口不再返回 detail，这里补查一条并就地替换左栏
     if (needDetail) {
         fetchToolDetail(tool.id).then(function (d) {
-            if (!d) return;
+            if (!d) {
+                // 补查失败：正文还停在 comment 上，至少给一句可读的提示，
+                // 不能让用户以为「这个工具就这么点介绍」
+                var tip = modalBody.querySelector('.detail-load-tip');
+                if (tip) tip.textContent = '详细介绍加载失败，请刷新重试';
+                return;
+            }
             tool.detail = d.detail;
             tool.usage = d.usage;
-            // 弹窗可能已经关了 —— 只在还开着的时候替换
+            // 弹窗可能已经关了，或者用户已经点开了另一个工具 —— 两种都不要再写
             if (!overlay.classList.contains('active')) return;
+            if (String(currentToolId) !== String(tool.id)) return;
             var live = document.querySelector('.modal-detail .detail-main');
             if (live) live.innerHTML = detailBodyHTML(tool);
         });

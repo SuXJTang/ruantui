@@ -1145,6 +1145,31 @@ function _fSet(id, v) { var el = _fInput(id); if (el) el.value = v; }
 function _fText(id, v) { var el = _fInput(id); if (el) el.textContent = v; }
 function openForm(tool) {
     if (!formOverlay) return;
+    // 列表接口不带 detail：编辑前必须先补查原文，否则表单里是空的，
+    // 用户点保存就把数据库里那几百字介绍清了。
+    if (tool && tool.id && !('detail' in tool)) {
+        _fText('formTitle', '编辑工具');
+        var body = document.querySelector('#formOverlay .modal-body');
+        var loading = document.createElement('div');
+        loading.className = 'form-loading-mask';
+        loading.textContent = '正在加载完整内容…';
+        if (body) body.appendChild(loading);
+        formOverlay.setAttribute('aria-hidden', 'false');
+        formOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        fetchToolDetail(tool.id).then(function (d) {
+            if (d) {
+                tool.detail = d.detail;
+                tool.usage = d.usage;
+            }
+            if (loading.parentNode) loading.parentNode.removeChild(loading);
+            formOverlay.classList.remove('active');
+            formOverlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            openForm(tool);
+        });
+        return;
+    }
     _fText('formTitle', tool ? '编辑工具' : '添加工具');
     _fSet('formId', tool ? tool.id : '');
     _fSet('formName', tool ? tool.name : '');

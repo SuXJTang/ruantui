@@ -81,10 +81,11 @@ function supabaseFetch(method, path, body) {
     return sbFetch(path, opts);
 }
 
-// 列表页只需要这些字段。之前不带 select 等于拉整表，每条都带上几百字的
-// detail / usage —— 45 条就多传 40 多 KB，点开详情前一个字都用不到。
+// 列表页字段。detail 是大头（每条 2-5 百字，45 条约 17KB），
+// 只在详情弹窗和管理面板编辑时才补查；usage / icon / is_custom 必须留着 ——
+// 卡片要显示使用说明、管理面板要回填图标和自定义标记。
 var TOOL_LIST_FIELDS = 'id,name,category,comment,rating,downloads,views,iconUrl,color,' +
-                       'tags,url,download,download_tier,pinned,created_at';
+                       'tags,url,download,download_tier,pinned,created_at,usage,icon,is_custom';
 
 // 获取所有工具（置顶优先、按创建时间排序）
 function fetchTools() {

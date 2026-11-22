@@ -411,8 +411,16 @@ function renderTools(filter, skipSkFade) {
             'title="' + (favOn ? '取消收藏' : '收藏') + '">' +
             '<i class="' + (favOn ? 'fas' : 'far') + ' fa-heart"></i></button>';
 
+        // 对比按钮：和收藏并列在右上角，状态由 compare.js 同步
+        var cmpOn = (window.Compare && Compare.list) ? Compare.list().indexOf(String(t.id)) !== -1 : false;
+        var cmpBtnHTML = '<button class="card-cmp-btn' + (cmpOn ? ' active' : '') + '" type="button" ' +
+            'data-cmp-id="' + escHTML(t.id) + '" aria-pressed="' + (cmpOn ? 'true' : 'false') + '" ' +
+            'aria-label="' + (cmpOn ? '移出对比' : '加入对比') + '" ' +
+            'title="' + (cmpOn ? '移出对比' : '加入对比') + '">' +
+            '<i class="fas fa-code-compare"></i></button>';
+
         card.innerHTML =
-            favBtnHTML +
+            favBtnHTML + cmpBtnHTML +
             '<div class="tool-icon" style="background:' + safeColor(DARK_ICON_BG[t.id] || t.color) + '">' + iconHTML + '</div>' +
             '<div class="tool-body">' +
             '<h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + nameHTML + '</h3>' +

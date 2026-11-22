@@ -591,7 +591,7 @@ button { cursor: pointer; border: none; outline: none; font-family: inherit; }
 }
 .tool-card:active { transform: translateY(-1px) scale(.995); }
 /* 卡片内所有直接子元素要压在光斑之上 —— 但收藏按钮是绝对定位，必须排除 */
-.tool-card > *:not(.card-fav-btn) { position: relative; z-index: 1; }
+.tool-card > *:not(.card-fav-btn):not(.card-cmp-btn) { position: relative; z-index: 1; }
 
 .tool-icon {
     width: 60px; height: 60px; border-radius: 18px;
@@ -3491,3 +3491,219 @@ html.motion-on .tool-card.in-view {
 /* 深色底上 6% 黑的阴影等于不存在，单独给一档（仍然克制） */
 [data-mode="dark"] .tool-card { box-shadow: 0 1px 3px rgba(0,0,0,.45); }
 [data-mode="dark"] .tool-card:hover { box-shadow: 0 10px 24px -16px rgba(0,0,0,.7), 0 0 0 1px rgba(var(--primary-rgb),.20); }
+
+/* ================================================================
+   v9 · 工具对比
+   ----------------------------------------------------------------
+   卡片右上角加「对比」按钮 → 底部浮出对比栏 → 全屏并排表格。
+   沿用收敛后的 token：一个强调色、3 档字号、轻阴影。
+   ================================================================ */
+
+/* ---------- 卡片上的对比按钮（和收藏并列） ---------- */
+.card-cmp-btn {
+    position: absolute; top: 10px; right: 48px; z-index: 2;
+    width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--s2); color: var(--ink3); font-size: 12px; cursor: pointer;
+    opacity: 0; transform: scale(.88);
+    transition: opacity .2s var(--ease-out-soft), transform .3s var(--ease-spring),
+                background .2s, color .2s;
+}
+/* 热区补到 40px（视觉仍是 32px 的圆） */
+.card-cmp-btn::after {
+    content: ""; position: absolute; left: -4px; right: -4px; top: -4px; bottom: -4px;
+    border-radius: 50%;
+}
+.tool-card:hover .card-cmp-btn,
+.card-cmp-btn:focus-visible,
+.card-cmp-btn.active { opacity: 1; transform: scale(1); }
+.card-cmp-btn:hover { background: var(--s1); color: var(--primary); }
+.card-cmp-btn.active { background: var(--primary); color: #fff; }
+.card-cmp-btn.active:hover { background: var(--primary); color: #fff; }
+
+/* ---------- 底部对比栏 ---------- */
+.cmp-bar {
+    position: fixed; left: 50%; z-index: 60;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(140%);
+    display: flex; align-items: center; gap: 12px;
+    max-width: min(720px, calc(100vw - 24px));
+    padding: 9px 10px 9px 12px;
+    background: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r-lg);
+    box-shadow: 0 10px 30px -16px rgba(15, 23, 42, .32);
+    transition: transform .42s var(--ease-spring);
+}
+.cmp-bar.show { transform: translateX(-50%) translateY(0); }
+.cmp-thumbs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+               flex: 1 1 auto; min-width: 0; }   /* 没有 min-width:0 时 flex 子项不肯收缩，缩略区被按钮挤扁而不能滚 */
+.cmp-thumbs::-webkit-scrollbar { display: none; }
+.cmp-thumb {
+    position: relative; flex: none; display: flex; align-items: center; gap: 7px;
+    padding: 5px 9px 5px 5px; border: 1px solid var(--line); border-radius: var(--r-full);
+    background: var(--s1); color: var(--ink1); font-size: 11.5px; cursor: pointer;
+    transition: border-color .2s, background .2s;
+}
+.cmp-thumb:hover { border-color: var(--primary); background: var(--s2); }
+.cmp-thumb-icon {
+    width: 22px; height: 22px; border-radius: 7px; flex: none;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.cmp-thumb-icon img, .cmp-thumb-icon svg { width: 18px; height: 18px; object-fit: contain; }
+.cmp-thumb-name { max-width: 84px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-thumb-x { font-size: 9px; color: var(--ink3); opacity: .6; }
+.cmp-thumb:hover .cmp-thumb-x { opacity: 1; color: var(--primary); }
+.cmp-bar-actions { display: flex; gap: 7px; margin-left: auto; flex: none; }
+.cmp-clear {
+    padding: 7px 12px; border: 1px solid var(--line); border-radius: var(--r-full);
+    background: transparent; color: var(--ink2); font-size: 11.5px; font-weight: 600; cursor: pointer;
+    transition: border-color .2s, color .2s;
+}
+.cmp-clear:hover { border-color: var(--line-2); color: var(--ink1); }
+.cmp-go {
+    padding: 7px 15px; border: none; border-radius: var(--r-full);
+    background: var(--primary); color: #fff; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    transition: transform .28s var(--ease-spring), opacity .2s;
+}
+.cmp-go:hover:not(:disabled) { transform: translateY(-1px); }
+.cmp-go:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ---------- 对比面板 ---------- */
+.cmp-overlay {
+    position: fixed; inset: 0; z-index: 1100;   /* 必须高于 .overlay(1000)，否则被详情弹窗盖住 */
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; background: rgba(15, 23, 42, .44);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    opacity: 0; visibility: hidden; transition: opacity .22s var(--ease-out-soft), visibility .22s;
+}
+.cmp-overlay.show { opacity: 1; visibility: visible; }
+.cmp-sheet {
+    width: 100%; max-width: 980px; max-height: 86vh;
+    display: flex; flex-direction: column;
+    background: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r-xl);
+    box-shadow: 0 32px 64px -28px rgba(0, 0, 0, .45);
+    transform: translateY(14px) scale(.985); transition: transform .38s var(--ease-spring);
+}
+.cmp-overlay.show .cmp-sheet { transform: none; }
+.cmp-sheet-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; border-bottom: 1px solid var(--line);
+}
+.cmp-sheet-head h2 { font-size: 16px; font-weight: 600; color: var(--ink1); }
+.cmp-sheet-tools { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.cmp-share {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border: 1px solid var(--line); border-radius: var(--r-full);
+    background: transparent; color: var(--ink2); font-size: 11.5px; font-weight: 600; cursor: pointer;
+    transition: border-color .2s, color .2s;
+}
+.cmp-share:hover { border-color: var(--primary); color: var(--primary); }
+.cmp-close {
+    width: 34px; height: 34px; border: none; border-radius: 50%;
+    background: var(--s2); color: var(--ink2); cursor: pointer; font-size: 13px;
+    transition: background .2s, color .2s, transform .3s var(--ease-spring-strong);
+}
+.cmp-close:hover { background: var(--s1); color: var(--ink1); transform: rotate(90deg); }
+
+.cmp-scroll { overflow: auto; padding: 0 4px 8px; }
+.cmp-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.cmp-scroll::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
+
+.cmp-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    table-layout: fixed;   /* 三列等宽，避免内容长短把列拉歪 */
+}
+.cmp-table th[scope="row"] {
+    width: 88px; min-width: 88px; padding: 12px 8px 12px 16px;
+    text-align: left; vertical-align: top;
+    font-size: 11.5px; font-weight: 600; color: var(--ink3); white-space: nowrap;
+}
+.cmp-table td {
+    padding: 12px 14px; vertical-align: top;
+    font-size: 13px; color: var(--ink1); line-height: 1.55;
+    border-left: 1px solid var(--line);
+}
+.cmp-table tr:first-child td { padding-top: 16px; }
+.cmp-row-comment td, .cmp-row-usage td { color: var(--ink2); }
+.cmp-row-usage td { font-size: 11.5px; }
+.cmp-head { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.cmp-icon {
+    width: 44px; height: 44px; border-radius: 13px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+}
+.cmp-icon img, .cmp-icon svg { width: 32px; height: 32px; object-fit: contain; }
+.cmp-head strong { font-size: 13px; font-weight: 600; color: var(--ink1); }
+.cmp-pin {
+    font-style: normal; font-size: 9.5px; font-weight: 600;
+    padding: 1px 6px; border-radius: 99px; background: var(--primary); color: #fff;
+}
+.cmp-rating { color: var(--ink1); font-weight: 600; }
+.cmp-rating i { color: #e0a500; font-size: 10px; margin-right: 2px; }
+.cmp-num { font-variant-numeric: tabular-nums; }
+.cmp-num em { font-style: normal; font-size: 10.5px; color: var(--ink3); margin-left: 1px; }
+.cmp-tier { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 600; }
+.cmp-tier.free { background: rgba(16, 185, 129, .12); color: #0d9668; }
+.cmp-tier.user { background: var(--s2); color: var(--ink2); }
+.cmp-tier.vip { background: rgba(184, 134, 11, .14); color: #b8860b; }
+.cmp-tag {
+    display: inline-block; padding: 1px 7px; margin: 0 4px 4px 0;
+    border: 1px solid var(--line); border-radius: 99px;
+    font-size: 10.5px; color: var(--ink2);
+}
+.cmp-muted { color: var(--ink3); }
+.cmp-visit {
+    display: inline-block; padding: 7px 16px; border-radius: var(--r-full);
+    background: var(--primary); color: #fff; font-size: 11.5px; font-weight: 600;
+    text-decoration: none; white-space: nowrap;
+    transition: transform .28s var(--ease-spring);
+}
+.cmp-visit:hover { transform: translateY(-1px); }
+
+/* 提示 */
+.cmp-toast {
+    position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(8px); z-index: 95;
+    padding: 9px 16px; border-radius: var(--r-full);
+    background: var(--ink1); color: var(--s0); font-size: 12px;
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .3s var(--ease-spring);
+}
+.cmp-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 移动端：面板铺满，表格横向滚动、首列吸左 ---------- */
+@media (max-width: 720px) {
+    .cmp-overlay { padding: 0; align-items: flex-end; }
+    .cmp-sheet {
+        max-width: none; max-height: 90vh; border-radius: var(--r-xl) var(--r-xl) 0 0;
+        transform: translateY(100%);
+    }
+    .cmp-overlay.show .cmp-sheet { transform: none; }
+    .cmp-sheet-head { padding: 12px 13px; }
+    .cmp-sheet-head h2 { font-size: 13px; }
+    .cmp-share { padding: 6px 10px; }
+    /* fixed 会把 min-width 废掉，列被压成 100px 左右；改回 auto + 定宽，让它横向滚动 */
+    .cmp-table { table-layout: auto; width: max-content; min-width: 100%; }
+    .cmp-table th[scope="row"] {
+        position: sticky; left: 0; z-index: 2;
+        width: 72px; min-width: 72px; padding: 10px 6px 10px 12px;
+        background: var(--s3); font-size: 11.5px;
+    }
+    .cmp-table td { width: 132px; min-width: 132px; padding: 10px 12px; }
+    .cmp-bar { bottom: calc(10px + env(safe-area-inset-bottom)); gap: 8px; padding: 8px 9px; }
+    .cmp-thumb-name { max-width: 56px; }
+    .cmp-go { padding: 7px 12px; }
+    .cmp-clear { padding: 7px 10px; }
+    .card-cmp-btn { right: 46px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cmp-bar, .cmp-sheet, .cmp-go, .cmp-visit, .cmp-close { transition: none; }
+}
+/* 窄屏对比栏：缩略图只保留图标 + 短名，避免三个挤成一团 */
+@media (max-width: 480px) {
+    .cmp-bar { gap: 6px; padding: 7px 8px; }
+    .cmp-thumb { padding: 4px 8px 4px 4px; gap: 5px; }
+    .cmp-thumb-icon { width: 20px; height: 20px; border-radius: 6px; }
+    .cmp-thumb-icon img, .cmp-thumb-icon svg { width: 16px; height: 16px; }
+    .cmp-thumb-name { max-width: 40px; }
+    .cmp-clear { padding: 6px 9px; font-size: 11px; }
+    .cmp-go { padding: 6px 11px; font-size: 11px; }
+}

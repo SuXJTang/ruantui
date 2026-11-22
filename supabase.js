@@ -81,9 +81,14 @@ function supabaseFetch(method, path, body) {
     return sbFetch(path, opts);
 }
 
+// 列表页只需要这些字段。之前不带 select 等于拉整表，每条都带上几百字的
+// detail / usage —— 45 条就多传 40 多 KB，点开详情前一个字都用不到。
+var TOOL_LIST_FIELDS = 'id,name,category,comment,rating,downloads,views,iconUrl,color,' +
+                       'tags,url,download,download_tier,pinned,created_at';
+
 // 获取所有工具（置顶优先、按创建时间排序）
 function fetchTools() {
-    return supabaseFetch('GET', 'tools?order=pinned.desc,created_at.asc')
+    return supabaseFetch('GET', 'tools?select=' + TOOL_LIST_FIELDS + '&order=pinned.desc,created_at.asc')
         .then(function(res) {
             if (!res.ok) throw new Error('Failed to fetch: ' + res.status);
             return res.json();

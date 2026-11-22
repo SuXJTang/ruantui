@@ -1312,7 +1312,19 @@ if (toolForm) {
     var donateBtn = document.getElementById('donateBtn');
     var donateOverlay = document.getElementById('donateOverlay');
     if (donateBtn && donateOverlay) {
-        donateBtn.onclick = function() { donateOverlay.setAttribute('aria-hidden', 'false'); donateOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; };
+        // 收款码两张图加起来近 300KB，写在 HTML 里就算弹窗是隐藏的也会首屏下载。
+        // 改成 data-src 占位，第一次打开赞赏弹窗时才真正请求。
+        function loadQRs() {
+            donateOverlay.querySelectorAll('.donate-qr[data-src]').forEach(function (img) {
+                if (!img.getAttribute('src')) img.src = img.getAttribute('data-src');
+            });
+        }
+        donateBtn.onclick = function() {
+            loadQRs();
+            donateOverlay.setAttribute('aria-hidden', 'false');
+            donateOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
         var c = donateOverlay.querySelector('.modal-close');
         if (c) c.onclick = function() { donateOverlay.classList.remove('active'); donateOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
         donateOverlay.onclick = function(e) { if (!e.target.closest('.modal')) { donateOverlay.classList.remove('active'); donateOverlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; } };

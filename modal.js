@@ -128,17 +128,11 @@ function detailInfoHTML(tool) {
     return '<div class="info-card"><h4>工具信息</h4><dl class="info-list">' + body + '</dl></div>';
 }
 
-function openModal(tool) {
-    if (!tool || !modalBody) return;
-    var iconHTML = renderIconHTML(tool);
+// 左栏正文：桌面完整显示，窄屏才折叠（.detail-text.collapsed 只在媒体查询里生效）
+function detailBodyHTML(tool) {
     var tagsArr = Array.isArray(tool.tags) ? tool.tags : [];
-    var tagsHTML = tagsArr.map(function(t) { return '<span class="modal-tag">' + escHTML(t) + '</span>'; }).join('');
-    // 分享地址走独立页面路径 /t/{id}（Worker 已在服务端注入该工具的 meta），
-    // 没有 toolShareUrl 时退回同形式，保证单独引用也不会坏。
-    var shareUrl = window.toolShareUrl ? window.toolShareUrl(tool.id) : (window.location.origin + '/t/' + tool.id);
-    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(shareUrl);
+    var tagsHTML = tagsArr.map(function (t) { return '<span class="modal-tag">' + escHTML(t) + '</span>'; }).join('');
 
-    // 正文：桌面完整显示，窄屏才折叠（.detail-text.collapsed 只在媒体查询里生效）
     function blockHTML(title, text, prefix) {
         if (!text) return '';
         var body = (prefix || '') + escHTML(text);
@@ -150,7 +144,38 @@ function openModal(tool) {
             '</section>';
     }
 
+    return blockHTML('详细介绍', tool.detail || tool.comment, '') +
+           blockHTML('使用说明', tool.usage, '📖 ') +
+           (tagsHTML ? '<section class="detail-block"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></section>' : '');
+}
+
+// 列表接口不再带 detail / usage（省 40 多 KB），详情打开时才补查这一条
+function fetchToolDetail(id) {
+    if (typeof sbFetch !== 'function') return Promise.resolve(null);
+    return sbFetch('tools?id=eq.' + encodeURIComponent(id) + '&select=detail,usage&limit=1', {
+        headers: {
+            'apikey': (typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : ''),
+            'Authorization': 'Bearer ' + (typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '')
+        }
+    }).then(function (r) {
+        if (!r.ok) return null;
+        return r.json();
+    }).then(function (rows) {
+        return (Array.isArray(rows) && rows[0]) || null;
+    }).catch(function () { return null; });
+}
+
+function openModal(tool) {
+    if (!tool || !modalBody) return;
+    var iconHTML = renderIconHTML(tool);
+    // 分享地址走独立页面路径 /t/{id}（Worker 已在服务端注入该工具的 meta），
+    // 没有 toolShareUrl 时退回同形式，保证单独引用也不会坏。
+    var shareUrl = window.toolShareUrl ? window.toolShareUrl(tool.id) : (window.location.origin + '/t/' + tool.id);
+    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(shareUrl);
+
     var iconBg = (typeof DARK_ICON_BG !== 'undefined' && DARK_ICON_BG[tool.id]) || tool.color;
+    // 列表接口不带 detail/usage，缺字段时打开弹窗后再补查这一条
+    var needDetail = !('detail' in tool) || !('usage' in tool);
 
     modalBody.innerHTML =
         // ---- 头部：大图标 + 名称 + 元信息 ----
@@ -168,11 +193,7 @@ function openModal(tool) {
         '</div>' +
         // ---- 双栏：左正文，右操作 ----
         '<div class="detail-grid">' +
-            '<div class="detail-main">' +
-                blockHTML('详细介绍', tool.detail || tool.comment, '') +
-                blockHTML('使用说明', tool.usage, '📖 ') +
-                (tagsHTML ? '<section class="detail-block"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></section>' : '') +
-            '</div>' +
+            '<div class="detail-main">' + detailBodyHTML(tool) + '</div>' +
             '<aside class="detail-side">' +
                 '<div class="action-card" id="_detailActions">' + detailActionsHTML(tool) + '</div>' +
                 detailInfoHTML(tool) +
@@ -239,6 +260,19 @@ function openModal(tool) {
             var favCountEl = document.querySelector('.filter-fav .filter-count');
             if (favCountEl && typeof getFavorites === 'function') favCountEl.textContent = getFavorites().length;
         };
+    }
+
+    // 列表接口不再返回 detail / usage，这里补查一条并就地替换左栏
+    if (needDetail) {
+        fetchToolDetail(tool.id).then(function (d) {
+            if (!d) return;
+            tool.detail = d.detail;
+            tool.usage = d.usage;
+            // 弹窗可能已经关了 —— 只在还开着的时候替换
+            if (!overlay.classList.contains('active')) return;
+            var live = document.querySelector('.modal-detail .detail-main');
+            if (live) live.innerHTML = detailBodyHTML(tool);
+        });
     }
 
     // VIP 专属下载区：只有数据库里有专属链接、且当前用户有权限时才显示。

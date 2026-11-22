@@ -3487,3 +3487,7 @@ html.motion-on .tool-card.in-view {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
 }
+
+/* 深色底上 6% 黑的阴影等于不存在，单独给一档（仍然克制） */
+[data-mode="dark"] .tool-card { box-shadow: 0 1px 3px rgba(0,0,0,.45); }
+[data-mode="dark"] .tool-card:hover { box-shadow: 0 10px 24px -16px rgba(0,0,0,.7), 0 0 0 1px rgba(var(--primary-rgb),.20); }

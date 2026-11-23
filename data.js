@@ -68,6 +68,13 @@ function loadTools(attempt) {
             var cached = localStorage.getItem(App.constants.CACHE_KEY);
             if (cached) {
                 var parsed = JSON.parse(cached);
+                // 缓存可能是旧版本写坏的（比如缺 name/category），先用前先过滤一遍，
+                // 否则渲染层会产出「没有名字的空卡片」
+                if (Array.isArray(parsed)) {
+                    parsed = parsed.filter(function(t) {
+                        return t && t.name && String(t.name).trim() && t.category;
+                    });
+                }
                 if (Array.isArray(parsed) && parsed.length) {
                     App.state.tools = parsed;
                     App.state.usingCache = true;

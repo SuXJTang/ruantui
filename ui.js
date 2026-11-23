@@ -261,7 +261,10 @@ function renderTools(filter, skipSkFade) {
     var toolCount = filtered.length;
     var shouldInsertAds = AD_CONFIG.enabled && toolCount >= AD_CONFIG.minTools;
 
+    var skipped = 0;
     filtered.forEach(function(t, idx) {
+      try {
+        if (!t || !t.name || !String(t.name).trim()) { skipped++; return; }
         if (shouldInsertAds && idx > 0 && idx % AD_CONFIG.interval === 0) {
             var adSlot = document.createElement('div');
             adSlot.className = 'ad-container ad-inline';
@@ -447,7 +450,12 @@ function renderTools(filter, skipSkFade) {
             '</div>';
 
         grid.appendChild(card);
+        } catch (err) {
+            skipped++;
+            console.warn('[render] 卡片渲染失败已跳过：', (t && t.name) || t, err);
+        }
     });
+    if (skipped) console.warn('[render] 本轮共跳过 ' + skipped + ' 条异常数据');
 
     var tc = document.getElementById('totalCount'); if (tc) tc.textContent = App.state.tools.length;
     var cc = document.getElementById('categoryCount'); if (cc) cc.textContent = new Set(App.state.tools.map(function(t) { return t.category; })).size;

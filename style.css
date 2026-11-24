@@ -3707,3 +3707,189 @@ html.motion-on .tool-card.in-view {
     .cmp-clear { padding: 6px 9px; font-size: 11px; }
     .cmp-go { padding: 6px 11px; font-size: 11px; }
 }
+
+/* ============================================================
+   UI v6「清爽版式」— 卡片头部重构（v6.0 第一刀）
+   ------------------------------------------------------------
+   卡片从「图标 / 标题 / 元信息 / 正文 纵向堆叠」改为：
+     头部[图标 + 标题&分类 + 数据] → 正文(简介/标签) → 按钮
+   复用既有 .tool-icon / .tool-cat / .tool-metrics / .tool-body / .tool-tags；
+   仅新增 .tool-head / .tool-headinfo，不改信息与交互。
+   ============================================================ */
+.tool-card { gap: 12px; }
+.tool-head {
+    display: flex; align-items: center; gap: 12px;
+    min-width: 0; position: relative; z-index: 1;
+}
+.tool-head .tool-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    margin-bottom: 0;
+}
+.tool-head .tool-icon img { width: 30px; height: 30px; }
+.tool-head .tool-icon i { font-size: 22px; }
+.tool-head .tool-icon-initial { font-size: 22px; }
+.tool-headinfo {
+    min-width: 0; flex: 1 1 auto;
+    display: flex; flex-direction: column; gap: 3px;
+}
+.tool-headinfo h3 {
+    font-size: 15.5px; font-weight: 800; letter-spacing: -.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--ink1); margin: 0;
+    display: flex; align-items: center; gap: 6px;
+}
+.tool-head .tool-cat { align-self: flex-start; }
+.tool-head .tool-metrics { margin-left: 0; gap: 8px; }
+.tool-body { display: flex; flex-direction: column; gap: 8px; }
+.tool-body p { margin-bottom: 0; }
+.tool-extra { margin-top: 0; }
+@media (max-width: 420px) {
+    .tool-head { gap: 10px; }
+    .tool-head .tool-icon { width: 46px; height: 46px; border-radius: 12px; }
+    .tool-headinfo h3 { font-size: 15px; }
+}
+
+/* 窄屏修正：旧 ≤560 断点用 icon/body 双列 grid（grid-template-areas:"icon body"）。
+   v6 把标题收进 .tool-head 后，grid 会把 .tool-head 挤进 56px 的 icon 列，
+   标题/分类被压成 0 宽并与正文重叠。这里把这些屏改回纵向 flex，
+   头部行（图标+标题+数据）独占整行，正文/按钮依次向下。 */
+@media (max-width: 560px) {
+    .tool-card { display: flex; flex-direction: column; }
+    .tool-head .tool-icon { align-self: center; }
+}
+
+/* ============================================================
+   UI v6.1「清爽版式」— 顶栏 / Hero / 筛选行 / 详情层
+   ------------------------------------------------------------
+   延续 v6.0 卡片头部重构的收敛方向：去掉彩色文字、光晕、旋转光环，
+   只留一个品牌色 + 中性阴影 + 统一圆角。
+   全部为覆盖式新增，旧规则与类名一律保留（AGENTS.md 铁律 2.2）。
+   注意：--accent 已 === --primary，旧的「渐变」其实都是单色，
+   所以这里改的是可感知的那几处（文字色、光晕、圆角、热区）。
+   ============================================================ */
+
+/* ---------- 1. 顶栏 ---------- */
+/* 品牌字原来是品牌色渐变文字（亮橙），是全站最抢眼的一处彩色文字；
+   改为实色墨色，靠字重和字号建立层级。 */
+.brand-text {
+    background: none;
+    -webkit-background-clip: border-box; background-clip: border-box;
+    -webkit-text-fill-color: var(--ink1); color: var(--ink1);
+    animation: none;
+    font-size: 16.5px; letter-spacing: -.4px;
+}
+.brand-icon { filter: none; }
+.brand-icon:hover { transform: scale(1.05); }
+.topbar { box-shadow: none; }
+/* 只在桌面收窄顶栏；≤720px 的 56px / 8px 间距是移动端专门调过的，别覆盖 */
+@media (min-width: 721px) {
+    .topbar-inner { height: 58px; gap: 12px; }
+}
+
+/* 搜索框与顶栏按钮统一成「圆角矩形」，不再是一堆胶囊混排 */
+.topbar-search input { border-radius: var(--r-sm); height: 38px; }
+.topbar-search input:focus { box-shadow: 0 0 0 3px rgba(var(--primary-rgb),.12); }
+.topbar-search::after { border-radius: 6px; }
+.header-btn { width: 36px; height: 36px; border-radius: 10px; font-size: 15px; }
+.header-btn:hover { background: var(--s2); }
+.header-btn:active { transform: scale(.96); }
+.account-btn { border-radius: 10px; }
+.theme-palette { border-radius: 10px; padding: 4px 8px; }
+
+/* ---------- 2. Hero ---------- */
+.profile { padding: 32px 0 22px; }
+/* 两层径向光晕在亮色下几乎没有信息量，只剩「发光」；去掉 */
+.profile-glow { display: none; }
+.profile-avatar {
+    width: 72px; height: 72px;
+    background: var(--s2);
+    box-shadow: 0 0 0 1px var(--line), 0 6px 16px -10px rgba(15,23,42,.30);
+}
+/* 旋转的彩色光环 → 静止的一圈浅底 */
+.profile-avatar::after {
+    inset: -3px; opacity: 1; filter: none; animation: none;
+    background: var(--s2); z-index: -1;
+}
+.profile-eyebrow {
+    text-transform: none; letter-spacing: .2px;
+    font-size: 12px; font-weight: 600;
+    color: var(--ink2); background: var(--s2);
+    border: 1px solid var(--line);
+}
+/* 标题原来是「墨色 → 品牌橙」渐变文字 + 橙光投影，是 AI 感的另一来源 */
+.profile-info h1 {
+    background: none;
+    -webkit-background-clip: border-box; background-clip: border-box;
+    -webkit-text-fill-color: var(--ink1); color: var(--ink1);
+    filter: none;
+    font-size: 30px; letter-spacing: -.9px;
+}
+.profile-bio { font-size: 13.5px; color: var(--ink2); }
+.stat { padding: 6px 13px; box-shadow: none; background: var(--s1); }
+.stat strong { font-size: 15px; }
+.mgmt-btn { border-radius: 10px; border-color: var(--line); }
+
+/* ---------- 3. 筛选行 / 按钮体系 ---------- */
+.filter-tag { border-radius: 10px; padding: 8px 14px; }
+.filter-tag.active { box-shadow: 0 6px 16px -10px rgba(var(--primary-rgb),.55); }
+.sort-select { border-radius: 10px; padding: 8px 30px 8px 13px; }
+/* 榜单按钮从 index.html 的内联样式搬到这里，与筛选/排序同一套规格 */
+.board-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--s1);
+    color: var(--ink2); font-size: 13px; font-weight: 600;
+    white-space: nowrap; cursor: pointer; flex: 0 0 auto;
+    transition: all .22s var(--ease);
+}
+.board-btn:hover { color: var(--ink1); border-color: var(--line-2); }
+.board-btn:active { transform: scale(.97); }
+.board-btn i { font-size: 12px; opacity: .85; }
+.result-count::before { content: none; }
+/* 卡片主按钮：去掉斜向流光伪元素，改实色 + 一道贴地阴影 */
+.tool-visit-btn { background: var(--primary); box-shadow: 0 6px 14px -10px rgba(var(--primary-rgb),.75); }
+.tool-visit-btn::after { content: none; }
+.tool-visit-btn:hover { filter: brightness(1.05); box-shadow: 0 8px 18px -10px rgba(var(--primary-rgb),.8); }
+.modal-link { border-radius: var(--r-sm); }
+
+/* ---------- 4. 详情层：去掉底色渐变，交给留白与描边 ---------- */
+.detail-head { background: var(--s3); }
+.detail-side { background: none; }
+.detail-icon { border-radius: 18px; box-shadow: 0 2px 8px -4px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.28); }
+.action-card { border-color: var(--line); }
+
+/* ---------- 窄屏收口：触控热区不小于 40px ---------- */
+@media (max-width: 720px) {
+    .header-btn { width: 40px; height: 40px; border-radius: 11px; }
+    .topbar-search input { height: 38px; }
+    .filter-tag { padding: 10px 14px; }
+    .board-btn, .sort-select { min-height: 40px; }
+    .profile { padding: 24px 0 18px; }
+    .profile-avatar { width: 64px; height: 64px; }
+    .profile-info h1 { font-size: 26px; }
+}
+
+/* ---------- 5. 卡片头部：数据行下移，标题避让右上角按钮 ---------- */
+/* v6 把「下载/浏览」数据放在头部右侧后，会和绝对定位的收藏/对比按钮重叠，
+   而窄卡片里再挤一条数据列会把标题压成 1 个字。
+   改为：标题独占一行（右侧预留按钮宽度），分类+推荐+数据合并成第二行。 */
+.tool-head { padding-right: 0; align-items: center; }
+.tool-headinfo h3 { padding-right: 62px; }
+.tool-headmeta {
+    display: flex; align-items: center; gap: 6px;
+    min-width: 0; flex-wrap: nowrap; overflow: hidden;
+}
+.tool-headmeta .pinned-badge,
+.tool-headmeta .tool-cat { align-self: center; }
+.tool-headmeta .pinned-badge { flex: 0 0 auto; padding: 2px 6px; font-size: 11px; }
+/* 分类可能很长：允许收缩并省略号，保证右侧下载量不被挤掉 */
+.tool-headmeta .tool-cat { flex: 0 1 auto; min-width: 0; padding: 2px 8px; font-size: 11px; }
+.tool-headmeta .tool-metrics { margin-left: 0; gap: 6px; flex: 0 0 auto; }
+/* 用法提示前的 📖 emoji 换成文字标签：彩色 emoji 与全站线性图标不是一套语言 */
+.tool-extra::before { content: '用法 · '; }
+/* 分类分布条：8px 圆头胶囊过重，收到 6px */
+.cat-bar { height: 6px; gap: 4px; margin: 0 0 18px; }
+.cat-seg { height: 6px; }
+@media (max-width: 560px) {
+    .tool-headinfo h3 { padding-right: 58px; }
+}

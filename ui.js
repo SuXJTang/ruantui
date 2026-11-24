@@ -304,11 +304,11 @@ function renderTools(filter, skipSkFade) {
         // 主按钮文案按「链接的来源字段」决定，而不是按优先级顺序猜：
         //  - 只有 download（没有官网）→ ⬇️ 下载
         //  - 有官网 url → 🌐 去官网
-        var primaryHref = toolLink, primaryLabel = '🚀 去使用';
+        var primaryHref = toolLink, primaryLabel = '<i class="fas fa-arrow-up-right-from-square"></i>去使用';
         if (t.download && primaryHref === t.download) {
-            primaryLabel = '⬇️ 下载';
+            primaryLabel = '<i class="fas fa-download"></i>下载';
         } else if (t.url && primaryHref === t.url) {
-            primaryLabel = '🌐 去官网';
+            primaryLabel = '<i class="fas fa-arrow-up-right-from-square"></i>去官网';
         }
 
         // 次按钮：再找一个与主按钮不同的链接
@@ -316,10 +316,10 @@ function renderTools(filter, skipSkFade) {
         for (var li = 0; li < allLinks.length; li++) {
             if (allLinks[li] !== primaryHref) { altLink = allLinks[li]; break; }
         }
-        var altLabel = '↗ 直达';
+        var altLabel = '<i class="fas fa-arrow-right"></i>直达';
         if (altLink) {
-            if (t.download && altLink === t.download) altLabel = '⬇️ 下载';
-            else if (t.url && altLink === t.url) altLabel = '🌐 官网';
+            if (t.download && altLink === t.download) altLabel = '<i class="fas fa-download"></i>下载';
+            else if (t.url && altLink === t.url) altLabel = '<i class="fas fa-house"></i>官网';
         }
 
         // ---------- 下载权限：free / user / vip ----------
@@ -340,7 +340,7 @@ function renderTools(filter, skipSkFade) {
         if (!canDownload) {
             // 主按钮是下载链接 → 换成官网；没有官网就换成提示按钮
             if (primaryHref && t.download && primaryHref === t.download) {
-                if (t.url) { primaryHref = t.url; primaryLabel = '🌐 去官网'; }
+                if (t.url) { primaryHref = t.url; primaryLabel = '<i class="fas fa-arrow-up-right-from-square"></i>去官网'; }
                 else { primaryHref = null; primaryLabel = ''; }
             }
             // 次按钮是下载链接 → 丢掉它
@@ -350,7 +350,7 @@ function renderTools(filter, skipSkFade) {
         // ---------- VIP/登录专属工具：没有公开下载地址时的按钮 ----------
         // 受限工具的下载地址存在 tool_downloads 表（受 RLS 保护），
         // tools.download 是空的 —— 所以上面找不到「下载」链接，
-        // 会降级成「📋 查看详情」，对已有权限的用户体验很差。
+        // 会降级成「<i class=\"fas fa-circle-info\"></i>查看详情」，对已有权限的用户体验很差。
         //
         // 这里单独处理：有权限时显示「下载」按钮，点击直接打开详情弹窗
         // （真实链接只在那里面、由数据库函数 get_download_url() 返回）。
@@ -362,14 +362,14 @@ function renderTools(filter, skipSkFade) {
         var actionsHTML;
         if (hasDownloadRight && !primaryHref) {
             // 有权限、但工具没有官网也没有公开下载地址
-            var dlText = tier === 'vip' ? '👑 VIP 下载' : '⬇️ 下载';
+            var dlText = tier === 'vip' ? '<i class="fas fa-crown"></i>VIP 下载' : '<i class="fas fa-download"></i>下载';
             actionsHTML = '<button class="tool-visit-btn" type="button" ' +
                 'data-dl-tool="' + escHTML(t.id) + '" ' +
                 'data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' +
                 dlText + '</button>';
         } else if (!canDownload && !primaryHref && !altLink) {
             // 完全没权限也没官网：显示一个引导按钮
-            var lockText = lockedReason === 'vip' ? '👑 开通 VIP 下载' : '🔒 登录后下载';
+            var lockText = lockedReason === 'vip' ? '<i class="fas fa-crown"></i>开通 VIP 下载' : '<i class="fas fa-lock"></i>登录后下载';
             actionsHTML = '<button class="tool-visit-btn tool-visit-locked" type="button" ' +
                 'data-locked-tool="' + escHTML(t.id) + '" data-locked-reason="' + escHTML(lockedReason) + '">' +
                 lockText + '</button>';
@@ -381,12 +381,12 @@ function renderTools(filter, skipSkFade) {
         } else if (primaryHref) {
             actionsHTML = '<a class="tool-visit-btn" href="' + escHTML(primaryHref) + '" target="_blank" rel="noopener" data-tool-id="' + escHTML(t.id) + '" data-tool-name="' + escHTML(t.name) + '">' + primaryLabel + '</a>';
         } else {
-            actionsHTML = '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;">📋 查看详情</div>';
+            actionsHTML = '<div class="tool-visit-btn" style="background:rgba(128,128,128,0.2);color:var(--text-light);cursor:default;pointer-events:none;"><i class=\"fas fa-circle-info\"></i>查看详情</div>';
         }
 
         // 有官网但下载被锁：在官网按钮旁边补一个提示
         if (!canDownload && primaryHref) {
-            var tipText = lockedReason === 'vip' ? '👑 VIP 专属下载' : '🔒 登录后可下载';
+            var tipText = lockedReason === 'vip' ? '<i class="fas fa-crown"></i>VIP 专属下载' : '<i class="fas fa-lock"></i>登录后可下载';
             actionsHTML = '<div class="tool-actions">' + actionsHTML +
                 '<button class="tool-visit-btn tool-visit-locked" type="button" ' +
                 'data-locked-tool="' + escHTML(t.id) + '" data-locked-reason="' + escHTML(lockedReason) + '">' +
@@ -413,30 +413,28 @@ function renderTools(filter, skipSkFade) {
 
         card.innerHTML =
             favBtnHTML + cmpBtnHTML +
-            '<div class="tool-icon" style="background:' + safeColor(DARK_ICON_BG[t.id] || t.color) + '">' + iconHTML + '</div>' +
+            '<div class="tool-head">' +
+              '<div class="tool-icon" style="background:' + safeColor(DARK_ICON_BG[t.id] || t.color) + '">' + iconHTML + '</div>' +
+              '<div class="tool-headinfo">' +
+                '<h3>' + nameHTML + '</h3>' +
+                '<div class="tool-headmeta">' +
+                  (isPinned ? '<span class="pinned-badge">推荐</span>' : '') +
+                  '<span class="tool-cat">' + escHTML(t.category) + '</span>' +
+                  '<span class="tool-metrics">' +
+                    '<span class="tool-dl" title="下载次数">' +
+                      '<i class="fas fa-download"></i>' +
+                      '<span class="tool-dl-num">' + (typeof formatCount === 'function' ? formatCount(t.downloads) : (Number(t.downloads) || 0)) + '</span>' +
+                    '</span>' +
+                  '</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
             '<div class="tool-body">' +
-            '<h3>' + (isPinned ? '<span class="pinned-badge">推荐</span>' : '') + nameHTML + '</h3>' +
-            '<div class="tool-meta">' +
-            '<span class="tool-cat">' + escHTML(t.category) + '</span>' +
-            // 数据展示：只显示下载量，靠右对齐
-            // （浏览量对普通用户没有参考价值，隐藏掉更清爽）
-            '<span class="tool-metrics">' +
-              '<span class="tool-dl" title="下载次数">' +
-                '<i class="fas fa-download"></i>' +
-                '<span class="tool-dl-num">' + (typeof formatCount === 'function' ? formatCount(t.downloads) : (Number(t.downloads) || 0)) + '</span>' +
-              '</span>' +
-              '<span class="tool-views" title="浏览次数">' +
-                '<i class="fas fa-eye"></i>' +
-                '<span class="tool-views-num">' + (typeof formatCount === 'function' ? formatCount(t.views) : (Number(t.views) || 0)) + '</span>' +
-              '</span>' +
-            '</span>' +
+              '<p>' + highlightText(t.comment, App.state.currentSearch.trim()) + '</p>' +
+              '<div class="tool-tags">' + tagsHTML + '</div>' +
+              (t.usage ? '<div class="tool-extra">' + escHTML(t.usage) + '</div>' : '') +
             '</div>' +
-            '<p>' + highlightText(t.comment, App.state.currentSearch.trim()) + '</p>' +
-            '<div class="tool-tags">' + tagsHTML + '</div>' +
-            (t.usage ? '<div class="tool-extra">' + escHTML(t.usage) + '</div>' : '') +
-            '</div>' +
-            actionsHTML +
-            '</div>';
+            actionsHTML;
 
         grid.appendChild(card);
         } catch (err) {

@@ -29,28 +29,9 @@
         }, 3000);
     }
 
-    // ---------- 1. 品牌标题打字机效果 ----------
-    if (!reduced) {
-        var brandText = document.querySelector('.brand-text');
-        if (brandText) {
-            var original = brandText.textContent;
-            brandText.textContent = '';
-            brandText.classList.add('typing-cursor');
-            var idx = 0;
-            function typeNext() {
-                if (idx < original.length) {
-                    brandText.textContent = original.substring(0, idx + 1);
-                    idx++;
-                    setTimeout(typeNext, 150 + Math.random() * 80);
-                } else {
-                    setTimeout(function() {
-                        brandText.classList.remove('typing-cursor');
-                    }, 1500);
-                }
-            }
-            setTimeout(typeNext, 500);
-        }
-    }
+    // ---------- 1. 品牌标题 ----------
+    // 原来这里做「打字机」逐字出现：首屏 1.5s 内品牌名是空的，
+    // 既拖慢首屏识别，也是最典型的「AI 味」小把戏；品牌名直接常显。
 
     // ---------- 2. 滚动进度条 ----------
     var bar = document.createElement('div');

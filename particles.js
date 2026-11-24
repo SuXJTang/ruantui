@@ -136,10 +136,9 @@
                 if (Math.random() < 0.3) shootingStar();
             }, isCoarse ? 1400 : 800);
         } else {
-            timer = setInterval(function() {
-                if (document.body.getAttribute('data-mode') === 'dark') return;
-                fallingPetal();
-            }, isCoarse ? 700 : 400);
+            // 亮色模式不再落花瓣：全屏漂浮的粉色花瓣没有任何信息量，
+            // 只会把「工具列表」变成装饰画（动效准入第 1 条：有信息量）。
+            // 需要背景纹理由 --s0 底色与卡片描边承担。
         }
     }
 

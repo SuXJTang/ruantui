@@ -137,7 +137,7 @@ function detailBodyHTML(tool) {
 
     return blockHTML('详细介绍', tool.detail || tool.comment, '') +
            '<div class="detail-load-tip"></div>' +
-           blockHTML('使用说明', tool.usage, '📖 ') +
+           blockHTML('使用说明', tool.usage, '') +
            (tagsHTML ? '<section class="detail-block"><h4>标签</h4><div class="modal-tags">' + tagsHTML + '</div></section>' : '');
 }
 

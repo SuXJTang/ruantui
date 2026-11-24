@@ -40,14 +40,14 @@
      ------------------------------------------------------------
      下方所有同源静态资源的 ?v=NN 必须一致，且与 sw.js 里的
      CACHE_VERSION（当前 'v94'）代表同一个发布版本。发版时：
-        1) 把本文件下面所有 ?v=113 全改成新号
+        1) 把本文件下面所有 ?v=121 全改成新号
         2) 把 sw.js 的 CACHE_VERSION 同时改成对应的 'v95'
      两步必须同时做，否则 SW 缓存与页面 URL 会对不上。
      详见 README「缓存版本号」一节。
      ============================================================ -->
-<link rel="preload" href="style.css?v=113" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="style.css?v=113"></noscript>
-    <link rel="stylesheet" href="style.css?v=113">
+<link rel="preload" href="style.css?v=121" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css?v=121"></noscript>
+    <link rel="stylesheet" href="style.css?v=121">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 广告位占位骨架：只在 .ad-container 还未被 adsense.js 标记为 .ad-active 时显示，
          替代原先挂到 .adsbygoogle <ins> 上的样式（那会污染 Google 的广告单元与广告拦截检测）。 -->
@@ -280,7 +280,7 @@
     <nav class="filter-bar" aria-label="分类筛选">
         <button class="filter-tag active" data-filter="all">全部</button>
     </nav>
-    <button class="board-btn" id="boardBtn" type="button" title="工具榜单" style="flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;white-space:nowrap;">🏆 榜单</button>
+    <button class="board-btn" id="boardBtn" type="button" title="工具榜单"><i class="fas fa-ranking-star"></i> 榜单</button>
     <select class="sort-select" id="sortSelect" aria-label="排序方式">
         <option value="default">默认排序</option>
         <option value="name">名称 A-Z</option>
@@ -525,24 +525,24 @@
     <div class="ann-panel-body" id="annPanelBody"><div class="ann-loading">加载中...</div></div>
 </div>
 
-<script defer src="shared.js?v=113"></script>
-<script defer src="supabase.js?v=113"></script>
-<script defer src="auth.js?v=113"></script>
-<script defer src="data.js?v=113"></script>
-<script defer src="ui.js?v=113"></script>
-<script defer src="modal.js?v=113"></script>
-<script defer src="apikey-config.js?v=113"></script>
-<script defer src="features.js?v=113"></script>
-<script defer src="theme.js?v=113"></script>
-<script defer src="particles.js?v=113"></script>
-<script defer src="effects.js?v=113"></script>
-<script defer src="interactions.js?v=113"></script>
-<script defer src="engagement.js?v=113"></script>
-<script defer src="mobile.js?v=113"></script>
-<script defer src="analytics.js?v=113"></script>
-<script defer src="adsense.js?v=113"></script>
-<script defer src="motion.js?v=113"></script>
-<script defer src="compare.js?v=113"></script>
+<script defer src="shared.js?v=121"></script>
+<script defer src="supabase.js?v=121"></script>
+<script defer src="auth.js?v=121"></script>
+<script defer src="data.js?v=121"></script>
+<script defer src="ui.js?v=121"></script>
+<script defer src="modal.js?v=121"></script>
+<script defer src="apikey-config.js?v=121"></script>
+<script defer src="features.js?v=121"></script>
+<script defer src="theme.js?v=121"></script>
+<script defer src="particles.js?v=121"></script>
+<script defer src="effects.js?v=121"></script>
+<script defer src="interactions.js?v=121"></script>
+<script defer src="engagement.js?v=121"></script>
+<script defer src="mobile.js?v=121"></script>
+<script defer src="analytics.js?v=121"></script>
+<script defer src="adsense.js?v=121"></script>
+<script defer src="motion.js?v=121"></script>
+<script defer src="compare.js?v=121"></script>
 <button id="backTop" aria-label="回到顶部" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </body>
 </html>

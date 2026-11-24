@@ -572,14 +572,14 @@ function renderSSRCards(tools, origin) {
 
         if (tier === 'free') {
             primaryLink = t.download || t.url || (origin + '/t/' + t.id);
-            btnLabel = t.download ? '⬇️ 下载' : (t.url ? '🌐 去官网' : '查看详情');
+            btnLabel = t.download ? '<i class="fas fa-download"></i>下载' : (t.url ? '<i class="fas fa-arrow-up-right-from-square"></i>去官网' : '查看详情');
         } else if (t.url) {
             // 有官网就先给官网，详情页里有下载入口
             primaryLink = t.url;
-            btnLabel = '🌐 去官网';
+            btnLabel = '<i class="fas fa-arrow-up-right-from-square"></i>去官网';
         } else {
             primaryLink = origin + '/t/' + t.id;
-            btnLabel = tier === 'vip' ? '👑 VIP 专属' : '🔒 登录后下载';
+            btnLabel = tier === 'vip' ? '👑 VIP 专属' : '<i class="fas fa-lock"></i>登录后下载';
             btnClass += ' tool-visit-locked-link';
         }
 
@@ -587,18 +587,22 @@ function renderSSRCards(tools, origin) {
             (tier === 'free' ? ' target="_blank" rel="noopener"' : '') + '>' + btnLabel + '</a>';
 
         return '<article class="tool-card ssr-card">' +
-            iconHTML +
-            '<div class="tool-body">' +
-            '<h3>' + pinnedHTML + '<a href="' + detailUrl + '" style="color:inherit;text-decoration:none">' + name + '</a></h3>' +
-            '<div class="tool-meta"><span class="tool-cat">' + cat + '</span>' +
-            // 与前端卡片保持一致：下载次数（主）+ 浏览次数（次）
-            '<span class="tool-metrics">' +
-              '<span class="tool-dl" title="下载次数"><i class="fas fa-download"></i>' +
-              '<span class="tool-dl-num">' + (Number(t.downloads) || 0) + '</span></span>' +
-            '</span>' +
+            '<div class="tool-head">' +
+              iconHTML +
+              '<div class="tool-headinfo">' +
+                '<h3><a href="' + detailUrl + '" style="color:inherit;text-decoration:none">' + name + '</a></h3>' +
+                '<div class="tool-headmeta">' + pinnedHTML +
+                  '<span class="tool-cat">' + cat + '</span>' +
+                  '<span class="tool-metrics">' +
+                    '<span class="tool-dl" title="下载次数"><i class="fas fa-download"></i>' +
+                    '<span class="tool-dl-num">' + (Number(t.downloads) || 0) + '</span></span>' +
+                  '</span>' +
+                '</div>' +
+              '</div>' +
             '</div>' +
-            '<p>' + comment + '</p>' +
-            tagHTML +
+            '<div class="tool-body">' +
+              '<p>' + comment + '</p>' +
+              tagHTML +
             '</div>' +
             btnHTML +
             '</article>';

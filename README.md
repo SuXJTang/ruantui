@@ -109,8 +109,8 @@ ruantui/
 
 | 位置 | 内容 | 本次值 |
 |------|------|--------|
-| `index.html` | 所有 `style.css?v=` / `*.js?v=` | `v=88` |
-| `sw.js` | `CACHE_VERSION` | `'v102'` |
+| `index.html` | 所有 `style.css?v=` / `*.js?v=` | `v=113` |
+| `sw.js` | `CACHE_VERSION` | `'v117'` |
 
 发版流程：
 

@@ -4,7 +4,6 @@
 // v5：桌面端从 560px 小对话框改成 940px 双栏宽面板。
 //     左栏放正文（详细介绍 / 使用说明 / 标签，完整显示不折叠），
 //     右栏放操作（官网 / 下载 / 收藏 / 复制链接）+ 工具信息 + 二维码。
-//     详细设计与功能矩阵见 docs/TOOL-DETAIL-V5-DESIGN.md
 // ============================================
 var overlay = document.getElementById('modalOverlay');
 var modalBody = document.getElementById('modalBody');
@@ -32,19 +31,10 @@ function tierLabel(tier) {
 // VIP 状态还没读到时（首屏异步）先不锁，等状态回来重开弹窗即可刷新。
 function detailActionsHTML(tool) {
     var tier = tool.download_tier || 'free';
-    var logged = !!(window.Auth && window.Auth.isLoggedIn());
-    var vipState = (window.App && App.state && App.state.vipInfo) || {};
-    var vipKnown = (vipState.loading === false) || (typeof vipState.isVip === 'boolean');
-    var isVip = !!vipState.isVip;
-
-    var canDownload = true, lockReason = '';
-    if (tier === 'vip') {
-        if (!logged) { canDownload = false; lockReason = 'login'; }
-        else if (!vipKnown) { canDownload = true; }
-        else if (!isVip) { canDownload = false; lockReason = 'vip'; }
-    } else if (tier === 'user') {
-        if (!logged) { canDownload = false; lockReason = 'login'; }
-    }
+    var access = (typeof window.tierAccess === 'function') ? window.tierAccess(tier) : null;
+    var logged = access ? access.logged : !!(window.Auth && window.Auth.isLoggedIn());
+    var canDownload = access ? access.canDownload : true;
+    var lockReason = access ? access.lockReason : '';
 
     var out = [];
     if (tool.url) {
@@ -167,6 +157,26 @@ function fetchToolDetail(id) {
     }).catch(function () { return null; });
 }
 
+// 同类工具（v4 灯塔 M1-1.5）：用已加载的 App.state.tools 本地筛选，零额外请求。
+// href 指向独立页 /t/{id}（可被爬虫抓取），点击时前端拦截改为就地切换弹窗。
+function relatedToolsHTML(tool) {
+    var all = (window.App && App.state && App.state.tools) || [];
+    var cat = tool.category || '';
+    var rel = all.filter(function (t) {
+        return t.id !== tool.id && (t.category || '') === cat;
+    }).slice(0, 8);
+    if (!rel.length) return '';
+    var links = rel.map(function (t) {
+        return '<a class="detail-rel-link" href="' + escHTML(window.location.origin + '/t/' + t.id) + '" ' +
+            'data-rel-id="' + t.id + '" style="display:inline-block;padding:6px 12px;border:1px solid var(--border);' +
+            'border-radius:999px;font-size:13px;color:var(--text);text-decoration:none;">' +
+            escHTML(t.name) + '</a>';
+    }).join('');
+    return '<section class="detail-related" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">' +
+        '<div style="font-size:13px;font-weight:700;margin-bottom:10px;">更多' + escHTML(cat || '') + '工具</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;">' + links + '</div></section>';
+}
+
 function openModal(tool) {
     if (!tool || !modalBody) return;
     currentToolId = tool.id;
@@ -210,7 +220,19 @@ function openModal(tool) {
                     '</button>' +
                 '</div>' +
             '</aside>' +
-        '</div>';
+        '</div>' +
+        relatedToolsHTML(tool);
+
+    // 同类工具：点击在弹窗内就地切换，不整页跳转
+    modalBody.querySelectorAll('.detail-rel-link').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            var rid = parseInt(this.dataset.relId, 10);
+            var rt = (window.App && App.state && App.state.tools)
+                ? App.state.tools.find(function (x) { return x.id === rid; }) : null;
+            if (rt) openModal(rt);
+        });
+    });
 
     // 二维码失败降级：换成纯文本链接，不要留破图
     var qrImg = modalBody.querySelector('.share-qr-img');
@@ -418,6 +440,9 @@ if (overlay) document.getElementById('toolGrid').addEventListener('click', funct
                     numEl.textContent = n;
                     tool.views = n;
                 }
+                if (typeof recordEvent === 'function') {
+                    recordEvent('tool_view', tool.id, { category: tool.category });
+                }
             }).catch(function() {});
         }
     }
@@ -436,6 +461,9 @@ if (overlay) {
                 var stat = document.querySelector('.detail-stat[data-dl-stat]');
                 if (stat && !isNaN(Number(n)) && typeof formatCount === 'function') {
                     stat.innerHTML = '<i class="fas fa-download"></i>' + formatCount(n);
+                }
+                if (typeof recordEvent === 'function') {
+                    recordEvent('tool_download', parseInt(dl.dataset.dlId, 10));
                 }
             }).catch(function () {});
         }

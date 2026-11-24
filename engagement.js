@@ -173,6 +173,9 @@
         }
 
         showToast(adding ? '已收藏 ❤' : '已取消收藏', adding ? 'success' : 'info');
+        if (typeof recordEvent === 'function') {
+            recordEvent(adding ? 'tool_favorite' : 'tool_unfavorite', id);
+        }
         return adding;
     }
 

@@ -62,6 +62,30 @@ function showToast(msg, type) {
     }, 2500);
 }
 
+// 下载权限判定（v4 灯塔 M2-2.4 收敛）
+// ------------------------------------------------------------
+// 卡片(ui.js)与详情弹窗(modal.js)原先各写一份 free/user/vip 判定，
+// 容易漂移。这里收敛成唯一来源。语义：
+//   free → 谁都能下；user → 登录才能下；vip → 登录且 VIP 才能下。
+// 时序注意：VIP 状态异步加载，未知时先「不锁」，等状态到位再重渲染。
+window.tierAccess = function (tier) {
+    tier = tier || 'free';
+    var vipState = (window.App && App.state && App.state.vipInfo) || {};
+    var vipKnown = (vipState.loading === false) || (typeof vipState.isVip === 'boolean');
+    var logged = !!(window.Auth && window.Auth.isLoggedIn());
+    var isVip = !!vipState.isVip;
+
+    var canDownload = true, lockReason = '';
+    if (tier === 'vip') {
+        if (!logged) { canDownload = false; lockReason = 'login'; }
+        else if (!vipKnown) { canDownload = true; }
+        else if (!isVip) { canDownload = false; lockReason = 'vip'; }
+    } else if (tier === 'user') {
+        if (!logged) { canDownload = false; lockReason = 'login'; }
+    }
+    return { tier: tier, canDownload: canDownload, lockReason: lockReason, logged: logged, isVip: isVip, vipKnown: vipKnown };
+};
+
 // 注入 Toast 动画
 (function() {
     if (document.getElementById('ts')) return;

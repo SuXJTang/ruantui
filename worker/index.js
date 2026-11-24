@@ -319,6 +319,12 @@ export default {
             return handleRequest(request, env);
         }
 
+        // 自动生成的 sitemap：按数据库实时出全部工具页，无需再跑本地脚本
+        // （旧的 scripts/gen-sitemap.js 硬编码 anon key / Cloudflare IP / 本机代理，已脆弱）。
+        if (url.pathname === '/sitemap.xml') {
+            return handleSitemap(url, env, ctx);
+        }
+
         // 首页：把工具列表以纯静态 HTML 塞进 #toolGrid。
         // 现状是 #toolGrid 为空、全靠 JS 渲染，而搜索引擎不执行 JS，
         // 抓到的首页只有「0 款工具 0 个分类」，收录质量很差。
@@ -465,6 +471,49 @@ async function fetchListCached(endpoint, ctx) {
     return rows;
 }
 
+// Worker 自动生成 sitemap.xml，替代脆弱的本地脚本。
+// 目的：工具增删后 sitemap 自动更新，lastmod 用当天日期，不再需要有人跑 gen-sitemap.js。
+async function handleSitemap(url, env, ctx) {
+    var origin = url.origin;
+    var today = new Date().toISOString().slice(0, 10);
+    var tools = null;
+    try {
+        tools = await fetchListCached(SB_URL + '/rest/v1/tools?select=id&order=created_at.asc', ctx);
+    } catch (e) {
+        console.error('sitemap 取工具失败，回退静态文件', e && e.message);
+    }
+    // 取不到数据时回退到静态 sitemap.xml，避免输出空站点地图
+    if (!tools || !tools.length) {
+        return applyCacheHeaders(url ? new Request(url.toString()) : new Request(origin), await env.ASSETS.fetch(new Request(new URL('/sitemap.xml', origin))));
+    }
+
+    var lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        '  <url>',
+        '    <loc>' + escHTML(origin + '/') + '</loc>',
+        '    <lastmod>' + today + '</lastmod>',
+        '    <changefreq>weekly</changefreq>',
+        '    <priority>1.0</priority>',
+        '  </url>'];
+    tools.forEach(function (t) {
+        lines.push('  <url>',
+            '    <loc>' + escHTML(origin + '/t/' + t.id) + '</loc>',
+            '    <lastmod>' + today + '</lastmod>',
+            '    <changefreq>monthly</changefreq>',
+            '    <priority>0.8</priority>',
+            '  </url>');
+    });
+    lines.push('</urlset>', '');
+
+    return new Response(lines.join('\n'), {
+        status: 200,
+        headers: {
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        },
+    });
+}
+
 // 把卡片 HTML 注入到页面的 #toolGrid，并把统计数字填上。
 // 首页和详情页共用这份逻辑 —— 两处都要有 SSR 内容，
 // 否则 JS 一旦加载失败（国内网络抖动时常见），用户看到的就是
@@ -586,6 +635,19 @@ async function injectToolList(htmlRes, url, ctx) {
     tools.forEach(function (t) { var c = t.category || '未分类'; catCount[c] = (catCount[c] || 0) + 1; });
 
     html = injectCardsIntoHTML(html, cards, tools, Object.keys(catCount).length);
+
+    // 首页 ItemList 结构化数据：服务端直接填真实工具，而不是等 ui.js 的 syncJsonLd。
+    // 搜索引擎不执行 JS，之前 itemListElement 是空数组，等同于没告诉 Google 有哪些工具。
+    try {
+        var itemList = tools.map(function (t, i) {
+            return { '@type': 'ListItem', position: i + 1, name: t.name, url: origin + '/t/' + t.id };
+        });
+        // 转义 < 防止工具名里出现 </script> 截断脚本
+        var itemJson = JSON.stringify(itemList).replace(/</g, '\\u003c');
+        html = html.replace('"itemListElement": []', '"itemListElement": ' + itemJson);
+    } catch (e) {
+        console.error('ItemList SSR 注入失败', e && e.message);
+    }
 
     // 详情页同样注入 SSR 卡片。
     // 这一步很关键：/t/{id} 之前是纯骨架页面（toolGrid 空、统计为 0），

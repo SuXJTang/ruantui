@@ -166,7 +166,8 @@
                         vipInfoLink2.onclick = function () {
                             closeDashboard();
                             setTimeout(function () {
-                                if (typeof showVipRequiredTip === 'function') showVipRequiredTip();
+                                if (typeof window.openVipInfo === 'function') window.openVipInfo();
+                                else if (typeof showVipRequiredTip === 'function') showVipRequiredTip();
                             }, 250);
                         };
                     }
@@ -186,6 +187,7 @@
         if (document.getElementById('ucNickInput')) return;
 
         content.innerHTML = buildDashboard();
+        if (typeof loadMyDownloads === 'function') loadMyDownloads();
         var settingsBtn = document.getElementById('ucSettingsBtn');
         if (settingsBtn) settingsBtn.onclick = function (e) { e.stopPropagation(); openSettingsPage(); };
         var logoutBtn = document.getElementById('ucLogoutBtn');
@@ -573,6 +575,7 @@
 
     // 构建仪表盘 HTML
     function buildDashboard() {
+        var loggedIn = !!(window.Auth && window.Auth.isLoggedIn());
         var favs = getFavorites();
         var history = getHistory();
         var visits = getVisits();
@@ -647,11 +650,60 @@
             '</div>' +
             // 3. 最近浏览
             '<div class="dash-card"><h4>🕘 最近浏览</h4><div class="dash-hist-list">' + histHTML + '</div></div>' +
+            // 3.5 我的下载（登录用户，来自 events 埋点）
+            (loggedIn ? '<div class="dash-card"><h4>⬇ 我的下载</h4><div id="ucDownloadsList"><div class="dash-empty">加载中…</div></div></div>' : '') +
             // 4. 热门排行
             '<div class="dash-card"><h4>🔥 热门工具 Top 5</h4><div class="dash-hot-list">' + hotHTML + '</div></div>' +
             // 5. 访问趋势（最不关键，放最后）
             '<div class="dash-card"><h4>📊 近 7 天访问</h4><div class="dash-visit-chart">' + visitHTML + '</div></div>' +
             '</div>';
+    }
+
+    // 我的下载（v4 灯塔 M3-3.3）：读当前用户自己的 tool_download 事件，
+    // 依赖 migration-events.sql 与 events_user_read_own 策略。
+    function loadMyDownloads() {
+        var box = document.getElementById('ucDownloadsList');
+        if (!box) return;
+        if (!(window.Auth && window.Auth.isLoggedIn())) return;
+        window.Auth.getAccessToken().then(function (token) {
+            if (!token) throw new Error('未登录');
+            return sbFetch('events?select=tool_id,created_at&event_name=eq.tool_download&order=created_at.desc&limit=200', {
+                method: 'GET',
+                headers: { 'apikey': window.RuantuiSupabase.key, 'Authorization': 'Bearer ' + token }
+            });
+        }).then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }).then(function (rows) {
+            var box2 = document.getElementById('ucDownloadsList');
+            if (!box2) return;
+            var seen = {}, ids = [];
+            (Array.isArray(rows) ? rows : []).forEach(function (r) {
+                if (r.tool_id && !seen[r.tool_id]) { seen[r.tool_id] = 1; ids.push(r.tool_id); }
+            });
+            var tools = ids.slice(0, 12).map(function (id) {
+                return (App.state.tools || []).find(function (t) { return t.id === id; });
+            }).filter(Boolean);
+            if (!tools.length) {
+                box2.innerHTML = '<div class="dash-empty">还没有下载记录</div>';
+                return;
+            }
+            box2.innerHTML = '<div class="dash-hist-list">' + tools.map(function (t) {
+                return '<div class="dash-hist-item" data-tool-id="' + t.id + '">' +
+                    '<div class="dash-hist-icon" style="background:' + safeColor(t.color) + '">' + renderIconHTML(t) + '</div>' +
+                    '<span class="dash-hist-name">' + escHTML(t.name) + '</span></div>';
+            }).join('') + '</div>';
+            box2.querySelectorAll('[data-tool-id]').forEach(function (el) {
+                el.onclick = function () {
+                    var id = parseInt(this.dataset.toolId, 10);
+                    var tool = (App.state.tools || []).find(function (t) { return t.id === id; });
+                    if (tool) { closeDashboard(); setTimeout(function () { openModal(tool); }, 300); }
+                };
+            });
+        }).catch(function () {
+            var box3 = document.getElementById('ucDownloadsList');
+            if (box3) box3.innerHTML = '<div class="dash-empty">下载记录暂不可用（需先执行 migration-events.sql）</div>';
+        });
     }
 
     // 创建仪表盘弹窗
@@ -669,6 +721,7 @@
             dashOverlay.onclick = function(e) { if (!e.target.closest('.modal')) closeDashboard(); };
         }
         document.getElementById('dashContent').innerHTML = buildDashboard();
+        if (typeof loadMyDownloads === 'function') loadMyDownloads();
         dashOverlay.classList.add('active');
 
         // 异步加载 profile（昵称），加载完刷新卡片
@@ -721,7 +774,8 @@
             vipInfoLink.onclick = function () {
                 closeDashboard();
                 setTimeout(function () {
-                    if (typeof showVipRequiredTip === 'function') showVipRequiredTip();
+                    if (typeof window.openVipInfo === 'function') window.openVipInfo();
+                    else if (typeof showVipRequiredTip === 'function') showVipRequiredTip();
                 }, 250);
             };
         }

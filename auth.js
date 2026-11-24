@@ -269,9 +269,11 @@
                     if (s) {
                         writeSession(s);
                         if (window.syncFavorites) { try { window.syncFavorites(); } catch(e) {} }
+                        if (typeof recordEvent === 'function') recordEvent('user_register');
                         return { ok: true, session: s };
                     }
                 }
+                if (typeof recordEvent === 'function') recordEvent('user_register');
                 return { ok: true, needsConfirm: true };
             });
         }).catch(function(e) {

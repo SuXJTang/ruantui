@@ -128,6 +128,48 @@ function fetchAnnouncements() {
         });
 }
 
+// ---------- 行为埋点（v4 灯塔 M1） ----------
+// 记录用户行为，写入 events 表。与 views/downloads 计数器并存：
+//   views/downloads 是页面展示的累计值；events 只做趋势/漏斗分析。
+// 写入走 security definer 的 record_event()，匿名用 anon_session 去重，
+// 登录用户带自己的 JWT 以便归属 user_id。
+// 迁移未执行（record_event 不存在）时静默失败，不影响正常功能。
+function getAnonSession() {
+    var k = 'ruantui_anon_session', s;
+    try {
+        s = localStorage.getItem(k);
+        if (!s) {
+            s = 'anon_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+            localStorage.setItem(k, s);
+        }
+        return s;
+    } catch (e) { return ''; }
+}
+
+function recordEvent(name, toolId, context) {
+    if (typeof sbFetch !== 'function') return Promise.resolve();
+    var tokenP = (window.Auth && window.Auth.isLoggedIn && window.Auth.isLoggedIn() && window.Auth.getAccessToken)
+        ? window.Auth.getAccessToken().catch(function () { return null; })
+        : Promise.resolve(null);
+    return tokenP.then(function (tok) {
+        var headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + (tok || SUPABASE_KEY),
+            'Content-Type': 'application/json'
+        };
+        return sbFetch('rpc/record_event', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                p_event_name: name,
+                p_tool_id: toolId || null,
+                p_context: context || {},
+                p_anon_session: tok ? '' : getAnonSession()
+            })
+        }).catch(function () {});
+    }).catch(function () {});
+}
+
 // 递增浏览量（使用 RPC 函数原子递增，避免竞态条件）
 function incrementView(id) {
     var t = (App && App.state && App.state.tools) ? App.state.tools.find(function(x) { return x.id === id; }) : null;

@@ -164,20 +164,25 @@ function renderTools(filter, skipSkFade) {
     if (!grid) return;
     if (!Array.isArray(App.state.tools)) App.state.tools = [];
     var q = App.state.currentSearch.toLowerCase().trim();
+    // 多关键词：空格分词，要求「每个词」都命中任意字段（AND 语义）。
+    // 例："影视 免费" 会同时要求匹配影视与免费，而不是整串去匹配。
+    var terms = q ? q.split(/\s+/).filter(Boolean) : [];
     var filtered = App.state.tools.filter(function(t) {
         var matchFilter = (filter === 'all' || t.category === filter);
         if (!matchFilter) return false;
-        if (!q) return true;
-        // 搜索名称、标签、评语、分类
-        return fuzzyMatch(t.name, q) ||
-            pinyinMatch(t.name, q) ||
-            fuzzyMatch(t.comment, q) ||
-            fuzzyMatch(t.category, q) ||
-            pinyinMatch(t.category, q) ||
-            (Array.isArray(t.tags) && t.tags.some(function(tag) {
-                return fuzzyMatch(tag, q) || pinyinMatch(tag, q);
-            })) ||
-            (t.detail && fuzzyMatch(t.detail, q));
+        if (!terms.length) return true;
+        return terms.every(function(term) {
+            // 每个词搜索名称、标签、评语、分类
+            return fuzzyMatch(t.name, term) ||
+                pinyinMatch(t.name, term) ||
+                fuzzyMatch(t.comment, term) ||
+                fuzzyMatch(t.category, term) ||
+                pinyinMatch(t.category, term) ||
+                (Array.isArray(t.tags) && t.tags.some(function(tag) {
+                    return fuzzyMatch(tag, term) || pinyinMatch(tag, term);
+                })) ||
+                (t.detail && fuzzyMatch(t.detail, term));
+        });
     });
 
     // 排序
@@ -328,25 +333,9 @@ function renderTools(filter, skipSkFade) {
         // 处理方式：状态未知时先按「暂不锁定」渲染，等 loadMyVip 完成后
         // 再整体重渲染一次（见 features.js 的 onVipLoaded 回调）。
         var tier = t.download_tier || 'free';
-        var canDownload = true, lockedReason = '';
-
-        var vipState = App.state.vipInfo || {};
-        var vipKnown = (vipState.loading === false) || (typeof vipState.isVip === 'boolean');
-        var vLogged = !!(window.Auth && window.Auth.isLoggedIn());
-        var vIsVip = !!vipState.isVip;
-
-        if (tier === 'vip') {
-            if (!vLogged) { canDownload = false; lockedReason = 'login'; }
-            else if (!vipKnown) {
-                // 状态还没读到：先不锁，等状态到位会重渲染
-                canDownload = true;
-            }
-            else if (!vIsVip) { canDownload = false; lockedReason = 'vip'; }
-        } else if (tier === 'user') {
-            if (!vLogged) {
-                canDownload = false; lockedReason = 'login';
-            }
-        }
+        var access = (typeof window.tierAccess === 'function') ? window.tierAccess(tier) : null;
+        var canDownload = access ? access.canDownload : true;
+        var lockedReason = access ? access.lockReason : '';
 
         if (!canDownload) {
             // 主按钮是下载链接 → 换成官网；没有官网就换成提示按钮
@@ -660,6 +649,98 @@ function showVipRequiredTip() {
     box.onclick = function (e) { if (e.target === box) close(); };
 }
 
+// VIP 权益说明（v4 灯塔 M3-3.1）
+// 比 showVipRequiredTip 更完整：讲清「VIP 能下什么 / 怎么开通」。
+window.openVipInfo = function () {
+    var existing = document.getElementById('_vipBenefitsModal');
+    if (existing) existing.remove();
+
+    var box = document.createElement('div');
+    box.id = '_vipBenefitsModal';
+    box.className = 'auth-overlay';
+    box.innerHTML =
+        '<div class="auth-card" role="dialog" aria-modal="true">' +
+          '<button class="auth-close" type="button" aria-label="关闭"><i class="fas fa-times"></i></button>' +
+          '<div class="auth-logo">👑</div>' +
+          '<h3 class="auth-title">VIP 会员权益</h3>' +
+          '<p class="auth-sub">一次开通，畅享全部专属资源</p>' +
+          '<div style="font-size:13px;line-height:1.9;color:var(--text);text-align:left;' +
+            'background:rgba(var(--primary-rgb),0.06);padding:14px 16px;border-radius:12px;margin:16px 0;">' +
+            '<div>· 下载所有「VIP 专属」工具资源</div>' +
+            '<div>· 后续新增的专属资源同样可用</div>' +
+            '<div>· 到期前站内提醒，不会突然失效</div>' +
+          '</div>' +
+          '<p style="font-size:12.5px;line-height:1.7;color:var(--text-light);text-align:left;margin:0 0 16px;">' +
+            '开通方式：联系站长（微信 / 支付宝转账），站长确认后手动开通，刷新页面即可生效。' +
+          '</p>' +
+          '<button type="button" class="auth-submit" id="_vipBenefitsOk">知道了</button>' +
+        '</div>';
+
+    document.body.appendChild(box);
+    requestAnimationFrame(function () { box.classList.add('active'); });
+
+    function close() {
+        box.classList.remove('active');
+        setTimeout(function () { box.remove(); }, 200);
+    }
+    box.querySelector('.auth-close').onclick = close;
+    box.querySelector('#_vipBenefitsOk').onclick = close;
+    box.onclick = function (e) { if (e.target === box) close(); };
+};
+
+// 工具榜单（v4 灯塔 M2-2.3）：下载榜 / 评分榜 / 新收录，本地数据实时计算。
+window.openLeaderboard = function () {
+    var existing = document.getElementById('_boardModal');
+    if (existing) existing.remove();
+    var tools = ((window.App && App.state && App.state.tools) || []).slice();
+
+    function renderList(title, arr) {
+        if (!arr.length) return '';
+        return '<div style="margin-bottom:18px;">' +
+            '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">' + title + '</div>' +
+            arr.slice(0, 10).map(function (t, i) {
+                return '<div class="board-item" data-board-id="' + t.id + '" ' +
+                    'style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer;">' +
+                    '<span style="width:22px;color:var(--text-light);font-size:13px;">' + (i + 1) + '</span>' +
+                    '<span style="flex:1;">' + escHTML(t.name) + '</span>' +
+                    '<span style="color:var(--text-light);font-size:12px;">' + escHTML(t.category || '') + '</span></div>';
+            }).join('') + '</div>';
+    }
+
+    var byDl = tools.slice().sort(function (a, b) { return (Number(b.downloads) || 0) - (Number(a.downloads) || 0); });
+    var byRate = tools.filter(function (t) { return Number(t.rating) > 0; })
+        .sort(function (a, b) { return (Number(b.rating) || 0) - (Number(a.rating) || 0); });
+    var byNew = tools.slice().sort(function (a, b) {
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
+
+    var box = document.createElement('div');
+    box.id = '_boardModal';
+    box.className = 'overlay active';
+    box.style.zIndex = '9998';
+    box.innerHTML = '<div class="modal modal-lg" role="dialog">' +
+        '<button class="modal-close" aria-label="关闭"><i class="fas fa-times"></i></button>' +
+        '<div class="modal-body" style="max-height:80vh;overflow-y:auto;">' +
+          '<div style="text-align:center;margin-bottom:16px;"><h2 style="font-size:20px;font-weight:800;">🏆 工具榜单</h2>' +
+          '<p style="font-size:12px;color:var(--text-light);margin-top:4px;">按全站数据实时统计</p></div>' +
+          renderList('🔥 下载榜', byDl) +
+          renderList('⭐ 评分榜', byRate) +
+          renderList('🆕 新收录', byNew) +
+        '</div></div>';
+    document.body.appendChild(box);
+
+    function close() { box.remove(); }
+    box.querySelector('.modal-close').onclick = close;
+    box.onclick = function (e) { if (!e.target.closest('.modal')) close(); };
+    box.querySelectorAll('.board-item').forEach(function (el) {
+        el.onclick = function () {
+            var id = parseInt(this.dataset.boardId, 10);
+            var tool = tools.find(function (t) { return t.id === id; });
+            if (tool) { close(); if (typeof openModal === 'function') openModal(tool); }
+        };
+    });
+};
+
 // 分类点击
 if (filterBar) filterBar.addEventListener('click', function(e) {
     var btn = e.target.closest('.filter-tag'); if (!btn) return;
@@ -681,6 +762,14 @@ if (filterBar) filterBar.addEventListener('click', function(e) {
         }
     }
 });
+
+// 榜单按钮（v4 灯塔 M2-2.3）
+var boardBtn = document.getElementById('boardBtn');
+if (boardBtn) {
+    boardBtn.onclick = function () {
+        if (typeof window.openLeaderboard === 'function') window.openLeaderboard();
+    };
+}
 
 // 排序切换 — onchange 由 features.js 负责（它会先恢复原始顺序再排序）。
 // 这里不再重复挂 change 监听：两个监听并存时，第二个（旧的这里）会用排序后的数组

@@ -70,12 +70,6 @@ window.copyToolText = function(id) {
     var t = App.state.tools.find(function(x) { return x.id === id; });
     if (t) copyToClipboard('🔧 ' + t.name + '\n📂 ' + t.category + '\n💬 ' + t.comment + '\n🔗 ' + window.toolShareUrl(id), '已复制');
 };
-window.downloadQR = function(id) {
-    var a = document.createElement('a');
-    var shareUrl = window.toolShareUrl(id);
-    a.href = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(shareUrl);
-    a.download = 'tool-' + id + '-qrcode.png'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-};
 
 // ---------- 管理面板 ----------
 // 权限模型：Supabase Auth 账号登录，是否可写由数据库 RLS 的 is_admin() 判定。
@@ -1456,6 +1450,7 @@ function createAnnouncement(title, content, type) {
             if (target) target.classList.add('active');
             if (this.dataset.tab === 'announcements') renderAnnouncementList();
             if (this.dataset.tab === 'vip') loadVipUsers();
+            if (this.dataset.tab === 'stats') loadStats();
         };
     });
 })();
@@ -1733,6 +1728,128 @@ function loadProfilesForVip() {
     });
 }
 
+// ---------- 数据看板（events 表，v4 灯塔 M1） ----------
+// 读取近 7 天事件做展示。要求已执行 db/migration-events.sql。
+// 注意：这里只统计 events（时间序列/漏斗）；页面上的「累计浏览量/下载量」
+// 仍以 tools.views / tools.downloads 为准，两者不要相加。
+function loadStats() {
+    var box = document.getElementById('statsContent');
+    if (!box) return;
+    box.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-light);font-size:13px;">加载中…</p>';
+    var since = new Date(Date.now() - 7 * 86400000).toISOString();
+
+    window.Auth.getAccessToken().then(function (token) {
+        if (!token) throw new Error('登录已过期，请重新登录');
+        return sbFetch('events?select=event_name,tool_id,created_at&created_at=gte.' +
+            encodeURIComponent(since) + '&order=created_at.desc&limit=5000', {
+            method: 'GET',
+            headers: {
+                'apikey': window.RuantuiSupabase.key,
+                'Authorization': 'Bearer ' + token
+            }
+        });
+    }).then(function (res) {
+        if (res.status === 404 || res.status === 400) throw new Error('数据看板尚未启用，请先执行 db/migration-events.sql');
+        if (res.status === 401) throw new Error('登录已过期，请重新登录');
+        if (res.status === 403) throw new Error('没有权限读取事件数据（请确认已执行 migration-events.sql）');
+        if (!res.ok) throw new Error('加载失败 HTTP ' + res.status);
+        return res.json();
+    }).then(function (rows) {
+        renderStats(Array.isArray(rows) ? rows : []);
+    }).catch(function (e) {
+        box.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-light);font-size:13px;">' +
+            escHTML(e.message || '加载失败') + '</p>';
+    });
+}
+
+function renderStats(rows) {
+    var box = document.getElementById('statsContent');
+    if (!box) return;
+
+    var counts = { tool_view: 0, tool_download: 0, tool_favorite: 0, tool_unfavorite: 0, user_register: 0, vip_activated: 0 };
+    var toolViews = {};
+    var toolNames = {};
+    (App.state.tools || []).forEach(function (t) { toolNames[t.id] = t.name; });
+
+    rows.forEach(function (r) {
+        if (r.event_name in counts) counts[r.event_name]++;
+        if (r.event_name === 'tool_view' && r.tool_id) {
+            toolViews[r.tool_id] = (toolViews[r.tool_id] || 0) + 1;
+        }
+    });
+
+    // 近 7 天每日事件
+    var days = {};
+    for (var i = 6; i >= 0; i--) {
+        var d = new Date(Date.now() - i * 86400000);
+        days[d.toISOString().slice(0, 10)] = 0;
+    }
+    rows.forEach(function (r) {
+        var k = String(r.created_at || '').slice(0, 10);
+        if (k in days) days[k]++;
+    });
+    var maxDay = 1;
+    Object.keys(days).forEach(function (k) { if (days[k] > maxDay) maxDay = days[k]; });
+
+    var top = Object.keys(toolViews).map(function (id) {
+        return { n: toolViews[id], name: toolNames[id] || ('#' + id) };
+    }).sort(function (a, b) { return b.n - a.n; }).slice(0, 10);
+
+    function card(label, val, icon) {
+        return '<div style="flex:1;min-width:88px;background:var(--card-solid,#fff);border:1px solid var(--border);border-radius:12px;padding:12px;">' +
+            '<div style="font-size:12px;color:var(--text-light);">' + icon + ' ' + label + '</div>' +
+            '<div style="font-size:22px;font-weight:700;margin-top:4px;">' + val + '</div></div>';
+    }
+
+    var html = '<p style="font-size:12.5px;color:var(--text-light);margin:0 0 12px;line-height:1.6;">' +
+        '近 7 天行为（events 表）。页面累计展示值仍看 tools.views / downloads，两者不相加。</p>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">' +
+        card('浏览', counts.tool_view, '👁') + card('下载', counts.tool_download, '⬇') +
+        card('收藏', counts.tool_favorite, '❤') + card('注册', counts.user_register, '🧑') +
+        card('VIP 开通', counts.vip_activated, '👑') + '</div>';
+
+    // 转化漏斗（相对浏览）
+    var v = counts.tool_view || 1;
+    var funnel = [['浏览', counts.tool_view], ['下载', counts.tool_download],
+        ['收藏', counts.tool_favorite], ['注册', counts.user_register]];
+    html += '<div style="margin-bottom:16px;"><div style="font-size:13px;font-weight:700;margin-bottom:8px;">转化漏斗</div>';
+    funnel.forEach(function (f) {
+        var pct = Math.round((f[1] || 0) / v * 100);
+        var w = Math.max(2, Math.min(100, pct));
+        html += '<div style="margin:6px 0;"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);">' +
+            '<span>' + f[0] + ' ' + f[1] + '</span><span>' + pct + '%</span></div>' +
+            '<div style="height:8px;background:var(--border);border-radius:99px;overflow:hidden;">' +
+            '<div style="width:' + w + '%;height:100%;background:var(--primary);"></div></div></div>';
+    });
+    html += '</div>';
+
+    // 每日柱状
+    html += '<div style="margin-bottom:16px;"><div style="font-size:13px;font-weight:700;margin-bottom:8px;">每日事件</div>' +
+        '<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">';
+    Object.keys(days).forEach(function (k) {
+        var h = Math.max(2, Math.round(days[k] / maxDay * 72));
+        html += '<div style="flex:1;text-align:center;">' +
+            '<div title="' + k + '：' + days[k] + '" style="height:' + h + 'px;background:var(--primary);border-radius:4px 4px 0 0;"></div>' +
+            '<div style="font-size:10px;color:var(--text-light);margin-top:2px;">' + k.slice(5) + '</div></div>';
+    });
+    html += '</div></div>';
+
+    // 热门工具
+    html += '<div><div style="font-size:13px;font-weight:700;margin-bottom:8px;">热门工具（浏览 Top 10）</div>';
+    if (!top.length) {
+        html += '<p style="font-size:12.5px;color:var(--text-light);">暂无数据</p>';
+    } else {
+        top.forEach(function (t, i) {
+            html += '<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);">' +
+                '<span>' + (i + 1) + '. ' + escHTML(t.name) + '</span>' +
+                '<span style="color:var(--text-light);">' + t.n + ' 次</span></div>';
+        });
+    }
+    html += '</div>';
+
+    box.innerHTML = html;
+}
+
 function vipState(p) {
     if (!p.vip_until) return { on: false, text: '普通用户', cls: 'normal' };
     var t = new Date(p.vip_until).getTime();
@@ -1823,6 +1940,9 @@ function renderVipList() {
             adminFetch('PATCH', 'profiles?id=eq.' + encodeURIComponent(uid), patch)
                 .then(function () {
                     showToast(label, 'success');
+                    if (typeof recordEvent === 'function') {
+                        recordEvent('vip_activated', null, { target_user: uid, plan: days });
+                    }
                     // 立即刷新列表（用 loadProfilesForVip，不能用 adminFetch —— 它读不了数据）
                     return loadProfilesForVip().then(function (rows) {
                         vipAllProfiles = Array.isArray(rows) ? rows : [];
@@ -2477,6 +2597,8 @@ function loadMyProfile() {
                 }
             }
             App.state.vipInfo = info;
+            // VIP 到期提醒：7 天内到期、非永久，每会话提示一次
+            if (typeof maybeRemindVipExpiry === 'function') maybeRemindVipExpiry(info);
             // 清掉 loadMyVip 的 pending，避免它继续发请求
             App.state._vipPending = null;
 
@@ -2499,6 +2621,20 @@ function loadMyProfile() {
            function () { App.state._profilePending = null; });
     App.state._profilePending = p;
     return p;
+}
+
+// VIP 到期提醒：7 天内到期、非永久，每会话提示一次（v4 灯塔 M3-3.2）
+function maybeRemindVipExpiry(info) {
+    try {
+        if (!info || !info.isVip || info.forever || !info.until) return;
+        var days = Math.ceil((new Date(info.until).getTime() - Date.now()) / 86400000);
+        if (days < 0 || days > 7) return;
+        if (sessionStorage.getItem('ruantui_vip_reminded') === '1') return;
+        sessionStorage.setItem('ruantui_vip_reminded', '1');
+        if (typeof showToast === 'function') {
+            showToast('你的 VIP 将在 ' + days + ' 天后到期，可联系站长续费', 'info');
+        }
+    } catch (e) { /* 忽略 */ }
 }
 
 // 页面加载后拉一次（延迟 300ms，等 restoreSession 先跑完）

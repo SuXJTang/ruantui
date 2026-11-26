@@ -424,10 +424,10 @@ git -c user.name="SuXJTang" -c user.email="1557003690@qq.com" commit -F msg.txt
 git push origin master
 
 # 线上验证（清缓存）
-curl.exe -sS --noproxy "*" -H "Cache-Control: no-cache" "https://luoluo.fun/style.css?v=123"
+curl.exe -sS --noproxy "*" -H "Cache-Control: no-cache" "https://luoluo.fun/style.css?v=124"
 ```
 
 ---
 
 **最后更新**：2026-11-26
-**对应版本**：?v=123 / CACHE_VERSION v127
+**对应版本**：?v=124 / CACHE_VERSION v128

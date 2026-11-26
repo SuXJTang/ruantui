@@ -10,6 +10,13 @@
 // 旧的 /api/click 埋点（只打日志不落库）与 /api/admin/* 均已移除：
 // /api/admin/* 返回 410 Gone，/api/click 已无调用方。
 
+// 构建标识：CI 在部署前用 sed 把这里替换成提交 sha 前 12 位（见 deploy.yml），
+// 部署后还原。为什么是写进代码而不是用 wrangler 的 --tag / --var：
+// 实测每次 `wrangler deploy` 会生成两个版本 —— 一个带 tag/var、0.6 秒后又一个
+// 不带这两者并最终覆盖线上。只有「代码内容本身」能稳定表达「线上是哪个提交」。
+// 本地/dev 环境下保持 'dev'，/api/health 会依次退回 env.GIT_REV、版本 tag。
+var BUILD_REV = 'dev';
+
 // 允许的前端来源（CORS 白名单）
 var ALLOWED_ORIGINS = [
     'https://suxjtang.github.io',
@@ -104,9 +111,13 @@ async function handleRequest(request, env) {
                 return errorResponse('只支持 GET', 405, cors);
             }
             var vmeta = env && env.CF_VERSION_METADATA;
-            // rev 优先用部署时注入的 GIT_REV（--var，随每次部署生效、不受版本
-            // 元数据二次上传影响），其次才是版本 tag，最后才是 version id。
-            var rev = (env && env.GIT_REV) || (vmeta && vmeta.tag) || 'unknown';
+            // rev 的取值优先级：
+            //   1) BUILD_REV —— CI 部署前 sed 注入的提交 sha，写在代码内容里，
+            //      不受 wrangler 一次 deploy 生成两个版本的影响，最可靠
+            //   2) env.GIT_REV —— 手工部署时可用 --var 注入
+            //   3) 版本 tag —— 可能为空
+            var rev = BUILD_REV !== 'dev' ? BUILD_REV
+                : ((env && env.GIT_REV) || (vmeta && vmeta.tag) || 'unknown');
             var vid = (vmeta && vmeta.id) || 'unknown';
             var healthHeaders = {
                 'Content-Type': 'application/json; charset=utf-8',

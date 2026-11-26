@@ -94,16 +94,20 @@ jobs:
           # 版本 tag = 提交 sha 前 12 位，供 /api/health 回读，冒烟据此断言
           # 「线上 Worker 就是本次提交」。wrangler 4 的 --tag 是标准参数；
           # 仍然不加 --non-interactive 之类的可选开关（历史上那个导致过失败）。
-          echo "← 本次提交: ${GITHUB_SHA:-<空>} / 注入 GIT_REV: ${GITHUB_SHA:0:12}"
+          echo "← 本次提交: ${GITHUB_SHA:-<空>} / 注入 BUILD_REV: ${GITHUB_SHA:0:12}"
+          # 把提交 sha 写进 worker 源码常量（见 worker/index.js 的 BUILD_REV）。
+          # 为什么不用 --tag / --var：实测一次 `wrangler deploy` 会生成两个版本，
+          # 一个带 tag/var、0.6 秒后另一个不带并覆盖线上 —— 只有代码内容本身可靠。
+          sed -i "s/^var BUILD_REV = '.*';$/var BUILD_REV = '${GITHUB_SHA:0:12}';/" worker/index.js
+          grep -n '^var BUILD_REV' worker/index.js
+          node --check worker/index.js
           set +e
-          # --var GIT_REV：把提交 sha 直接注入 worker 环境变量，/api/health 原样返回。
-          # 为什么不用 --tag：实测每次 deploy 会生成两个版本（一个带 tag、
-          # 一个无 tag 并最终覆盖线上），tag 和 version id 都不可靠；
-          # --var 是部署参数本身，两次上传都带，且随部署生效。
-          OUT=$(wrangler deploy --var "GIT_REV:${GITHUB_SHA:0:12}" 2>&1)
+          OUT=$(wrangler deploy 2>&1)
           CODE=$?
           set -e
           echo "$OUT"
+          # 还原源码，别把注入的 sha 留在工作区
+          git checkout -- worker/index.js
 
           if [ $CODE -ne 0 ]; then
             # 把 wrangler 的报错提炼成 GitHub 注解，在 Summary 页也能直接看到，

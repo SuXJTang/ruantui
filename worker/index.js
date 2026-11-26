@@ -91,6 +91,33 @@ async function handleRequest(request, env) {
     var cors = getCORSHeaders(request);
 
     try {
+        // GET /api/health —— 部署闸门专用：回答「线上跑的到底是哪次提交」。
+        //
+        // 为什么需要它：纯 worker 改动（不碰前端资源）时 index.html / sw.js 的
+        // 版本号都不变，冒烟里的 ?v= / CACHE_VERSION 比对就证明不了 worker 是否
+        // 真的上线了 —— 只能等下次发版时顺带验证。
+        //
+        // CI 用 `wrangler deploy --tag <sha前12位>` 打版本 tag，这里读回来。
+        // 只暴露版本 tag 和时间戳，不掺业务数据、不暴露任何配置或密钥。
+        if (path === '/api/health') {
+            if (method !== 'GET' && method !== 'HEAD') {
+                return errorResponse('只支持 GET', 405, cors);
+            }
+            var vmeta = env && env.CF_VERSION_METADATA;
+            var rev = (vmeta && (vmeta.tag || vmeta.id)) || 'unknown';
+            var healthHeaders = {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-store',
+                'X-Robots-Tag': 'noindex',
+            };
+            for (var hk in cors) { healthHeaders[hk] = cors[hk]; }
+            return new Response(JSON.stringify({
+                ok: true,
+                rev: rev,
+                ts: new Date().toISOString(),
+            }), { status: 200, headers: healthHeaders });
+        }
+
         // POST /api/admin/login —— 已废弃（v3.2.0）
         //
         // 管理权限已改为 Supabase Auth 账号登录 + 数据库 RLS 的 admins 白名单，

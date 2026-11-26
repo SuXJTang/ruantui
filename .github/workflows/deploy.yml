@@ -91,13 +91,11 @@ jobs:
           fi
 
           echo "=== 开始部署 ==="
-          # 只用最基础的 deploy 命令，不加任何可选参数。
-          # 教训：不同 wrangler 4.x 小版本支持的选项不一样，
-          #   --non-interactive 在 CI 安装到的版本里直接报
-          #   "Unknown arguments: non-interactive"，导致部署失败。
-          #   wrangler 在 CI 环境（CI=true）下本身就是非交互的。
+          # 版本 tag = 提交 sha 前 12 位，供 /api/health 回读，冒烟据此断言
+          # 「线上 Worker 就是本次提交」。wrangler 4 的 --tag 是标准参数；
+          # 仍然不加 --non-interactive 之类的可选开关（历史上那个导致过失败）。
           set +e
-          OUT=$(wrangler deploy 2>&1)
+          OUT=$(wrangler deploy --tag "${GITHUB_SHA:0:12}" 2>&1)
           CODE=$?
           set -e
           echo "$OUT"
@@ -196,6 +194,22 @@ jobs:
           echo "$SAMPLE HTTP $t_code，canonical 注入: ${t_canon:-无}"
           if [ "$t_code" != "200" ] || [ -z "$t_canon" ]; then
             echo "::error::$SAMPLE 未正确返回注入过 canonical 的 HTML（HTTP $t_code）。检查 worker 的路由与 html_handling。"
+            exit 1
+          fi
+
+          # 6) Worker 版本闸门：线上跑的必须是「本次提交」
+          #    前几步只能证明静态资源是新的。纯 worker 改动（不动 index.html/sw.js）
+          #    时版本号不变，那些断言全都会绿 —— 但 worker 可能压根没部署成功。
+          #    /api/health 回读 deploy --tag 打的版本 tag，这里硬比对。
+          WANT_REV="${GITHUB_SHA:0:12}"
+          GOT_REV=$(get https://luoluo.fun/api/health | grep -o '"rev"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//; s/"$//' || true)
+          echo "仓库提交 $WANT_REV / 线上 worker rev=${GOT_REV:-空}"
+          if [ -z "${GOT_REV:-}" ] || [ "$GOT_REV" = "unknown" ]; then
+            echo "::error::/api/health 没返回有效 rev（可能是 version_metadata binding 未生效）。"
+            exit 1
+          fi
+          if [ "$GOT_REV" != "$WANT_REV" ]; then
+            echo "::error::线上 worker rev=$GOT_REV ≠ 本次提交 $WANT_REV：worker 没部署上去，或部署的是旧版本。"
             exit 1
           fi
 

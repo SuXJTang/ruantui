@@ -362,9 +362,12 @@ export default {
                 // 后者会把 injectToolMeta 设好的 no-store 覆盖成 no-cache，
                 // 而 no-cache 实测阻挡不住 Cloudflare 边缘缓存，
                 // 导致改了注入逻辑后 /t/{id} 一直返回旧版本。
-                if (page) return page;
+                if (page.state === 'ok' && page.page) return page.page;
+                console.warn('详情页降级为首页兜底 id=' + toolId + ' state=' + page.state);
             }
             // 取不到数据时退回普通首页，不要给用户 404
+            // （三态已拆开，missing / error 的状态码分流是下一步的事，
+            //  这一步刻意保持原行为，先证明拆三态本身没改变线上表现）
             var fb = new Request(new URL('/index.html', url), request);
             var fbRes = await env.ASSETS.fetch(fb);
             var fbHeaders = new Headers(fbRes.headers);
@@ -437,30 +440,63 @@ function absolutizeAssets(html, origin) {
 }
 
 // 取工具数据（走 Supabase 公开只读接口，anon key 只能读不能写）
+// 返回 { state: 'ok' | 'missing' | 'error', tool }：
+//   ok      —— 查到了
+//   missing —— HTTP 200 但结果为空，即这个 id 确实不存在（已下架 / 从未存在）
+//   error   —— 上游挂了（网络错误 / 非 2xx / 响应不是数组）
+// 三者必须分开：missing 可以回 404，error 绝不能 ——
+// 否则 Supabase 抖一下，全站工具页会一起变 404 被搜索引擎批量摘收录。
 async function fetchTool(id, ctx) {
     var endpoint = SB_URL + '/rest/v1/tools?id=eq.' + id +
         '&select=id,name,category,comment,detail,rating,iconUrl,color,tags&limit=1';
-    var rows = await fetchListCached(endpoint, ctx);
-    return rows && rows[0] ? rows[0] : null;
+    var r = await fetchListCached(endpoint, ctx);
+    if (r.state !== 'ok') return { state: 'error', tool: null };
+    return r.rows.length ? { state: 'ok', tool: r.rows[0] } : { state: 'missing', tool: null };
 }
 
-// 带缓存地拉 Supabase 列表，返回数组或 null
+// 带缓存地拉 Supabase 列表。
+// 返回 { state: 'ok' | 'error', rows }：
+//   ok    —— HTTP 200 且响应是数组（rows 可以是空数组，表示查询结果确实为空）
+//   error —— 网络失败 / !res.ok / JSON 解析失败 / 响应不是数组
+// 历史坑：这里从前统一返回 null，「没有数据」和「上游挂了」混在一条路上，
+// 详情页因此只能把所有异常都当成「数据取不到」退回首页（软 404）。
 async function fetchListCached(endpoint, ctx) {
     var cacheKey = new Request(endpoint, { method: 'GET' });
     var cache = caches.default;
     var hit = await cache.match(cacheKey);
     if (hit) {
-        try { return await hit.json(); } catch (e) { return null; }
+        try {
+            var cached = await hit.json();
+            if (Array.isArray(cached)) return { state: 'ok', rows: cached };
+        } catch (e) { /* 缓存内容坏了，当作未命中继续回源 */ }
     }
-    var res = await fetch(endpoint, {
-        headers: {
-            'apikey': SB_KEY,
-            'Authorization': 'Bearer ' + SB_KEY,
-        },
-    });
-    if (!res.ok) return null;
-    var rows = await res.json();
-    if (!Array.isArray(rows)) return null;
+    var res;
+    try {
+        res = await fetch(endpoint, {
+            headers: {
+                'apikey': SB_KEY,
+                'Authorization': 'Bearer ' + SB_KEY,
+            },
+        });
+    } catch (e) {
+        console.error('fetchListCached 网络失败', endpoint, e && e.message);
+        return { state: 'error', rows: [] };
+    }
+    if (!res.ok) {
+        console.error('fetchListCached 上游 HTTP ' + res.status, endpoint);
+        return { state: 'error', rows: [] };
+    }
+    var rows;
+    try {
+        rows = await res.json();
+    } catch (e) {
+        console.error('fetchListCached 响应解析失败', endpoint, e && e.message);
+        return { state: 'error', rows: [] };
+    }
+    if (!Array.isArray(rows)) {
+        console.error('fetchListCached 响应不是数组', endpoint);
+        return { state: 'error', rows: [] };
+    }
     // 缓存 10 分钟：工具信息改动不频繁，管理员编辑后最多 10 分钟生效
     if (ctx && ctx.waitUntil) {
         var toCache = new Response(JSON.stringify(rows), {
@@ -468,7 +504,7 @@ async function fetchListCached(endpoint, ctx) {
         });
         ctx.waitUntil(cache.put(cacheKey, toCache));
     }
-    return rows;
+    return { state: 'ok', rows: rows };
 }
 
 // Worker 自动生成 sitemap.xml，替代脆弱的本地脚本。
@@ -478,7 +514,8 @@ async function handleSitemap(url, env, ctx) {
     var today = new Date().toISOString().slice(0, 10);
     var tools = null;
     try {
-        tools = await fetchListCached(SB_URL + '/rest/v1/tools?select=id&order=created_at.asc', ctx);
+        var sr = await fetchListCached(SB_URL + '/rest/v1/tools?select=id&order=created_at.asc', ctx);
+        if (sr.state === 'ok') tools = sr.rows;
     } catch (e) {
         console.error('sitemap 取工具失败，回退静态文件', e && e.message);
     }
@@ -616,7 +653,8 @@ function renderSSRCards(tools, origin) {
 async function injectToolList(htmlRes, url, ctx) {
     var endpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier,downloads,views&order=pinned.desc,created_at.asc';
     var tools = await fetchListCached(endpoint, ctx);
-    if (!tools || !tools.length) return null;
+    if (tools.state !== 'ok' || !tools.rows.length) return null;
+    tools = tools.rows;
 
     var html = await htmlRes.text();
     var origin = url.origin;
@@ -659,7 +697,8 @@ async function injectToolList(htmlRes, url, ctx) {
     // 注入卡片后，即使脚本挂了也能看到完整列表。
     try {
         var listEndpoint = SB_URL + '/rest/v1/tools?select=id,name,category,comment,rating,iconUrl,color,tags,url,download,pinned,download_tier,downloads,views&order=pinned.desc,created_at.asc';
-        var allTools = await fetchListCached(listEndpoint, ctx);
+        var lr = await fetchListCached(listEndpoint, ctx);
+        var allTools = lr.state === 'ok' ? lr.rows : [];
         if (allTools && allTools.length) {
             var catSet = {};
             allTools.forEach(function (x) { var c = x.category || '未分类'; catSet[c] = (catSet[c] || 0) + 1; });
@@ -680,18 +719,15 @@ async function injectToolList(htmlRes, url, ctx) {
 }
 
 // 把首页 HTML 里的 title / description / og / canonical / JSON-LD 换成具体工具的信息
+// 返回 { state: 'ok' | 'missing' | 'error', page: Response|null } ——
+// 调用方按 state 决定状态码（第 3 步：missing → 404、error → 503）。
 async function injectToolMeta(htmlRes, toolId, url, ctx) {
-    var tool;
-    try {
-        tool = await fetchTool(toolId, ctx);
-    } catch (e) {
-        console.error('fetchTool 抛错', toolId, e && e.message);
-        return null;
+    var found = await fetchTool(toolId, ctx);
+    if (found.state !== 'ok') {
+        console.error('fetchTool ' + found.state + ', id=' + toolId);
+        return { state: found.state, page: null };
     }
-    if (!tool) {
-        console.error('fetchTool 返回空, id=' + toolId);
-        return null;
-    }
+    var tool = found.tool;
 
     var html = await htmlRes.text();
     var origin = url.origin;
@@ -783,10 +819,10 @@ async function injectToolMeta(htmlRes, toolId, url, ctx) {
     html = html.replace('</head>',
         '<script type="application/ld+json">' + crumbLd + '</script>\n</head>');
 
-    return new Response(html, {
+    return { state: 'ok', page: new Response(html, {
         status: 200,
         headers: htmlRes.headers,
-    });
+    }) };
 }
 
 // 取同分类的其他工具，用于详情页底的「更多 XX 工具」内链
@@ -795,6 +831,6 @@ async function fetchRelatedTools(tool, ctx) {
     if (!cat) return [];
     var endpoint = SB_URL + '/rest/v1/tools?select=id,name&category=eq.' + cat +
         '&id=neq.' + tool.id + '&order=pinned.desc,id.asc&limit=8';
-    var rows = await fetchListCached(endpoint, ctx);
-    return Array.isArray(rows) ? rows : [];
+    var r = await fetchListCached(endpoint, ctx);
+    return r.state === 'ok' ? r.rows : [];
 }

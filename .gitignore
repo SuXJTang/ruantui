@@ -29,6 +29,3 @@ tmp/
 
 # UI v4 改造前的样式快照（本地留底，不入库）
 .style-v3-backup.css
-
-# 部署闸门文件：CI 在部署前生成、随 assets 上传，不进仓库
-rev.txt

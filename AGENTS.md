@@ -253,6 +253,23 @@ Worker 里有 `absolutizeAssets()` 统一转成绝对路径，新增资源时注
 GitHub Actions 的 `paths` 过滤排除了 `*.md`。
 想让改动上线，**必须动到实际代码文件**。
 
+### 6.6 详情页三态 ≠ 一律 404
+
+`/t/{id}` 走 `fetchListCached` → `fetchTool` 的三态，**不要合并成一条兜底**：
+
+| state | 判定 | 响应 |
+|---|---|---|
+| `ok` | HTTP 200 且 `rows.length > 0` | 200 + 注入 meta |
+| `missing` | HTTP 200 但结果为空 | **404** + 内联下架页 |
+| `error` | 网络失败 / 非 2xx / 解析失败 / 非数组 | **503** + `Retry-After: 60` + `no-store` |
+
+- `error` 永远不能给 404：Supabase 抖一下，全站工具页会被搜索引擎批量摘收录。
+- 两个兜底页是 worker 内联字符串，**不能复用 index.html** —— 会拉起 SPA，
+  用户看到的又是首页骨架，等于软 404 复现。
+- 范围只锁 `matchToolPath()` 命中的 `/t/\d+`；`/t/abc` 和任意未知路径仍走
+  SPA 兜底（200 + index.html），改那条分支会全站深层链接白屏。
+- `deploy.yml` 冒烟里的「`/t/56` 必须 200」就是这条链路的回归哨兵，不要删。
+
 ---
 
 ## 七、下载链接规则

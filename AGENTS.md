@@ -197,6 +197,21 @@ node --check 对应.js
 | `index.html` | 所有资源的 `?v=N` → `?v=N+1` |
 | `sw.js` | `CACHE_VERSION = 'vX'` → `'vX+1'` |
 | `README.md` | 同步更新文档里的版本号 |
+| `AGENTS.md` | 尾注「最后更新 / 对应版本」同步 |
+
+**这些都由脚本一次写全，不要手改**：
+
+```bash
+node scripts/bump-version.js
+```
+
+脚本会同时更新 index.html / sw.js / README.md / AGENTS.md 四处，并在输出里
+打印每一处的旧值 → 新值。手抄版本号必然漂移（本文件尾注曾长期停在
+`?v=42 / v50`，而线上已是 `?v=121 / v125`）。
+
+CI 的「部署后冒烟检查」会把线上 `?v=` / `CACHE_VERSION` 与仓库里的值比对，
+不一致直接 fail —— 所以忘了 bump、或 bump 后没上线，会立刻变红而不是静默
+「CI 绿了但用户看不到变化」。
 
 **只改一个会导致**：用户拿不到新文件，或 SW 缓存混乱（历史上出现过
 「改了但用户看不到变化」，排查很久）。
@@ -383,8 +398,8 @@ node --check worker/index.js
 $c = Get-Content style.css -Raw
 "$(([regex]::Matches($c,'\{')).Count) / $(([regex]::Matches($c,'\}')).Count)"
 
-# 版本递增（index.html + sw.js + README.md 三处）
-# 参考历史 commit 里的 bump*.js 脚本
+# 版本递增（index.html + sw.js + README.md + AGENTS.md 四处，一次写全）
+node scripts/bump-version.js
 
 # 提交
 git add -A
@@ -392,10 +407,10 @@ git -c user.name="SuXJTang" -c user.email="1557003690@qq.com" commit -F msg.txt
 git push origin master
 
 # 线上验证（清缓存）
-curl.exe -sS --noproxy "*" -H "Cache-Control: no-cache" "https://luoluo.fun/style.css?v=42"
+curl.exe -sS --noproxy "*" -H "Cache-Control: no-cache" "https://luoluo.fun/style.css?v=122"
 ```
 
 ---
 
-**最后更新**：2026-11-09
-**对应版本**：?v=42 / CACHE_VERSION v50
+**最后更新**：2026-11-26
+**对应版本**：?v=122 / CACHE_VERSION v126

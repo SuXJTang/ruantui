@@ -38,7 +38,27 @@ readme = readme.replace(/`v=\d+`/g, '`v=' + newV + '`');
 readme = readme.replace(/`'v\d+'`/g, "`'v" + newCache + "'`");
 write('README.md', readme);
 
+// 4) AGENTS.md —— 尾注的「最后更新 / 对应版本」必须由脚本写。
+//    这份文件是给 AI 助手读的规范，基线版本号写错会让下次 bump 算错、
+//    或者撞回旧号导致 SW 缓存混乱。手抄必然漂移。
+try {
+  let agents = read('AGENTS.md');
+  const today = new Date();
+  const stamp = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+  agents = agents
+    .replace(/^\*\*最后更新\*\*：.*$/m, '**最后更新**：' + stamp)
+    .replace(/^\*\*对应版本\*\*：.*$/m, '**对应版本**：?v=' + newV + ' / CACHE_VERSION v' + newCache)
+    // 速查命令里的示例 URL 也跟着走，避免复制粘贴验了个旧版本
+    .replace(/luoluo\.fun\/style\.css\?v=\d+/g, 'luoluo.fun/style.css?v=' + newV);
+  write('AGENTS.md', agents);
+} catch (e) {
+  console.warn('提示：AGENTS.md 未同步（' + e.message + '）');
+}
+
 console.log('版本已递增：');
 console.log('  index.html  ?v=' + oldV + ' → ?v=' + newV + '（' + vNums.length + ' 处）');
 console.log('  sw.js       v' + oldCache + ' → v' + newCache);
 console.log('  README.md   已同步');
+console.log('  AGENTS.md   尾注已同步');

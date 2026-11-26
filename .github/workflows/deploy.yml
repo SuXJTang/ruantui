@@ -115,10 +115,15 @@ jobs:
       - name: 部署后冒烟检查
         run: |
           set -euo pipefail
+          # 统一带浏览器 UA：站点前面有 WAF 规则，非浏览器 UA 有被拦的风险，
+          # 监控必须验「用户看到的」，不能因为自己 UA 不像浏览器就误判站点挂了。
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+          get() { curl -sS -A "$UA" --max-time 20 "$@"; }
+
           echo "等待边缘生效…"
           sleep 8
           # 1) 站点可访问
-          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://luoluo.fun/ || echo 000)
+          code=$(get -o /dev/null -w '%{http_code}' https://luoluo.fun/ || echo 000)
           echo "首页 HTTP $code"
           if [ "$code" != "200" ]; then
             echo "::error::首页返回 $code，部署可能失败。"
@@ -138,16 +143,44 @@ jobs:
 
           # 3) 带版本号的静态资源应有一年强缓存
           #    版本号从首页动态读取，避免写死后换版本就失效
-          V=$(curl -sS --max-time 20 https://luoluo.fun/ | grep -o 'ui\.js?v=[0-9]*' | head -1 | sed 's/.*v=//' || true)
+          V=$(get https://luoluo.fun/ | grep -o 'ui\.js?v=[0-9]\+' | head -1 | sed 's/.*v=//' || true)
           if [ -z "${V:-}" ]; then
             echo "::warning::未能从首页解析出 ui.js 版本号，跳过缓存检查"
           else
             echo "检测到版本号 v=$V"
-            cc=$(curl -sS -D - -o /dev/null --max-time 20 "https://luoluo.fun/ui.js?v=$V" | grep -i '^cache-control:' | tr -d '\r' || echo '')
+            cc=$(get -D - -o /dev/null "https://luoluo.fun/ui.js?v=$V" | grep -i '^cache-control:' | tr -d '\r' || echo '')
             echo "ui.js 缓存头: $cc"
             if ! echo "$cc" | grep -q 'max-age=31536000'; then
               echo "::warning::静态资源未命中长缓存策略，请检查 run_worker_first 与 applyCacheHeaders。"
             fi
+          fi
+
+          # 4) 版本一致性：线上必须等于仓库里的值
+          #    这是「CI 绿了但用户看到的还是旧页面」的兜底 —— 只验 200 不够，
+          #    旧资源也能 200。
+          WANT_V=$(grep -o '?v=[0-9]\+' index.html | head -1 | sed 's/?v=//')
+          WANT_CACHE=$(grep -o "CACHE_VERSION = 'v[0-9]*'" sw.js | head -1 | grep -o 'v[0-9]*')
+          GOT_V=$(get https://luoluo.fun/ | grep -o 'ui\.js?v=[0-9]\+' | head -1 | sed 's/.*v=//' || true)
+          GOT_CACHE=$(get https://luoluo.fun/sw.js | grep -o "CACHE_VERSION = 'v[0-9]*'" | head -1 | grep -o 'v[0-9]*' || true)
+          echo "仓库: ?v=$WANT_V  CACHE_VERSION=$WANT_CACHE"
+          echo "线上: ?v=$GOT_V  CACHE_VERSION=$GOT_CACHE"
+          if [ "$GOT_V" != "$WANT_V" ]; then
+            echo "::error::线上 index.html 版本 ?v=$GOT_V 与仓库 ?v=$WANT_V 不一致：部署未生效或缓存回退。"
+            exit 1
+          fi
+          if [ "$GOT_CACHE" != "$WANT_CACHE" ]; then
+            echo "::error::线上 sw.js CACHE_VERSION=$GOT_CACHE 与仓库 $WANT_CACHE 不一致：新 Service Worker 没上线。"
+            exit 1
+          fi
+
+          # 5) 详情页服务端 meta 注入仍生效
+          #    防 run_worker_first / html_handling 被改回，导致 SEO 注入静默失效。
+          t_code=$(get -o /dev/null -w '%{http_code}' https://luoluo.fun/t/56 || echo 000)
+          t_canon=$(get https://luoluo.fun/t/56 | grep -o 'rel="canonical" href="https://luoluo.fun/t/56"' | head -1 || true)
+          echo "/t/56 HTTP $t_code，canonical 注入: ${t_canon:-无}"
+          if [ "$t_code" != "200" ] || [ -z "$t_canon" ]; then
+            echo "::error::/t/56 未正确返回注入过 canonical 的 HTML（HTTP $t_code）。检查 worker 的路由与 html_handling。"
+            exit 1
           fi
 
           echo "✅ 部署后检查通过"

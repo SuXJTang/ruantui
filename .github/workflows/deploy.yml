@@ -202,14 +202,17 @@ jobs:
           #    时版本号不变，那些断言全都会绿 —— 但 worker 可能压根没部署成功。
           #    /api/health 回读 deploy --tag 打的版本 tag，这里硬比对。
           WANT_REV="${GITHUB_SHA:0:12}"
-          GOT_REV=$(get https://luoluo.fun/api/health | grep -o '"rev"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//; s/"$//' || true)
-          echo "仓库提交 $WANT_REV / 线上 worker rev=${GOT_REV:-空}"
+          HEALTH=$(get https://luoluo.fun/api/health || true)
+          GOT_REV=$(echo "$HEALTH" | grep -o '"rev"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//; s/"$//' || true)
+          GOT_VER=$(echo "$HEALTH" | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//; s/"$//' || true)
+          echo "仓库提交 $WANT_REV / 线上 rev=${GOT_REV:-空} version=${GOT_VER:-空}"
+          echo "health 原文: ${HEALTH:-<空>}"
           if [ -z "${GOT_REV:-}" ] || [ "$GOT_REV" = "unknown" ]; then
-            echo "::error::/api/health 没返回有效 rev（可能是 version_metadata binding 未生效）。"
+            echo "::error::/api/health 没有版本 tag（version=$(GOT_VER)）。两种可能：1) version_metadata binding 没生效；2) 有人绕过 CI 手动跑了 wrangler deploy（不带 --tag 会清掉 tag）。请一律走 CI 发布。"
             exit 1
           fi
           if [ "$GOT_REV" != "$WANT_REV" ]; then
-            echo "::error::线上 worker rev=$GOT_REV ≠ 本次提交 $WANT_REV：worker 没部署上去，或部署的是旧版本。"
+            echo "::error::线上 worker rev=$GOT_REV ≠ 本次提交 $WANT_REV：要么 worker 没部署上去，要么部署完成后又被别的部署覆盖了。"
             exit 1
           fi
 

@@ -104,7 +104,8 @@ async function handleRequest(request, env) {
                 return errorResponse('只支持 GET', 405, cors);
             }
             var vmeta = env && env.CF_VERSION_METADATA;
-            var rev = (vmeta && (vmeta.tag || vmeta.id)) || 'unknown';
+            var rev = (vmeta && vmeta.tag) || 'unknown';
+            var vid = (vmeta && vmeta.id) || 'unknown';
             var healthHeaders = {
                 'Content-Type': 'application/json; charset=utf-8',
                 'Cache-Control': 'no-store',
@@ -114,6 +115,7 @@ async function handleRequest(request, env) {
             return new Response(JSON.stringify({
                 ok: true,
                 rev: rev,
+                version: vid,
                 ts: new Date().toISOString(),
             }), { status: 200, headers: healthHeaders });
         }

@@ -10,13 +10,6 @@
 // 旧的 /api/click 埋点（只打日志不落库）与 /api/admin/* 均已移除：
 // /api/admin/* 返回 410 Gone，/api/click 已无调用方。
 
-// 构建标识：CI 在部署前用 sed 把这里替换成提交 sha 前 12 位（见 deploy.yml），
-// 部署后还原。为什么是写进代码而不是用 wrangler 的 --tag / --var：
-// 实测每次 `wrangler deploy` 会生成两个版本 —— 一个带 tag/var、0.6 秒后又一个
-// 不带这两者并最终覆盖线上。只有「代码内容本身」能稳定表达「线上是哪个提交」。
-// 本地/dev 环境下保持 'dev'，/api/health 会依次退回 env.GIT_REV、版本 tag。
-var BUILD_REV = 'dev';
-
 // 允许的前端来源（CORS 白名单）
 var ALLOWED_ORIGINS = [
     'https://suxjtang.github.io',
@@ -111,13 +104,9 @@ async function handleRequest(request, env) {
                 return errorResponse('只支持 GET', 405, cors);
             }
             var vmeta = env && env.CF_VERSION_METADATA;
-            // rev 的取值优先级：
-            //   1) BUILD_REV —— CI 部署前 sed 注入的提交 sha，写在代码内容里，
-            //      不受 wrangler 一次 deploy 生成两个版本的影响，最可靠
-            //   2) env.GIT_REV —— 手工部署时可用 --var 注入
-            //   3) 版本 tag —— 可能为空
-            var rev = BUILD_REV !== 'dev' ? BUILD_REV
-                : ((env && env.GIT_REV) || (vmeta && vmeta.tag) || 'unknown');
+            // rev 只是排查用的辅助信息（版本 tag 可能为空，见 deploy.yml 的说明）。
+            // 真正的部署闸门断言的是 /rev.txt —— 那是随 assets 一起上传的静态文件。
+            var rev = (env && env.GIT_REV) || (vmeta && vmeta.tag) || 'unknown';
             var vid = (vmeta && vmeta.id) || 'unknown';
             var healthHeaders = {
                 'Content-Type': 'application/json; charset=utf-8',
@@ -219,6 +208,11 @@ function applyCacheHeaders(request, response) {
         // CACHE_VERSION 的递增就会延迟最多一小时才到用户端 ——「改了用户看不到」
         // 的原始症状会在这一层原样复发。浏览器每次导航都会回源核对 SW 脚本，
         // 所以这里用 no-cache 不会增加多少请求，却能让发布即时生效。
+        cacheControl = 'no-cache, must-revalidate';
+    } else if (pathname === '/rev.txt') {
+        // 部署闸门文件（CI 每次部署写入当前提交 sha，见 deploy.yml）。
+        // 边缘绝不能缓存它：冒烟要读的是「这一次部署的 sha」，
+        // 缓存 1 小时会让闸门永远对不上、每次都红。
         cacheControl = 'no-cache, must-revalidate';
     } else if (hasVersion) {
         // URL 带版本戳 → 内容不可变，可永久缓存

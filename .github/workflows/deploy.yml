@@ -94,20 +94,21 @@ jobs:
           # 版本 tag = 提交 sha 前 12 位，供 /api/health 回读，冒烟据此断言
           # 「线上 Worker 就是本次提交」。wrangler 4 的 --tag 是标准参数；
           # 仍然不加 --non-interactive 之类的可选开关（历史上那个导致过失败）。
-          echo "← 本次提交: ${GITHUB_SHA:-<空>} / 注入 BUILD_REV: ${GITHUB_SHA:0:12}"
-          # 把提交 sha 写进 worker 源码常量（见 worker/index.js 的 BUILD_REV）。
-          # 为什么不用 --tag / --var：实测一次 `wrangler deploy` 会生成两个版本，
-          # 一个带 tag/var、0.6 秒后另一个不带并覆盖线上 —— 只有代码内容本身可靠。
-          sed -i "s/^var BUILD_REV = '.*';$/var BUILD_REV = '${GITHUB_SHA:0:12}';/" worker/index.js
-          grep -n '^var BUILD_REV' worker/index.js
-          node --check worker/index.js
+          echo "← 本次提交: ${GITHUB_SHA:-<空>} / 用于闸门的 rev: ${GITHUB_SHA:0:12}"
+          # 部署闸门文件：把提交 sha 写成静态资源 rev.txt，随 assets 一起上传。
+          # 为什么不用 wrangler --tag / --var / 版本元数据：实测一次 `wrangler deploy`
+          # 会在 Cloudflare 侧产生两个版本（一个带 tag/var，0.6 秒后一个不带并覆盖
+          # 线上），那三条路读到的都不是最终运行的那份。
+          # rev.txt 是 assets 的一部分，读得回来就说明这次上传生效了；
+          # 内容只有提交 sha（本来就公开），部署完立即删除，不进仓库。
+          echo "${GITHUB_SHA:0:12}" > rev.txt
+          cat rev.txt
           set +e
           OUT=$(wrangler deploy 2>&1)
           CODE=$?
           set -e
           echo "$OUT"
-          # 还原源码，别把注入的 sha 留在工作区
-          git checkout -- worker/index.js
+          rm -f rev.txt
 
           if [ $CODE -ne 0 ]; then
             # 把 wrangler 的报错提炼成 GitHub 注解，在 Summary 页也能直接看到，
@@ -206,22 +207,21 @@ jobs:
             exit 1
           fi
 
-          # 6) Worker 版本闸门：线上跑的必须是「本次提交」
+          # 6) Worker 版本闸门：线上部署的必须是「本次提交」
           #    前几步只能证明静态资源是新的。纯 worker 改动（不动 index.html/sw.js）
-          #    时版本号不变，那些断言全都会绿 —— 但 worker 可能压根没部署成功。
-          #    部署时用 --var GIT_REV=<sha前12位> 注入，这里硬比对。
+          #    时版本号不变，那些断言全都会绿 —— 但部署可能压根没成功。
+          #
+          #    判据是 rev.txt：部署步骤把提交 sha 写成静态文件随 assets 上传，
+          #    这里读回比对。不用 wrangler --tag / --var / 版本元数据 ——
+          #    实测一次 deploy 会产生两个版本（一个带 tag/var、0.6 秒后一个不带
+          #    并覆盖线上），那几条路读到的都不是最终运行的那份，已连续红了三次。
           WANT_REV="${GITHUB_SHA:0:12}"
+          GOT_REV=$(get https://luoluo.fun/rev.txt | tr -d '[:space:]' || true)
+          echo "本次提交 $WANT_REV / 线上 rev.txt=${GOT_REV:-空}"
           HEALTH=$(get https://luoluo.fun/api/health || true)
-          revof() { echo "$HEALTH" | grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/.*:[[:space:]]*"//; s/"$//'; }
-          GOT_REV=$(revof rev || true)
-          echo "本次提交 $WANT_REV / 线上 worker rev=${GOT_REV:-空}"
-          echo "health 原文: ${HEALTH:-<空>}"
-          if [ -z "${GOT_REV:-}" ] || [ "$GOT_REV" = "unknown" ]; then
-            echo "::error::/api/health 里没有 rev：说明 --var GIT_REV 没注入，或线上跑的是别的部署。"
-            exit 1
-          fi
+          echo "health（仅排查用，不参与断言）: ${HEALTH:-<空>}"
           if [ "$GOT_REV" != "$WANT_REV" ]; then
-            echo "::error::线上 worker rev=$GOT_REV ≠ 本次提交 $WANT_REV：worker 没部署上去，或部署后又被别的部署覆盖。"
+            echo "::error::线上 rev.txt=${GOT_REV:-空} ≠ 本次提交 $WANT_REV：这次部署没生效，或部署后又被别的部署覆盖。"
             exit 1
           fi
 

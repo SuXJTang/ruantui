@@ -94,9 +94,13 @@ jobs:
           # 版本 tag = 提交 sha 前 12 位，供 /api/health 回读，冒烟据此断言
           # 「线上 Worker 就是本次提交」。wrangler 4 的 --tag 是标准参数；
           # 仍然不加 --non-interactive 之类的可选开关（历史上那个导致过失败）。
-          echo "← 本次提交: ${GITHUB_SHA:-<空>} / 部署 tag: ${GITHUB_SHA:0:12}"
+          echo "← 本次提交: ${GITHUB_SHA:-<空>} / 注入 GIT_REV: ${GITHUB_SHA:0:12}"
           set +e
-          OUT=$(wrangler deploy --tag "${GITHUB_SHA:0:12}" 2>&1)
+          # --var GIT_REV：把提交 sha 直接注入 worker 环境变量，/api/health 原样返回。
+          # 为什么不用 --tag：实测每次 deploy 会生成两个版本（一个带 tag、
+          # 一个无 tag 并最终覆盖线上），tag 和 version id 都不可靠；
+          # --var 是部署参数本身，两次上传都带，且随部署生效。
+          OUT=$(wrangler deploy --var "GIT_REV:${GITHUB_SHA:0:12}" 2>&1)
           CODE=$?
           set -e
           echo "$OUT"
@@ -108,14 +112,6 @@ jobs:
             echo "::error::wrangler 退出码 $CODE —— 关键错误: $ERR"
             exit $CODE
           fi
-
-          # 抓 wrangler 自己报的版本 id，传给冒烟做硬比对。
-          # 为什么不全靠 --tag：实测 tag 有时没落到版本上（2026-11 两次部署中
-          # 一次有 tag 一次没有），而 version id 是 wrangler 在成功输出里明写的，
-          # 一定存在。tag 只当辅助信息。
-          VID=$(echo "$OUT" | grep -oE 'Current Version ID:[[:space:]]*[0-9a-f-]{8,}' | head -1 | sed 's/.*:[[:space:]]*//')
-          echo "WORKER_VERSION_ID=$VID" >> "$GITHUB_ENV"
-          echo "本次部署 version id: ${VID:-<未解析到>}"
 
           echo "✅ 部署命令执行完成"
 
@@ -209,24 +205,19 @@ jobs:
           # 6) Worker 版本闸门：线上跑的必须是「本次提交」
           #    前几步只能证明静态资源是新的。纯 worker 改动（不动 index.html/sw.js）
           #    时版本号不变，那些断言全都会绿 —— 但 worker 可能压根没部署成功。
-          #
-          #    判据用「wrangler 本次输出的 Current Version ID」，不用 --tag：
-          #    实测 tag 有时没落到版本上，而 version id 一定有。
-          WANT_VID="${WORKER_VERSION_ID:-}"
+          #    部署时用 --var GIT_REV=<sha前12位> 注入，这里硬比对。
           WANT_REV="${GITHUB_SHA:0:12}"
           HEALTH=$(get https://luoluo.fun/api/health || true)
           revof() { echo "$HEALTH" | grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/.*:[[:space:]]*"//; s/"$//'; }
-          GOT_VID=$(revof version || true)
           GOT_REV=$(revof rev || true)
-          echo "本次提交 $WANT_REV / 本次部署 version id ${WANT_VID:-<空>}"
-          echo "线上 rev=${GOT_REV:-空} version=${GOT_VID:-空}"
+          echo "本次提交 $WANT_REV / 线上 worker rev=${GOT_REV:-空}"
           echo "health 原文: ${HEALTH:-<空>}"
-          if [ -z "${WANT_VID:-}" ]; then
-            echo "::error::没能从 wrangler 输出里解析出 Current Version ID，无法断言 worker 是否上线。"
+          if [ -z "${GOT_REV:-}" ] || [ "$GOT_REV" = "unknown" ]; then
+            echo "::error::/api/health 里没有 rev：说明 --var GIT_REV 没注入，或线上跑的是别的部署。"
             exit 1
           fi
-          if [ "$GOT_VID" != "$WANT_VID" ]; then
-            echo "::error::线上 worker version=${GOT_VID:-空} ≠ 本次部署 ${WANT_VID}：worker 没部署上去，或部署后又被别的部署覆盖（比如有人手动 wrangler deploy）。"
+          if [ "$GOT_REV" != "$WANT_REV" ]; then
+            echo "::error::线上 worker rev=$GOT_REV ≠ 本次提交 $WANT_REV：worker 没部署上去，或部署后又被别的部署覆盖。"
             exit 1
           fi
 

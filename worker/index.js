@@ -104,7 +104,9 @@ async function handleRequest(request, env) {
                 return errorResponse('只支持 GET', 405, cors);
             }
             var vmeta = env && env.CF_VERSION_METADATA;
-            var rev = (vmeta && vmeta.tag) || 'unknown';
+            // rev 优先用部署时注入的 GIT_REV（--var，随每次部署生效、不受版本
+            // 元数据二次上传影响），其次才是版本 tag，最后才是 version id。
+            var rev = (env && env.GIT_REV) || (vmeta && vmeta.tag) || 'unknown';
             var vid = (vmeta && vmeta.id) || 'unknown';
             var healthHeaders = {
                 'Content-Type': 'application/json; charset=utf-8',

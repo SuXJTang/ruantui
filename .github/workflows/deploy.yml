@@ -158,14 +158,30 @@ jobs:
           # 4) 版本一致性：线上必须等于仓库里的值
           #    这是「CI 绿了但用户看到的还是旧页面」的兜底 —— 只验 200 不够，
           #    旧资源也能 200。
+          #
+          #    ⚠ 读点必须选「每次回源校验」的页面，不能读 `/`。
+          #    实测（2026-11）：/ 的头是 s-maxage=60 + stale-while-revalidate=300
+          #    且 cf-cache-status=HIT，部署后最多约 6 分钟边缘还在发旧 HTML；
+          #    而且加 ?cb=<时间戳> 破不掉（实测同一个 HIT、同样的 cache-control，
+          #    CF 这里不按 query 分 key）。读 / 会让这条断言在每次部署后先红几分钟，
+          #    接着就会有人加 retry，闸门从此失效。
+          #    改读 /t/{id}：max-age=0, must-revalidate，每次校验，读到的是新字节。
+          #    id 从 sitemap 现取、不写死 —— 写死 56 的话哪天那条工具被删，冒烟就假报警。
+          SAMPLE=$(get https://luoluo.fun/sitemap.xml 2>/dev/null | grep -o '/t/[0-9]\+' | head -1 || true)
+          if [ -z "${SAMPLE:-}" ]; then
+            echo "::warning::sitemap 里没解析出 /t/{id}，退回 /t/56 取样。sitemap 为空本身是 P1 问题。"
+            SAMPLE="/t/56"
+          fi
+          echo "取样详情页: $SAMPLE"
+
           WANT_V=$(grep -o '?v=[0-9]\+' index.html | head -1 | sed 's/?v=//')
           WANT_CACHE=$(grep -o "CACHE_VERSION = 'v[0-9]*'" sw.js | head -1 | grep -o 'v[0-9]*')
-          GOT_V=$(get https://luoluo.fun/ | grep -o 'ui\.js?v=[0-9]\+' | head -1 | sed 's/.*v=//' || true)
+          GOT_V=$(get "https://luoluo.fun$SAMPLE" | grep -o 'ui\.js?v=[0-9]\+' | head -1 | sed 's/.*v=//' || true)
           GOT_CACHE=$(get https://luoluo.fun/sw.js | grep -o "CACHE_VERSION = 'v[0-9]*'" | head -1 | grep -o 'v[0-9]*' || true)
           echo "仓库: ?v=$WANT_V  CACHE_VERSION=$WANT_CACHE"
           echo "线上: ?v=$GOT_V  CACHE_VERSION=$GOT_CACHE"
           if [ "$GOT_V" != "$WANT_V" ]; then
-            echo "::error::线上 index.html 版本 ?v=$GOT_V 与仓库 ?v=$WANT_V 不一致：部署未生效或缓存回退。"
+            echo "::error::线上 $SAMPLE 的版本 ?v=$GOT_V 与仓库 ?v=$WANT_V 不一致：部署未生效或缓存回退。"
             exit 1
           fi
           if [ "$GOT_CACHE" != "$WANT_CACHE" ]; then
@@ -175,11 +191,11 @@ jobs:
 
           # 5) 详情页服务端 meta 注入仍生效
           #    防 run_worker_first / html_handling 被改回，导致 SEO 注入静默失效。
-          t_code=$(get -o /dev/null -w '%{http_code}' https://luoluo.fun/t/56 || echo 000)
-          t_canon=$(get https://luoluo.fun/t/56 | grep -o 'rel="canonical" href="https://luoluo.fun/t/56"' | head -1 || true)
-          echo "/t/56 HTTP $t_code，canonical 注入: ${t_canon:-无}"
+          t_code=$(get -o /dev/null -w '%{http_code}' "https://luoluo.fun$SAMPLE" || echo 000)
+          t_canon=$(get "https://luoluo.fun$SAMPLE" | grep -o "rel=\"canonical\" href=\"https://luoluo.fun$SAMPLE\"" | head -1 || true)
+          echo "$SAMPLE HTTP $t_code，canonical 注入: ${t_canon:-无}"
           if [ "$t_code" != "200" ] || [ -z "$t_canon" ]; then
-            echo "::error::/t/56 未正确返回注入过 canonical 的 HTML（HTTP $t_code）。检查 worker 的路由与 html_handling。"
+            echo "::error::$SAMPLE 未正确返回注入过 canonical 的 HTML（HTTP $t_code）。检查 worker 的路由与 html_handling。"
             exit 1
           fi
 

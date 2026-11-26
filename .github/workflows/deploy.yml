@@ -108,7 +108,10 @@ jobs:
           CODE=$?
           set -e
           echo "$OUT"
-          rm -f rev.txt
+          # 注意：这里绝不能删 rev.txt。实测一次 deploy 会分两次上传 assets，
+          # 第二次在命令返回后十几秒内还在进行；提前删掉会让第二次上传的版本
+          # 里没有 rev.txt，线上退化成 SPA 兜底页 → 闸门假绿、线上却读不到 rev。
+          # rev.txt 内容只有提交 sha（本来就公开），已加进 .gitignore，不吃仓库。
 
           if [ $CODE -ne 0 ]; then
             # 把 wrangler 的报错提炼成 GitHub 注解，在 Summary 页也能直接看到，

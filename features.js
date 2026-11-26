@@ -2688,7 +2688,12 @@ var installBtn = document.querySelector('.install-btn');
 if (installBtn) installBtn.style.display = 'none';
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(function(reg) {
+    // updateViaCache: 'none' —— SW 脚本的「更新检查」绕过浏览器 HTTP 缓存。
+    //   默认值 'imports' 意味着浏览器按 sw.js 自己的 Cache-Control 决定要不要重新拉，
+    //   配上边缘的 max-age=3600，一次发布最多要等两小时用户才可能拿到新 SW。
+    // 用绝对路径 /sw.js —— 页面挂在 /t/{id} 下时，相对路径会被解析成 /t/sw.js，
+    //   那里根本不存在这个文件（会 404 或吃 SPA 兜底页），SW 注册直接失败。
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function(reg) {
         console.log('SW registered');
 
         // v7 新版本提示条：仅当「已有旧版本在控制页面」时提示，

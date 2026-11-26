@@ -171,6 +171,13 @@ function applyCacheHeaders(request, response) {
     var cacheControl;
     if (isHTML) {
         cacheControl = 'no-cache, must-revalidate';
+    } else if (pathname === '/sw.js') {
+        // Service Worker 脚本绝不能长缓存：它没有 ?v= 版本戳，
+        // 一旦被边缘缓存（实测曾是 public, max-age=3600 + cf-cache-status: HIT），
+        // CACHE_VERSION 的递增就会延迟最多一小时才到用户端 ——「改了用户看不到」
+        // 的原始症状会在这一层原样复发。浏览器每次导航都会回源核对 SW 脚本，
+        // 所以这里用 no-cache 不会增加多少请求，却能让发布即时生效。
+        cacheControl = 'no-cache, must-revalidate';
     } else if (hasVersion) {
         // URL 带版本戳 → 内容不可变，可永久缓存
         cacheControl = 'public, max-age=31536000, immutable';

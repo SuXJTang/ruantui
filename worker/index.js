@@ -363,16 +363,15 @@ export default {
                 // 而 no-cache 实测阻挡不住 Cloudflare 边缘缓存，
                 // 导致改了注入逻辑后 /t/{id} 一直返回旧版本。
                 if (page.state === 'ok' && page.page) return page.page;
-                console.warn('详情页降级为首页兜底 id=' + toolId + ' state=' + page.state);
+                // 三态分流：只有「确实没有这条记录」才回 404。
+                // 上游挂了回 503 —— 绝不能回 404，否则 Supabase 抖一下
+                // 全站工具页会被搜索引擎批量摘收录。
+                if (page.state === 'missing') return gonePage();
+                if (page.state === 'error') return busyPage();
             }
-            // 取不到数据时退回普通首页，不要给用户 404
-            // （三态已拆开，missing / error 的状态码分流是下一步的事，
-            //  这一步刻意保持原行为，先证明拆三态本身没改变线上表现）
-            var fb = new Request(new URL('/index.html', url), request);
-            var fbRes = await env.ASSETS.fetch(fb);
-            var fbHeaders = new Headers(fbRes.headers);
-            fbHeaders.set('Cache-Control', 'no-store, must-revalidate');
-            return new Response(fbRes.body, { status: 200, headers: fbHeaders });
+            // 连 index.html 都取不到（极罕见）：同样是「暂时不行」，给 503。
+            // 不再退回 200 + 首页 —— 那正是这轮要消灭的软 404。
+            return busyPage();
         }
 
         // 非 API 请求由静态资源处理
@@ -833,4 +832,86 @@ async function fetchRelatedTools(tool, ctx) {
         '&id=neq.' + tool.id + '&order=pinned.desc,id.asc&limit=8';
     var r = await fetchListCached(endpoint, ctx);
     return r.state === 'ok' ? r.rows : [];
+}
+
+// ------------------------------------------------------------------
+// 详情页的两个兜底页：工具不存在（404）/ 上游暂时不可用（503）
+// ------------------------------------------------------------------
+// 为什么内联 HTML 而不是用 ASSETS 里的 404.html：
+// 这个页面必须完全自包含 —— 一旦复用 index.html 或引 style.css，
+// 前端脚本就会被拉起来去请求 Supabase，用户看到的又变成首页骨架，
+// 等于绕回这轮要消灭的软 404。所以：内联样式、无脚本、不注册 SW。
+// 配色跟主站同色系（橙 #FF7D20 / 深底 #0E0F12），但刻意只用一个文件。
+function minimalPageHTML(opts) {
+    var title = escHTML(opts.title);
+    var heading = escHTML(opts.heading);
+    var text = escHTML(opts.text);
+    return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n' +
+        '<meta charset="utf-8">\n' +
+        '<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+        '<meta name="robots" content="noindex,follow">\n' +
+        '<title>' + title + '</title>\n' +
+        '<style>' +
+        '*{box-sizing:border-box}' +
+        'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;' +
+        'padding:24px;background:#0E0F12;color:#EDEDF0;' +
+        'font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}' +
+        'main{max-width:420px;width:100%;text-align:center}' +
+        '.code{font-size:13px;letter-spacing:.14em;color:#FF7D20;font-weight:700;margin-bottom:14px}' +
+        'h1{font-size:21px;line-height:1.35;margin:0 0 10px;font-weight:700}' +
+        'p{margin:0 0 26px;color:#9A9BA3;font-size:14px}' +
+        'a{display:inline-block;padding:12px 26px;border-radius:999px;background:#FF7D20;color:#151619;' +
+        'text-decoration:none;font-weight:700;font-size:14px}' +
+        'a:active{transform:scale(.98)}' +
+        '.brand{margin-top:28px;font-size:12px;color:#5C5E66;letter-spacing:.04em}' +
+        '</style>\n</head>\n<body>\n<main>\n' +
+        '<div class="code">' + escHTML(opts.codeText) + '</div>\n' +
+        '<h1>' + heading + '</h1>\n' +
+        '<p>' + text + '</p>\n' +
+        '<a href="/">返回全部工具</a>\n' +
+        '<div class="brand">软推 · luoluo.fun</div>\n' +
+        '</main>\n</body>\n</html>\n';
+}
+
+// 工具确实不存在（已下架 / 从未存在）。
+// 404 会被爬虫和旧外链反复请求，所以给 60 秒边缘缓存，不给 no-store ——
+// 60 秒的窗口也足够工具重新上架后自愈。
+function gonePage() {
+    return new Response(minimalPageHTML({
+        codeText: '404',
+        title: '该工具已下架 | 软推',
+        heading: '这个工具已下架',
+        text: '它可能已经停止维护，或者被收录方移除了。可以去首页看看其它还在维护的工具。',
+    }), {
+        status: 404,
+        headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'public, max-age=60',
+            'X-Robots-Tag': 'noindex',
+            'X-Content-Type-Options': 'nosniff',
+        },
+    });
+}
+
+// 上游（Supabase）暂时不可用。
+// 绝不能在这里给 200 首页或 404 ——
+// 200 会让「上游挂了」在监控眼里跟「页面正常」长得一样；
+// 404 会让搜索引擎把暂时取不到的工具页批量摘收录。
+// 503 + Retry-After 是标准的临时信号：保留 URL、不摘收录、监控能一眼看见。
+function busyPage() {
+    return new Response(minimalPageHTML({
+        codeText: '暂时不可用',
+        title: '页面暂时加载不出来 | 软推',
+        heading: '页面暂时加载不出来',
+        text: '服务刚打了个盹，稍等一会儿再刷新试试。工具本身没有下架。',
+    }), {
+        status: 503,
+        headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'Retry-After': '60',
+            'X-Robots-Tag': 'noindex',
+            'X-Content-Type-Options': 'nosniff',
+        },
+    });
 }

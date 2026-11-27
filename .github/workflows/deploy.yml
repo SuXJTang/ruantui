@@ -64,9 +64,16 @@ jobs:
             echo "没有上一次提交（首次推送或手动触发），跳过检查"
             exit 0
           fi
-          CHANGED=$(git diff --name-only "$BEFORE" HEAD 2>/dev/null | grep -vE '^(scripts/|\.github/|docs/)' || true)
+          # 显式探测：浅克隆或 force-push 时 before 可能不在历史里，别静默跳过
+          if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "::warning::本地没有提交 $BEFORE（浅克隆或 force-push），跳过 bump 检查"
+            exit 0
+          fi
+          RAW=$(git diff --name-only "$BEFORE" HEAD) || RAW=""
+          echo "原始改动列表:"; echo "${RAW:-<空>}"
+          CHANGED=$(echo "$RAW" | grep -vE '^(scripts/|\.github/|docs/)' || true)
           if [ -z "$CHANGED" ]; then
-            echo "::warning::取不到 $BEFORE..HEAD 的改动列表，跳过 bump 检查"
+            echo "没有发布资源的改动，跳过 bump 检查"
             exit 0
           fi
           echo "本次改动（前 20 条）:"; echo "$CHANGED" | head -20
@@ -259,20 +266,12 @@ jobs:
             exit 1
           fi
 
-          # 6) Worker 版本闸门：线上部署的必须是「本次提交」
-          #    前几步只能证明静态资源是新的。纯 worker 改动（不动 index.html/sw.js）
-          #    时版本号不变，那些断言全都会绿 —— 但部署可能压根没成功。
-          #
-          #    判据是 /api/health 的 rev：部署时 --tag 打上的提交 sha，Worker 运行时
-          #    现读版本元数据返回 —— 不进 HTTP 缓存、不会被 SPA 兜底页盖住。
-          WANT_REV="${GITHUB_SHA:0:12}"
-          HEALTH=$(get https://luoluo.fun/api/health || true)
-          GOT_REV=$(echo "$HEALTH" | grep -o '"rev"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//; s/"$//' || true)
-          echo "本次提交 $WANT_REV / 线上 rev=${GOT_REV:-空}"
-          echo "health 原文: ${HEALTH:-<空>}"
-          if [ "$GOT_REV" != "$WANT_REV" ]; then
-            echo "::error::线上 /api/health 的 rev=${GOT_REV:-空} ≠ 本次提交 $WANT_REV：部署没生效，或部署后又被别的部署覆盖。"
-            exit 1
-          fi
+          # 6) 打印 /api/health 原文（只做线索，不断言 rev）
+          #    为什么不拿 rev 当判据：Cloudflare 那条 Git 自动构建会在 CI 部署后
+          #    22~39 秒再部署一次、且不带 --tag，rev 稳定变成 unknown（run #119 就是
+          #    因为这个断言红的）。真正的判据是第 4b 步的 build —— 它写在 worker
+          #    源码里、两条通道产出一致，配合「改了代码没 bump 就拦」那条检查，
+          #    build 前进就等价于「这次改动上线了」。
+          echo "health 原文（rev 仅线索，不作判据）: $(get https://luoluo.fun/api/health || echo '<空>')"
 
           echo "✅ 部署后检查通过"

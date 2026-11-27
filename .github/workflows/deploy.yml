@@ -48,6 +48,40 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
+        with:
+          # 需要完整历史：下面要用 github.event.before 做「改了代码却没 bump」的比对
+          fetch-depth: 0
+
+      - name: 检查版本号是否跟着改动一起前进
+        run: |
+          set -euo pipefail
+          # 目的：让 BUILD（写进 worker 源码的发布标记）不可伪造 ——
+          # 改了 JS/CSS/HTML 却没跑 node scripts/bump-version.js 时，
+          # BUILD 原地不动，冒烟里的「线上 BUILD == 仓库 BUILD」就会假绿。
+          # 这条在部署前拦住，省掉一次无效部署。
+          BEFORE="${{ github.event.before }}"
+          if [ -z "${BEFORE:-}" ] || echo "$BEFORE" | grep -qE '^0+$'; then
+            echo "没有上一次提交（首次推送或手动触发），跳过检查"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" HEAD 2>/dev/null | grep -vE '^(scripts/|\.github/|docs/)' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::warning::取不到 $BEFORE..HEAD 的改动列表，跳过 bump 检查"
+            exit 0
+          fi
+          echo "本次改动（前 20 条）:"; echo "$CHANGED" | head -20
+          if ! echo "$CHANGED" | grep -qE '(^|/)[^/]+\.(js|css)$|^index\.html$'; then
+            echo "没有改动 JS/CSS/HTML，不需要 bump"
+            exit 0
+          fi
+          OLD_BUILD=$(git show "$BEFORE:worker/index.js" 2>/dev/null | grep -o "var BUILD = 'v[0-9]\+'" | head -1 || true)
+          NEW_BUILD=$(grep -o "var BUILD = 'v[0-9]\+'" worker/index.js | head -1 || true)
+          echo "BUILD: 上次=${OLD_BUILD:-<无>} 本次=${NEW_BUILD:-<无>}"
+          if [ -n "${OLD_BUILD:-}" ] && [ "$OLD_BUILD" = "$NEW_BUILD" ]; then
+            echo "::error::改了 JS/CSS/HTML 但没跑 node scripts/bump-version.js（BUILD 仍是 $NEW_BUILD）。发布标记不前进，冒烟就证明不了这次改动真的上线。"
+            exit 1
+          fi
+          echo "✅ 发布标记已前进"
 
       - name: 检查 Secret 是否已配置
         id: cfg
@@ -169,6 +203,14 @@ jobs:
           #    接着就会有人加 retry，闸门从此失效。
           #    改读 /t/{id}：max-age=0, must-revalidate，每次校验，读到的是新字节。
           #    id 从 sitemap 现取、不写死 —— 写死 56 的话哪天那条工具被删，冒烟就假报警。
+          #    ⚠ 先等过「第二条部署通道的覆盖窗口」再断言。
+          #    实测（2026-11）：Cloudflare 侧还有一条 Git 自动构建，每次 push 都会在
+          #    GitHub Actions 部署后 22~39 秒再部署一次并覆盖。在窗口内读到的是马上
+          #    要被替换的那份，断言绿了也可能是假绿。等 55 秒，读到的是稳定态 ——
+          #    两条通道部署同一份源码，三件套应当一致。
+          echo "等待覆盖窗口过去（55s）…"
+          sleep 55
+
           SAMPLE=$(get https://luoluo.fun/sitemap.xml 2>/dev/null | grep -o '/t/[0-9]\+' | head -1 || true)
           if [ -z "${SAMPLE:-}" ]; then
             echo "::warning::sitemap 里没解析出 /t/{id}，退回 /t/56 取样。sitemap 为空本身是 P1 问题。"

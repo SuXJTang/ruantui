@@ -57,8 +57,36 @@ try {
   console.warn('提示：AGENTS.md 未同步（' + e.message + '）');
 }
 
+// 5) worker/index.js —— BUILD 常量（部署闸门的内容派生标记）
+//    纯 worker 改动不会改 ?v= / CACHE_VERSION，冒烟就证明不了 worker 上线。
+//    BUILD 跟着 bump 一起前进，/api/health 把它吐出来，冒烟比对它。
+//    值刻意等同 index.html 的 ?v=，一个数字同时代表 assets 与 worker 的发布点。
+try {
+  let worker = read('worker/index.js');
+  if (!/BUILD_STAMP_BEGIN[\s\S]*?BUILD_STAMP_END/.test(worker)) {
+    throw new Error('worker/index.js 里没找到 BUILD_STAMP_BEGIN/END 标记块');
+  }
+  const before = worker;
+  worker = worker.replace(
+    /(BUILD_STAMP_BEGIN[\s\S]*?var BUILD = ')v\d+(';)/,
+    '$1v' + newV + '$2'
+  );
+  // 注意：不能拿「内容是否变化」判断成功 —— 已经是目标值时替换本来就无变化。
+  // 断言最终值，而不是断言「变了」。
+  if (!new RegExp("BUILD_STAMP_BEGIN[\\s\\S]*?var BUILD = 'v" + newV + "';").test(worker)) {
+    throw new Error('BUILD 未到达 v' + newV);
+  }
+  if (worker !== before) write('worker/index.js', worker);
+} catch (e) {
+  // 这条不能降级成 warning：BUILD 不前进，冒烟的 worker 闸门就会红，
+  // 而且在 CI 里才发现，比这里直接失败贵得多。
+  console.error('BUILD 同步失败：' + e.message + '（worker 发布标记没前进，冒烟会红）');
+  process.exit(1);
+}
+
 console.log('版本已递增：');
 console.log('  index.html  ?v=' + oldV + ' → ?v=' + newV + '（' + vNums.length + ' 处）');
 console.log('  sw.js       v' + oldCache + ' → v' + newCache);
 console.log('  README.md   已同步');
 console.log('  AGENTS.md   尾注已同步');
+console.log('  worker      BUILD = v' + newV + '（部署闸门用）');

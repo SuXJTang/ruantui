@@ -191,6 +191,22 @@ jobs:
             exit 1
           fi
 
+          # 4b) Worker 自身的发布标记：/api/health 的 build
+          #     纯 worker 改动不碰 ?v= / CACHE_VERSION，上面两条证明不了 worker 上线。
+          #     build 是写进 worker 源码的常量（bump-version.js 同步），内容派生：
+          #     两条部署通道产出一致，不经过缓存，也不会像 --tag 那样被后到的那条冲掉。
+          WANT_BUILD=$(grep -o "var BUILD = 'v[0-9]\+'" worker/index.js | head -1 | grep -o 'v[0-9]\+')
+          GOT_BUILD=$(get https://luoluo.fun/api/health | grep -o '"build":"v[0-9]\+"' | head -1 | grep -o 'v[0-9]\+' || true)
+          echo "worker BUILD 仓库=$WANT_BUILD 线上=$GOT_BUILD"
+          if [ -z "${WANT_BUILD:-}" ]; then
+            echo "::error::仓库 worker/index.js 里没解析出 BUILD 常量（BUILD_STAMP 标记块被删了？）。"
+            exit 1
+          fi
+          if [ "$GOT_BUILD" != "$WANT_BUILD" ]; then
+            echo "::error::线上 worker BUILD=$GOT_BUILD 与仓库 $WANT_BUILD 不一致：worker 没上线或 health 路由被改。"
+            exit 1
+          fi
+
           # 5) 详情页服务端 meta 注入仍生效
           #    防 run_worker_first / html_handling 被改回，导致 SEO 注入静默失效。
           t_code=$(get -o /dev/null -w '%{http_code}' "https://luoluo.fun$SAMPLE" || echo 000)

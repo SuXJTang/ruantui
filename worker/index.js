@@ -10,6 +10,24 @@
 // 旧的 /api/click 埋点（只打日志不落库）与 /api/admin/* 均已移除：
 // /api/admin/* 返回 410 Gone，/api/click 已无调用方。
 
+// ------------------------------------------------------------------
+// BUILD —— 部署闸门的内容派生标记（唯一可用于断言「worker 已上线」的值）
+//
+// 为什么不用部署期元数据（--tag / --var / version_metadata.tag）：
+// 本站有两条部署通道，GitHub Actions 和 Cloudflare Workers Builds（Git 集成）。
+// 后者不带任何 tag，且总在前一次部署后 22~40 秒覆盖它 —— 实测 /api/health 的
+// rev 恒为 unknown、version 是那条无 tag 部署的 id。所以部署期元数据在这里
+// 天生不可信。（worker 改动 + 版本元数据这条路已经折腾过三轮，别再来第四次。）
+//
+// 内容派生的标记跟着源码走：两条通道构建同一个 commit → 常量必然一致，
+// 也不经过任何缓存层。值由 scripts/bump-version.js 同步为 index.html 的 ?v=。
+//
+// 改这一行请走脚本（node scripts/bump-version.js），不要手改。
+// BUILD_STAMP_BEGIN
+var BUILD = 'v126';
+// BUILD_STAMP_END
+// ------------------------------------------------------------------
+
 // 允许的前端来源（CORS 白名单）
 var ALLOWED_ORIGINS = [
     'https://suxjtang.github.io',
@@ -97,15 +115,17 @@ async function handleRequest(request, env) {
         // 版本号都不变，冒烟里的 ?v= / CACHE_VERSION 比对就证明不了 worker 是否
         // 真的上线了 —— 只能等下次发版时顺带验证。
         //
-        // CI 用 `wrangler deploy --tag <sha前12位>` 打版本 tag，这里读回来。
-        // 只暴露版本 tag 和时间戳，不掺业务数据、不暴露任何配置或密钥。
+        // ⚠ 判据用 `build`（源码里的常量，由 scripts/bump-version.js 写入），
+        //   不要用 rev（部署期元数据）。本站有两条部署通道：GitHub Actions
+        //   （带 --tag）和 Cloudflare Workers Builds（不带 tag，且总在 22~40 秒后
+        //   覆盖前一次部署），所以 rev/version 恒定落到 unknown 或别人的版本上。
+        //   内容派生的常量跟源码走，两条通道产出一致，也不经过任何缓存。
         if (path === '/api/health') {
             if (method !== 'GET' && method !== 'HEAD') {
                 return errorResponse('只支持 GET', 405, cors);
             }
             var vmeta = env && env.CF_VERSION_METADATA;
-            // rev 只是排查用的辅助信息（版本 tag 可能为空，见 deploy.yml 的说明）。
-            // 真正的部署闸门断言的是 /rev.txt —— 那是随 assets 一起上传的静态文件。
+            // rev / version 只作排查线索，不进任何断言（见上面的说明）。
             var rev = (env && env.GIT_REV) || (vmeta && vmeta.tag) || 'unknown';
             var vid = (vmeta && vmeta.id) || 'unknown';
             var healthHeaders = {
@@ -116,6 +136,7 @@ async function handleRequest(request, env) {
             for (var hk in cors) { healthHeaders[hk] = cors[hk]; }
             return new Response(JSON.stringify({
                 ok: true,
+                build: BUILD,
                 rev: rev,
                 version: vid,
                 ts: new Date().toISOString(),
